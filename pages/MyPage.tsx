@@ -1,7 +1,21 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useFavorites } from '../hooks';
+import type { FavoriteType } from '../hooks';
 
 const MyPage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<FavoriteType>('event');
+  const { favorites, removeFavorite, getByType, eventCount, spaceCount, spotCount } = useFavorites();
+
+  const currentItems = getByType(activeTab);
+
+  const tabs: { key: FavoriteType; label: string; count: number }[] = [
+    { key: 'event', label: '저장한 행사', count: eventCount },
+    { key: 'space', label: '저장한 장소', count: spaceCount },
+    { key: 'spot', label: '저장한 야경', count: spotCount },
+  ];
+
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-10 pb-24 space-y-10">
       {/* Profile Card */}
@@ -25,17 +39,19 @@ const MyPage: React.FC = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="flex gap-4 w-full md:w-auto">
-          {[
-            { label: '저장한 행사', value: 24 },
-            { label: '저장한 장소', value: 12 },
-            { label: '작성한 리뷰', value: 8 },
-          ].map(stat => (
-            <div key={stat.label} className="flex-1 md:w-32 bg-background-light p-6 rounded-2xl flex flex-col items-center justify-center border border-gray-100 cursor-pointer hover:border-primary transition-all">
-              <span className="text-3xl font-black text-primary">{stat.value}</span>
-              <span className="text-[10px] font-black text-gray-400 mt-2 uppercase tracking-widest">{stat.label}</span>
-            </div>
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 md:w-32 p-6 rounded-2xl flex flex-col items-center justify-center border transition-all cursor-pointer ${
+                activeTab === tab.key ? 'bg-primary/5 border-primary/30' : 'bg-background-light border-gray-100 hover:border-primary'
+              }`}
+            >
+              <span className="text-3xl font-black text-primary">{tab.count}</span>
+              <span className="text-[10px] font-black text-gray-400 mt-2 uppercase tracking-widest">{tab.label}</span>
+            </button>
           ))}
         </div>
       </section>
@@ -66,37 +82,88 @@ const MyPage: React.FC = () => {
 
         <div className="lg:col-span-3 space-y-6">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 flex gap-10 overflow-x-auto no-scrollbar">
-            <button className="py-6 font-black text-sm border-b-4 border-primary text-navy">저장한 행사 <span className="text-primary ml-1">24</span></button>
-            <button className="py-6 font-bold text-sm text-gray-400 hover:text-navy">저장한 장소 <span className="ml-1">12</span></button>
-            <button className="py-6 font-bold text-sm text-gray-400 hover:text-navy">작성한 리뷰 <span className="ml-1">8</span></button>
+            {tabs.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`py-6 font-bold text-sm whitespace-nowrap ${
+                  activeTab === tab.key
+                    ? 'font-black border-b-4 border-primary text-navy'
+                    : 'text-gray-400 hover:text-navy'
+                }`}
+              >
+                {tab.label} <span className={activeTab === tab.key ? 'text-primary ml-1' : 'ml-1'}>{tab.count}</span>
+              </button>
+            ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {[
-              { title: '서울 미디어 아트 2024', cat: '전시', date: '10.01 - 10.31', loc: 'DDP', img: 'https://picsum.photos/seed/ma/400/500' },
-              { title: '경복궁 야간 관람', cat: '체험', date: '상시 운영', loc: '경복궁', img: 'https://picsum.photos/seed/k/400/500' },
-              { title: '한강 달빛 야시장', cat: '푸드', date: '매주 주말', loc: '여의도', img: 'https://picsum.photos/seed/nightm/400/500' },
-            ].map((item, i) => (
-              <div key={i} className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all">
-                <div className="relative h-64 overflow-hidden">
-                  <img className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" src={item.img} alt={item.title} />
-                  <button className="absolute top-4 right-4 bg-white/90 p-2 rounded-full text-primary shadow-lg"><span className="material-symbols-outlined fill font-bold">favorite</span></button>
-                </div>
-                <div className="p-5">
-                  <p className="text-[10px] font-black text-primary uppercase mb-1 tracking-widest">{item.cat}</p>
-                  <h4 className="font-black text-navy mb-3">{item.title}</h4>
-                  <div className="space-y-1 text-xs text-gray-400 font-bold">
-                    <p className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">calendar_today</span> {item.date}</p>
-                    <p className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">location_on</span> {item.loc}</p>
+          {currentItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+              <span className="material-symbols-outlined text-5xl mb-4">
+                {activeTab === 'event' ? 'event' : activeTab === 'space' ? 'museum' : 'nightlight'}
+              </span>
+              <p className="font-bold text-lg mb-2">
+                저장한 {activeTab === 'event' ? '행사' : activeTab === 'space' ? '장소' : '야경명소'}가 없습니다
+              </p>
+              <p className="text-sm mb-6">마음에 드는 항목의 하트를 눌러 저장해보세요</p>
+              <Link
+                to={activeTab === 'event' ? '/events' : '/map'}
+                className="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:brightness-110"
+              >
+                {activeTab === 'event' ? '행사 둘러보기' : '지도에서 찾기'}
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {currentItems.map(item => (
+                <div key={`${item.type}-${item.id}`} className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all">
+                  <Link to={item.type === 'event' ? `/event/${item.id}` : '/map'}>
+                    <div className="relative h-52 overflow-hidden bg-gray-50">
+                      {item.image ? (
+                        <img
+                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                          src={item.image}
+                          alt={item.title}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <span className="material-symbols-outlined text-5xl">
+                            {item.type === 'event' ? 'event' : item.type === 'space' ? 'museum' : 'nightlight'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                  <div className="p-5">
+                    <div className="flex justify-between items-start">
+                      <div className="min-w-0 flex-1">
+                        {item.category && <p className="text-[10px] font-black text-primary uppercase mb-1 tracking-widest">{item.category}</p>}
+                        <h4 className="font-black text-navy mb-3 truncate">{item.title}</h4>
+                        <div className="space-y-1 text-xs text-gray-400 font-bold">
+                          {item.date && <p className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">calendar_today</span> {item.date}</p>}
+                          <p className="flex items-center gap-1 truncate"><span className="material-symbols-outlined text-sm">location_on</span> {item.location}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => removeFavorite(item.id, item.type)}
+                        className="text-primary shrink-0 ml-2 hover:scale-110 transition-transform"
+                      >
+                        <span className="material-symbols-outlined fill">favorite</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-            <div className="border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center h-[380px] group cursor-pointer hover:border-primary/50 transition-colors">
-              <div className="size-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-all"><span className="material-symbols-outlined text-3xl">add</span></div>
-              <p className="mt-4 text-sm font-black text-gray-400">새로운 행사 찾기</p>
+              ))}
+              <Link to={activeTab === 'event' ? '/events' : '/map'} className="border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center h-[320px] group cursor-pointer hover:border-primary/50 transition-colors">
+                <div className="size-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                  <span className="material-symbols-outlined text-3xl">add</span>
+                </div>
+                <p className="mt-4 text-sm font-black text-gray-400">
+                  {activeTab === 'event' ? '새로운 행사 찾기' : activeTab === 'space' ? '문화공간 찾기' : '야경명소 찾기'}
+                </p>
+              </Link>
             </div>
-          </div>
+          )}
         </div>
       </section>
     </div>

@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useEvents } from '../hooks';
+import { useEvents, useFavorites } from '../hooks';
 
 const EventList: React.FC = () => {
   const [filter, setFilter] = useState('latest');
@@ -11,6 +11,7 @@ const EventList: React.FC = () => {
   const ITEMS_PER_PAGE = 10;
 
   const { events, loading, isError } = useEvents();
+  const { toggleFavorite, isFavorite } = useFavorites();
 
   // 필터링된 이벤트
   const filteredEvents = useMemo(() => {
@@ -141,8 +142,22 @@ const EventList: React.FC = () => {
                 <div>
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="text-lg font-bold leading-snug group-hover:text-primary transition-colors">{event.TITLE}</h4>
-                    <button className="text-gray-300 hover:text-primary transition-colors shrink-0 ml-2" onClick={(e) => e.preventDefault()}>
-                      <span className="material-symbols-outlined">favorite</span>
+                    <button
+                      className={`shrink-0 ml-2 transition-colors ${isFavorite(String(eventIndex), 'event') ? 'text-primary' : 'text-gray-300 hover:text-primary'}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleFavorite({
+                          id: String(eventIndex),
+                          type: 'event',
+                          title: event.TITLE,
+                          location: event.PLACE || event.GUNAME,
+                          image: event.MAIN_IMG,
+                          category: event.CODENAME,
+                          date: formatDate(event),
+                        });
+                      }}
+                    >
+                      <span className={`material-symbols-outlined ${isFavorite(String(eventIndex), 'event') ? 'fill' : ''}`}>favorite</span>
                     </button>
                   </div>
                   <div className="space-y-1 text-sm text-gray-500 font-medium">

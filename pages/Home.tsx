@@ -5,7 +5,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { FreeMode, Mousewheel } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/free-mode';
-import { useEvents } from '../hooks';
+import { useEvents, useFavorites } from '../hooks';
 
 // 배너 슬라이드 데이터 - 이미지를 교체하려면 여기서 수정하세요
 const BANNER_SLIDES = [
@@ -87,6 +87,8 @@ const Home: React.FC = () => {
     const timer = setInterval(nextSlide, 5000);
     return () => clearInterval(timer);
   }, [nextSlide, isPaused]);
+
+  const { toggleFavorite, isFavorite } = useFavorites();
 
   const isFree = (event: typeof events[0]) => {
     return event.IS_FREE === '무료' || (event.USE_FEE && event.USE_FEE.includes('무료'));
@@ -285,8 +287,24 @@ const Home: React.FC = () => {
                           onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/default/800/600'; }}
                         />
                         {free && <div className="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase text-primary">무료 입장</div>}
-                        <button className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/50 backdrop-blur-md flex items-center justify-center text-navy hover:bg-primary hover:text-white transition-all">
-                          <span className="material-symbols-outlined text-xl">favorite</span>
+                        <button
+                          className={`absolute top-3 right-3 w-8 h-8 rounded-full backdrop-blur-md flex items-center justify-center transition-all ${
+                            isFavorite(String(idx), 'event') ? 'bg-primary text-white' : 'bg-white/50 text-navy hover:bg-primary hover:text-white'
+                          }`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            toggleFavorite({
+                              id: String(idx),
+                              type: 'event',
+                              title: event.TITLE,
+                              location: event.PLACE || event.GUNAME,
+                              image: event.MAIN_IMG,
+                              category: event.CODENAME,
+                              date: event.DATE,
+                            });
+                          }}
+                        >
+                          <span className={`material-symbols-outlined text-xl ${isFavorite(String(idx), 'event') ? 'fill' : ''}`}>favorite</span>
                         </button>
                       </div>
                       <div className="p-5">

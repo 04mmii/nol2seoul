@@ -1,12 +1,13 @@
 
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useEvents } from '../hooks';
+import { useEvents, useFavorites } from '../hooks';
 
 const EventDetail: React.FC = () => {
   const { id } = useParams();
   const { events, loading, isError } = useEvents();
 
+  const { toggleFavorite, isFavorite } = useFavorites();
   const eventIndex = Number(id);
   const event = events[eventIndex];
 
@@ -138,9 +139,24 @@ const EventDetail: React.FC = () => {
                   홈페이지 가기
                 </a>
               )}
-              <button className="w-full bg-gray-100 text-navy py-4 rounded-full font-bold text-lg hover:bg-gray-200 transition-all flex items-center justify-center gap-2">
-                <span className="material-symbols-outlined">favorite</span>
-                관심행사 등록
+              <button
+                onClick={() => toggleFavorite({
+                  id: String(eventIndex),
+                  type: 'event',
+                  title: event.TITLE,
+                  location: event.PLACE || event.GUNAME,
+                  image: event.MAIN_IMG,
+                  category: event.CODENAME,
+                  date: dateRange,
+                })}
+                className={`w-full py-4 rounded-full font-bold text-lg transition-all flex items-center justify-center gap-2 ${
+                  isFavorite(String(eventIndex), 'event')
+                    ? 'bg-primary text-white shadow-lg shadow-primary/30'
+                    : 'bg-gray-100 text-navy hover:bg-gray-200'
+                }`}
+              >
+                <span className={`material-symbols-outlined ${isFavorite(String(eventIndex), 'event') ? 'fill' : ''}`}>favorite</span>
+                {isFavorite(String(eventIndex), 'event') ? '관심행사 등록됨' : '관심행사 등록'}
               </button>
             </div>
           </div>
