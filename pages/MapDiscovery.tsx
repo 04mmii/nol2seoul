@@ -4,6 +4,7 @@ import { FreeMode, Mousewheel } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/free-mode';
 import { useKakaoLoader, useEvents, useCulturalSpaces, useNightViewSpots, useFavorites } from '../hooks';
+import { NightSpotSlideCard, NightSpotDetailCard } from '../components/NightSpotCard';
 import type { Event, CulturalSpace, NightViewSpot, KakaoMap, KakaoMarker } from '../types';
 
 type CategoryType = '전체' | '문화행사' | '문화공간' | '야경명소';
@@ -264,6 +265,19 @@ const MapDiscovery = () => {
         const isSpot = !('CODENAME' in selectedItem) && !('FAC_NAME' in selectedItem);
         const spot = isSpot ? selectedItem as NightViewSpot : null;
 
+        if (spot) {
+          return (
+            <NightSpotDetailCard
+              spot={spot}
+              id={info.id}
+              isFavorited={isFavorite(info.id, 'spot')}
+              isNightMode={isNightMode}
+              onToggleFavorite={() => toggleFavorite({ id: info.id, type: 'spot', title: info.title, location: info.location, image: info.image, category: '야경명소', date: info.date })}
+              onClose={() => setSelectedItem(null)}
+            />
+          );
+        }
+
         return (
           <div className={`absolute top-24 left-6 z-30 w-[360px] rounded-2xl shadow-2xl overflow-hidden ${isNightMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
             <button
@@ -273,105 +287,38 @@ const MapDiscovery = () => {
               <span className="material-symbols-outlined text-sm">close</span>
             </button>
 
-            {/* 야경명소: 그라디언트 헤더 / 나머지: 포스터 이미지 */}
-            {spot ? (
-              <div className="relative w-full bg-gradient-to-br from-indigo-950 via-slate-900 to-violet-950 p-6 pb-5">
-                <div className="absolute top-3 left-3">
-                  <span className="bg-indigo-500/30 text-indigo-300 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border border-indigo-500/20">야경명소</span>
-                </div>
-                <div className="mt-6 flex items-start gap-4">
-                  <div className="size-14 rounded-2xl bg-indigo-500/20 flex items-center justify-center shrink-0 border border-indigo-500/20">
-                    <span className="material-symbols-outlined text-3xl text-indigo-300">nightlight</span>
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="font-black text-lg text-white leading-tight">{info.title}</h4>
-                    <p className="text-indigo-300/70 text-xs font-bold mt-1 truncate">{info.location}</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="relative w-full h-[280px] bg-gray-100">
-                {info.image ? (
-                  <img src={info.image} alt={info.title} className="w-full h-full object-contain bg-gray-50" />
-                ) : (
-                  <div className={`w-full h-full flex items-center justify-center ${isNightMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                    <span className={`material-symbols-outlined text-6xl ${isNightMode ? 'text-gray-500' : 'text-gray-300'}`}>
-                      {info.category === '문화행사' ? 'event' : 'museum'}
-                    </span>
-                  </div>
-                )}
-                <div className="absolute top-3 left-3">
-                  <span className="bg-primary text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">{info.type}</span>
-                </div>
-              </div>
-            )}
-
-            {/* 상세 정보 */}
-            <div className={`p-5 space-y-3 ${isNightMode ? '' : ''}`}>
-              {!spot && <h4 className={`font-black text-lg leading-tight ${isNightMode ? 'text-white' : 'text-navy'}`}>{info.title}</h4>}
-
-              {/* 야경명소 전용 정보 */}
-              {spot ? (
-                <div className="space-y-2.5">
-                  {spot.OPERATING_TIME && (
-                    <div className={`flex items-start gap-2.5 text-xs ${isNightMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                      <span className="material-symbols-outlined text-sm text-indigo-400 mt-0.5 shrink-0">schedule</span>
-                      <div>
-                        <p className="font-black text-[10px] text-indigo-400 uppercase tracking-widest mb-0.5">운영시간</p>
-                        <p className="font-bold">{spot.OPERATING_TIME}</p>
-                      </div>
-                    </div>
-                  )}
-                  {spot.ENTR_FEE && (
-                    <div className={`flex items-start gap-2.5 text-xs ${isNightMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                      <span className="material-symbols-outlined text-sm text-indigo-400 mt-0.5 shrink-0">payments</span>
-                      <div>
-                        <p className="font-black text-[10px] text-indigo-400 uppercase tracking-widest mb-0.5">입장료</p>
-                        <p className="font-bold">{spot.ENTR_FEE}</p>
-                      </div>
-                    </div>
-                  )}
-                  {spot.SUBWAY && (
-                    <div className={`flex items-start gap-2.5 text-xs ${isNightMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                      <span className="material-symbols-outlined text-sm text-indigo-400 mt-0.5 shrink-0">subway</span>
-                      <div>
-                        <p className="font-black text-[10px] text-indigo-400 uppercase tracking-widest mb-0.5">지하철</p>
-                        <p className="font-bold">{spot.SUBWAY}</p>
-                      </div>
-                    </div>
-                  )}
-                  {spot.CONTENT && (
-                    <p className={`text-xs leading-relaxed line-clamp-3 ${isNightMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {spot.CONTENT}
-                    </p>
-                  )}
-                </div>
+            <div className="relative w-full h-[280px] bg-gray-100">
+              {info.image ? (
+                <img src={info.image} alt={info.title} className="w-full h-full object-contain bg-gray-50" />
               ) : (
-                <div className="space-y-2">
-                  <p className={`text-xs font-bold flex items-center gap-1.5 ${isNightMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    <span className="material-symbols-outlined text-sm">location_on</span>
-                    {info.location}
-                  </p>
-                  {info.date && (
-                    <p className={`text-xs font-bold flex items-center gap-1.5 ${isNightMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      <span className="material-symbols-outlined text-sm">schedule</span>
-                      {info.date}
-                    </p>
-                  )}
+                <div className={`w-full h-full flex items-center justify-center ${isNightMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                  <span className={`material-symbols-outlined text-6xl ${isNightMode ? 'text-gray-500' : 'text-gray-300'}`}>
+                    {info.category === '문화행사' ? 'event' : 'museum'}
+                  </span>
                 </div>
               )}
+              <div className="absolute top-3 left-3">
+                <span className="bg-primary text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">{info.type}</span>
+              </div>
+            </div>
 
+            <div className="p-5 space-y-3">
+              <h4 className={`font-black text-lg leading-tight ${isNightMode ? 'text-white' : 'text-navy'}`}>{info.title}</h4>
+              <div className="space-y-2">
+                <p className={`text-xs font-bold flex items-center gap-1.5 ${isNightMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <span className="material-symbols-outlined text-sm">location_on</span>
+                  {info.location}
+                </p>
+                {info.date && (
+                  <p className={`text-xs font-bold flex items-center gap-1.5 ${isNightMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <span className="material-symbols-outlined text-sm">schedule</span>
+                    {info.date}
+                  </p>
+                )}
+              </div>
               <div className="flex gap-2 pt-2">
                 <button
-                  onClick={() => toggleFavorite({
-                    id: info.id,
-                    type: info.favType,
-                    title: info.title,
-                    location: info.location,
-                    image: info.image,
-                    category: info.type,
-                    date: info.date,
-                  })}
+                  onClick={() => toggleFavorite({ id: info.id, type: info.favType, title: info.title, location: info.location, image: info.image, category: info.type, date: info.date })}
                   className={`flex-1 py-2.5 rounded-full font-bold text-sm flex items-center justify-center gap-1.5 transition-all ${
                     isFavorite(info.id, info.favType)
                       ? isNightMode ? 'bg-indigo-600 text-white' : 'bg-primary text-white'
@@ -381,19 +328,6 @@ const MapDiscovery = () => {
                   <span className={`material-symbols-outlined text-lg ${isFavorite(info.id, info.favType) ? 'fill' : ''}`}>favorite</span>
                   {isFavorite(info.id, info.favType) ? '저장됨' : '저장'}
                 </button>
-                {spot?.URL && (
-                  <a
-                    href={spot.URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`flex-1 py-2.5 rounded-full font-bold text-sm flex items-center justify-center gap-1.5 transition-all ${
-                      isNightMode ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-primary text-white hover:brightness-110'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-lg">open_in_new</span>
-                    상세보기
-                  </a>
-                )}
               </div>
             </div>
           </div>
@@ -430,101 +364,62 @@ const MapDiscovery = () => {
             {getRecentItems().map(({ item, category }, i) => {
               const info = getItemInfo(item);
               const isSpotCard = !('CODENAME' in item) && !('FAC_NAME' in item);
-              const spotData = isSpotCard ? item as NightViewSpot : null;
 
               return (
                 <SwiperSlide key={i} style={{ width: isSpotCard ? '260px' : '280px' }}>
-                  <div
-                    onClick={() => setSelectedItem(item)}
-                    className={`rounded-2xl overflow-hidden shadow-2xl flex flex-col cursor-pointer transition-all hover:scale-[1.02] ${
-                      isSpotCard
-                        ? 'bg-gradient-to-br from-indigo-950 via-slate-900 to-violet-950 border border-indigo-500/20 hover:border-indigo-400/50'
-                        : isNightMode
+                  {isSpotCard ? (
+                    <NightSpotSlideCard
+                      spot={item as NightViewSpot}
+                      id={info.id}
+                      isFavorited={isFavorite(info.id, 'spot')}
+                      onToggleFavorite={() => toggleFavorite({ id: info.id, type: 'spot', title: info.title, location: info.location, image: info.image, category: '야경명소', date: info.date })}
+                      onClick={() => setSelectedItem(item)}
+                    />
+                  ) : (
+                    <div
+                      onClick={() => setSelectedItem(item)}
+                      className={`rounded-2xl overflow-hidden shadow-2xl flex flex-col cursor-pointer transition-all hover:scale-[1.02] ${
+                        isNightMode
                           ? 'bg-gray-800 border border-gray-700 hover:border-indigo-500'
                           : 'bg-white border border-gray-100 hover:border-primary'
-                    }`}
-                  >
-                    {/* 야경명소: 아이콘 + 텍스트 카드 */}
-                    {isSpotCard ? (
-                      <div className="p-5 flex flex-col h-[200px]">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md text-[10px] font-black border border-indigo-500/20">야경명소</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleFavorite({ id: info.id, type: info.favType, title: info.title, location: info.location, image: info.image, category: info.type, date: info.date });
-                            }}
-                            className={`size-7 rounded-full flex items-center justify-center ${
-                              isFavorite(info.id, info.favType) ? 'text-indigo-300' : 'text-indigo-500/50 hover:text-indigo-300'
-                            }`}
-                          >
-                            <span className={`material-symbols-outlined text-lg ${isFavorite(info.id, info.favType) ? 'fill' : ''}`}>favorite</span>
-                          </button>
-                        </div>
-                        <div className="flex items-start gap-3 mb-3">
-                          <div className="size-10 rounded-xl bg-indigo-500/15 flex items-center justify-center shrink-0 border border-indigo-500/15">
-                            <span className="material-symbols-outlined text-xl text-indigo-300">nightlight</span>
+                      }`}
+                    >
+                      <div className="relative h-36">
+                        {info.image ? (
+                          <img className="w-full h-full object-cover" src={info.image} alt={info.title} />
+                        ) : (
+                          <div className={`w-full h-full flex items-center justify-center ${isNightMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                            <span className={`material-symbols-outlined text-4xl ${isNightMode ? 'text-gray-500' : 'text-gray-300'}`}>
+                              {'CODENAME' in item ? 'event' : 'museum'}
+                            </span>
                           </div>
-                          <div className="min-w-0">
-                            <h4 className="font-bold text-white truncate text-sm">{info.title}</h4>
-                            <p className="text-indigo-300/60 text-[11px] font-bold truncate mt-0.5">{info.location}</p>
-                          </div>
+                        )}
+                        <div className={`absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md text-[10px] font-black text-white ${
+                          isNightMode ? 'bg-indigo-600' : 'bg-navy'
+                        }`}>
+                          {category}
                         </div>
-                        <div className="mt-auto space-y-1.5">
-                          {spotData?.OPERATING_TIME && (
-                            <p className="text-[11px] text-indigo-200/60 font-bold flex items-center gap-1.5">
-                              <span className="material-symbols-outlined text-xs text-indigo-400/60">schedule</span>
-                              <span className="truncate">{spotData.OPERATING_TIME}</span>
-                            </p>
-                          )}
-                          {spotData?.ENTR_FEE && (
-                            <p className="text-[11px] text-indigo-200/60 font-bold flex items-center gap-1.5">
-                              <span className="material-symbols-outlined text-xs text-indigo-400/60">payments</span>
-                              <span className="truncate">{spotData.ENTR_FEE}</span>
-                            </p>
-                          )}
-                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite({ id: info.id, type: info.favType, title: info.title, location: info.location, image: info.image, category: info.type, date: info.date });
+                          }}
+                          className={`absolute top-2.5 right-2.5 size-8 rounded-full flex items-center justify-center backdrop-blur-md ${
+                            isFavorite(info.id, info.favType) ? 'bg-primary/80 text-white' : 'bg-white/50 text-gray-600 hover:text-primary'
+                          }`}
+                        >
+                          <span className={`material-symbols-outlined text-lg ${isFavorite(info.id, info.favType) ? 'fill' : ''}`}>favorite</span>
+                        </button>
                       </div>
-                    ) : (
-                      <>
-                        {/* 문화행사/문화공간: 이미지 카드 */}
-                        <div className="relative h-36">
-                          {info.image ? (
-                            <img className="w-full h-full object-cover" src={info.image} alt={info.title} />
-                          ) : (
-                            <div className={`w-full h-full flex items-center justify-center ${isNightMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                              <span className={`material-symbols-outlined text-4xl ${isNightMode ? 'text-gray-500' : 'text-gray-300'}`}>
-                                {'CODENAME' in item ? 'event' : 'museum'}
-                              </span>
-                            </div>
-                          )}
-                          <div className={`absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md text-[10px] font-black text-white ${
-                            isNightMode ? 'bg-indigo-600' : 'bg-navy'
-                          }`}>
-                            {category}
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleFavorite({ id: info.id, type: info.favType, title: info.title, location: info.location, image: info.image, category: info.type, date: info.date });
-                            }}
-                            className={`absolute top-2.5 right-2.5 size-8 rounded-full flex items-center justify-center backdrop-blur-md ${
-                              isFavorite(info.id, info.favType) ? 'bg-primary/80 text-white' : 'bg-white/50 text-gray-600 hover:text-primary'
-                            }`}
-                          >
-                            <span className={`material-symbols-outlined text-lg ${isFavorite(info.id, info.favType) ? 'fill' : ''}`}>favorite</span>
-                          </button>
-                        </div>
-                        <div className={`p-4 ${isNightMode ? 'bg-gray-800' : 'bg-white'}`}>
-                          <h4 className={`font-bold truncate ${isNightMode ? 'text-white' : 'text-navy'}`}>{info.title}</h4>
-                          <p className={`text-xs font-bold flex items-center gap-1 mt-1.5 text-gray-400`}>
-                            <span className="material-symbols-outlined text-sm">location_on</span>
-                            <span className="truncate">{info.location}</span>
-                          </p>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                      <div className={`p-4 ${isNightMode ? 'bg-gray-800' : 'bg-white'}`}>
+                        <h4 className={`font-bold truncate ${isNightMode ? 'text-white' : 'text-navy'}`}>{info.title}</h4>
+                        <p className="text-xs font-bold flex items-center gap-1 mt-1.5 text-gray-400">
+                          <span className="material-symbols-outlined text-sm">location_on</span>
+                          <span className="truncate">{info.location}</span>
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </SwiperSlide>
               );
             })}
