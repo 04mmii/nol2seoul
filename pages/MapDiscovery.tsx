@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { FreeMode, Mousewheel } from 'swiper/modules';
 import 'swiper/css';
@@ -10,6 +11,7 @@ import type { Event, CulturalSpace, NightViewSpot, KakaoMap, KakaoMarker } from 
 type CategoryType = '전체' | '문화행사' | '문화공간' | '야경명소';
 
 const MapDiscovery = () => {
+  const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
   const markersRef = useRef<KakaoMarker[]>([]);
@@ -189,7 +191,7 @@ const MapDiscovery = () => {
     return items.slice(0, 10);
   };
 
-  // 서브 카테고리 추출
+  // 서브 카테고리 추출 (문화행사는 자체 페이지가 있으므로 제외)
   const getSubCategories = (): string[] => {
     if (selectedCategory === '야경명소') {
       const codes = [...new Set(spots.map(s => s.SUBJECT_CD).filter(Boolean))];
@@ -197,10 +199,6 @@ const MapDiscovery = () => {
     }
     if (selectedCategory === '문화공간') {
       const codes = [...new Set(spaces.map(s => s.SUBJCODE).filter(Boolean))];
-      return ['전체', ...codes];
-    }
-    if (selectedCategory === '문화행사') {
-      const codes = [...new Set(events.map(e => e.CODENAME).filter(Boolean))];
       return ['전체', ...codes];
     }
     return [];
@@ -384,6 +382,15 @@ const MapDiscovery = () => {
                   <span className={`material-symbols-outlined text-lg ${isFavorite(info.id, info.favType) ? 'fill' : ''}`}>favorite</span>
                   {isFavorite(info.id, info.favType) ? '저장됨' : '저장'}
                 </button>
+                {'CODENAME' in selectedItem && (
+                  <Link
+                    to={`/event/${info.id}`}
+                    className="flex-1 py-2.5 rounded-full font-bold text-sm flex items-center justify-center gap-1.5 bg-primary text-white hover:brightness-110 transition-all"
+                  >
+                    <span className="material-symbols-outlined text-lg">arrow_forward</span>
+                    상세보기
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -402,26 +409,37 @@ const MapDiscovery = () => {
               : ''
           }`}>
             <div className="max-w-[1200px] mx-auto">
-              {/* 드래그 핸들 + 타이틀 */}
+              {/* 타이틀 */}
               <div className="flex items-center justify-between mb-3">
-                <button
-                  onClick={() => setIsListOpen(!isListOpen)}
-                  className={`font-black text-lg px-4 py-1.5 rounded-full w-fit backdrop-blur-md flex items-center gap-2 ${
-                    isNightMode ? 'bg-gray-800/90 text-white' : 'bg-white/90 text-navy shadow-lg'
-                  }`}
-                >
-                  {selectedCategory === '전체' ? '추천 장소' : selectedCategory}
-                  <span className={`${isNightMode ? 'text-indigo-400' : 'text-primary'}`}>
-                    {selectedCategory === '전체'
-                      ? events.length + spaces.length + spots.length
-                      : selectedCategory === '문화행사'
-                        ? events.length
+                {selectedCategory === '문화행사' ? (
+                  <Link
+                    to="/events"
+                    className={`font-black text-lg px-4 py-1.5 rounded-full w-fit backdrop-blur-md flex items-center gap-2 ${
+                      isNightMode ? 'bg-gray-800/90 text-white' : 'bg-white/90 text-navy shadow-lg'
+                    }`}
+                  >
+                    문화행사
+                    <span className={`${isNightMode ? 'text-indigo-400' : 'text-primary'}`}>{events.length}건</span>
+                    <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => setIsListOpen(!isListOpen)}
+                    className={`font-black text-lg px-4 py-1.5 rounded-full w-fit backdrop-blur-md flex items-center gap-2 ${
+                      isNightMode ? 'bg-gray-800/90 text-white' : 'bg-white/90 text-navy shadow-lg'
+                    }`}
+                  >
+                    {selectedCategory === '전체' ? '추천 장소' : selectedCategory}
+                    <span className={`${isNightMode ? 'text-indigo-400' : 'text-primary'}`}>
+                      {selectedCategory === '전체'
+                        ? events.length + spaces.length + spots.length
                         : selectedCategory === '문화공간'
                           ? spaces.length
                           : spots.length}건
-                  </span>
-                  <span className={`material-symbols-outlined text-sm transition-transform ${isListOpen ? 'rotate-180' : ''}`}>expand_less</span>
-                </button>
+                    </span>
+                    <span className={`material-symbols-outlined text-sm transition-transform ${isListOpen ? 'rotate-180' : ''}`}>expand_less</span>
+                  </button>
+                )}
               </div>
 
               {/* 서브 카테고리 필터 */}
@@ -446,7 +464,7 @@ const MapDiscovery = () => {
           </div>
 
           {/* 컨텐츠 영역 */}
-          {isListOpen ? (
+          {isListOpen && selectedCategory !== '문화행사' ? (
             /* 펼쳐진 리스트 */
             <div className={`flex-1 overflow-y-auto px-6 pb-6 ${isNightMode ? 'bg-gray-900' : 'bg-white'}`}>
               <div className="max-w-[1200px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
@@ -455,10 +473,19 @@ const MapDiscovery = () => {
                   const isSpotItem = !('CODENAME' in item) && !('FAC_NAME' in item);
                   const spotData = isSpotItem ? item as NightViewSpot : null;
 
+                  const isEvent = 'CODENAME' in item;
+
                   return (
                     <div
                       key={i}
-                      onClick={() => { setSelectedItem(item); setIsListOpen(false); }}
+                      onClick={() => {
+                        if (isEvent) {
+                          navigate(`/event/${info.id}`);
+                        } else {
+                          setSelectedItem(item);
+                          setIsListOpen(false);
+                        }
+                      }}
                       className={`flex gap-4 p-3.5 rounded-xl cursor-pointer transition-all ${
                         isNightMode
                           ? 'hover:bg-gray-800 border border-gray-800 hover:border-gray-700'
@@ -553,7 +580,13 @@ const MapDiscovery = () => {
                           />
                         ) : (
                           <div
-                            onClick={() => setSelectedItem(item)}
+                            onClick={() => {
+                              if ('CODENAME' in item) {
+                                navigate(`/event/${info.id}`);
+                              } else {
+                                setSelectedItem(item);
+                              }
+                            }}
                             className={`rounded-2xl overflow-hidden shadow-2xl flex flex-col cursor-pointer transition-all hover:scale-[1.02] ${
                               isNightMode
                                 ? 'bg-gray-800 border border-gray-700 hover:border-indigo-500'
