@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { useKakaoLoader, useEvents, useCulturalSpaces, useNightViewSpots } from '../hooks';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { FreeMode, Mousewheel } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/free-mode';
+import { useKakaoLoader, useEvents, useCulturalSpaces, useNightViewSpots, useFavorites } from '../hooks';
 import type { Event, CulturalSpace, NightViewSpot, KakaoMap, KakaoMarker } from '../types';
 
 type CategoryType = '전체' | '문화행사' | '문화공간' | '야경명소';
@@ -12,12 +16,14 @@ const MapDiscovery = () => {
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('전체');
   const [selectedItem, setSelectedItem] = useState<Event | CulturalSpace | NightViewSpot | null>(null);
 
-  const { isLoaded } = useKakaoLoader();
+  const { isLoaded, error: mapError } = useKakaoLoader();
   const { events, loading: eventsLoading } = useEvents();
   const { spaces, loading: spacesLoading } = useCulturalSpaces();
   const { spots, loading: spotsLoading } = useNightViewSpots();
+  const { toggleFavorite, isFavorite } = useFavorites();
 
   const isLoading = eventsLoading || spacesLoading || spotsLoading;
+  const isNightMode = selectedCategory === '야경명소';
 
   // 카카오 지도 초기화
   useEffect(() => {
@@ -25,7 +31,7 @@ const MapDiscovery = () => {
 
     const { kakao } = window;
     const mapOption = {
-      center: new kakao.maps.LatLng(37.5665, 126.9780), // 서울 시청
+      center: new kakao.maps.LatLng(37.5665, 126.9780),
       level: 8,
     };
 
@@ -39,7 +45,6 @@ const MapDiscovery = () => {
     const { kakao } = window;
     const map = mapInstanceRef.current;
 
-    // 기존 마커 제거
     markersRef.current.forEach(marker => marker.setMap(null));
     markersRef.current = [];
 
@@ -55,7 +60,6 @@ const MapDiscovery = () => {
       return marker;
     };
 
-    // 카테고리별 마커 생성
     if (selectedCategory === '전체' || selectedCategory === '문화행사') {
       events.forEach(event => {
         if (event.LAT && event.LOT) {
@@ -89,10 +93,8 @@ const MapDiscovery = () => {
     }
   }, [isLoaded, selectedCategory, events, spaces, spots]);
 
-  // 현재 위치로 이동
   const moveToCurrentLocation = () => {
     if (!mapInstanceRef.current) return;
-
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
@@ -100,87 +102,115 @@ const MapDiscovery = () => {
         mapInstanceRef.current?.panTo(moveLatLng);
         mapInstanceRef.current?.setLevel(5);
       },
-      (error) => {
-        console.error('위치 정보를 가져올 수 없습니다:', error);
-      }
+      (error) => console.error('위치 정보를 가져올 수 없습니다:', error)
     );
   };
 
-  // 줌 컨트롤
   const zoomIn = () => {
     if (!mapInstanceRef.current) return;
-    const level = mapInstanceRef.current.getLevel();
-    mapInstanceRef.current.setLevel(level - 1);
+    mapInstanceRef.current.setLevel(mapInstanceRef.current.getLevel() - 1);
   };
 
   const zoomOut = () => {
     if (!mapInstanceRef.current) return;
-    const level = mapInstanceRef.current.getLevel();
-    mapInstanceRef.current.setLevel(level + 1);
+    mapInstanceRef.current.setLevel(mapInstanceRef.current.getLevel() + 1);
   };
 
-  // 아이템 정보 가져오기
   const getItemInfo = (item: Event | CulturalSpace | NightViewSpot) => {
     if ('CODENAME' in item) {
-      // Event
       return {
+        id: String(events.indexOf(item)),
         title: item.TITLE,
         location: item.PLACE || item.GUNAME,
         date: item.DATE,
         image: item.MAIN_IMG,
         type: item.CODENAME,
+        category: '문화행사' as const,
+        favType: 'event' as const,
       };
     } else if ('FAC_NAME' in item) {
-      // CulturalSpace
       return {
+        id: String(spaces.indexOf(item)),
         title: item.FAC_NAME,
         location: item.ADDR,
         date: item.CLOSEDAY ? `휴관일: ${item.CLOSEDAY}` : '',
         image: item.MAIN_IMG || item.IMG_URL,
         type: '문화공간',
+        category: '문화공간' as const,
+        favType: 'space' as const,
       };
     } else {
-      // NightViewSpot
       return {
+        id: String(spots.indexOf(item)),
         title: item.TITLE,
         location: item.ADDR,
         date: item.OPERATING_TIME,
         image: item.MAIN_IMG,
         type: '야경명소',
+        category: '야경명소' as const,
+        favType: 'spot' as const,
       };
     }
   };
 
-  // 카테고리별 최근 아이템
   const getRecentItems = () => {
     const items: Array<{ item: Event | CulturalSpace | NightViewSpot; category: string }> = [];
 
     if (selectedCategory === '전체' || selectedCategory === '문화행사') {
-      events.slice(0, 3).forEach(e => items.push({ item: e, category: '문화행사' }));
+      events.slice(0, 4).forEach(e => items.push({ item: e, category: '문화행사' }));
     }
     if (selectedCategory === '전체' || selectedCategory === '문화공간') {
-      spaces.slice(0, 3).forEach(s => items.push({ item: s, category: '문화공간' }));
+      spaces.slice(0, 4).forEach(s => items.push({ item: s, category: '문화공간' }));
     }
     if (selectedCategory === '전체' || selectedCategory === '야경명소') {
-      spots.slice(0, 3).forEach(s => items.push({ item: s, category: '야경명소' }));
+      spots.slice(0, 4).forEach(s => items.push({ item: s, category: '야경명소' }));
     }
 
-    return items.slice(0, 6);
+    return items.slice(0, 10);
   };
 
   const categories: CategoryType[] = ['전체', '문화행사', '문화공간', '야경명소'];
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-gray-200">
+    <div className={`relative h-screen w-full overflow-hidden transition-colors duration-500 ${isNightMode ? 'bg-gray-900' : 'bg-gray-200'}`}>
       {/* 카카오 지도 */}
-      <div ref={mapRef} className="absolute inset-0 z-0" />
+      <div
+        ref={mapRef}
+        className={`absolute inset-0 z-0 transition-all duration-500 ${isNightMode ? 'grayscale invert brightness-90' : ''}`}
+      />
+
+      {/* 야경 오버레이 */}
+      {isNightMode && <div className="absolute inset-0 z-[1] bg-indigo-950/30 pointer-events-none" />}
+
+      {/* 에러 표시 */}
+      {mapError && (
+        <div className="absolute inset-0 z-50 bg-white flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4 text-center px-6">
+            <span className="material-symbols-outlined text-5xl text-red-400">error</span>
+            <p className="text-navy font-bold text-lg">지도를 불러올 수 없습니다</p>
+            <p className="text-gray-400 text-sm max-w-md">{mapError}</p>
+            <div className="bg-gray-50 rounded-xl p-4 text-left text-xs text-gray-500 max-w-md w-full space-y-1">
+              <p className="font-bold text-navy mb-2">확인해주세요:</p>
+              <p>1. 카카오 개발자 콘솔 &gt; 내 애플리케이션 &gt; 플랫폼</p>
+              <p>2. Web 플랫폼에 사이트 도메인 등록 (예: https://nol2seoul.vercel.app)</p>
+              <p>3. JavaScript 키가 올바른지 확인</p>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm mt-2"
+            >
+              다시 시도
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 로딩 표시 */}
-      {(!isLoaded || isLoading) && (
-        <div className="absolute inset-0 z-50 bg-white/80 flex items-center justify-center">
+      {!mapError && (!isLoaded || isLoading) && (
+        <div className={`absolute inset-0 z-50 flex items-center justify-center ${isNightMode ? 'bg-gray-900/80' : 'bg-white/80'}`}>
           <div className="flex flex-col items-center gap-4">
             <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-navy font-bold">지도를 불러오는 중...</p>
+            <p className={`font-bold ${isNightMode ? 'text-white' : 'text-navy'}`}>지도를 불러오는 중...</p>
           </div>
         </div>
       )}
@@ -192,13 +222,16 @@ const MapDiscovery = () => {
             {categories.map(cat => (
               <button
                 key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-6 py-2 rounded-full font-bold shadow-xl whitespace-nowrap transition-all ${
+                onClick={() => { setSelectedCategory(cat); setSelectedItem(null); }}
+                className={`px-6 py-2.5 rounded-full font-bold shadow-xl whitespace-nowrap transition-all ${
                   selectedCategory === cat
-                    ? 'bg-primary text-white'
-                    : 'bg-white/90 backdrop-blur-md border border-gray-100'
+                    ? cat === '야경명소' ? 'bg-indigo-600 text-white' : 'bg-primary text-white'
+                    : isNightMode
+                      ? 'bg-gray-800/90 backdrop-blur-md border border-gray-700 text-gray-200'
+                      : 'bg-white/90 backdrop-blur-md border border-gray-100'
                 }`}
               >
+                {cat === '야경명소' && <span className="material-symbols-outlined text-sm align-middle mr-1">nightlight</span>}
                 {cat}
               </button>
             ))}
@@ -207,59 +240,104 @@ const MapDiscovery = () => {
       </div>
 
       {/* 지도 컨트롤 */}
-      <div className="absolute right-8 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-4">
-        <div className="flex flex-col bg-white rounded-2xl shadow-2xl p-1">
-          <button onClick={zoomIn} className="size-12 flex items-center justify-center hover:text-primary">
+      <div className="absolute right-6 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-3">
+        <div className={`flex flex-col rounded-2xl shadow-2xl p-1 ${isNightMode ? 'bg-gray-800' : 'bg-white'}`}>
+          <button onClick={zoomIn} className={`size-11 flex items-center justify-center hover:text-primary ${isNightMode ? 'text-gray-300' : ''}`}>
             <span className="material-symbols-outlined">add</span>
           </button>
-          <div className="h-px bg-gray-100 mx-2"></div>
-          <button onClick={zoomOut} className="size-12 flex items-center justify-center hover:text-primary">
+          <div className={`h-px mx-2 ${isNightMode ? 'bg-gray-700' : 'bg-gray-100'}`}></div>
+          <button onClick={zoomOut} className={`size-11 flex items-center justify-center hover:text-primary ${isNightMode ? 'text-gray-300' : ''}`}>
             <span className="material-symbols-outlined">remove</span>
           </button>
         </div>
-        <button onClick={moveToCurrentLocation} className="size-12 bg-white rounded-2xl shadow-2xl flex items-center justify-center hover:text-primary">
+        <button
+          onClick={moveToCurrentLocation}
+          className={`size-11 rounded-2xl shadow-2xl flex items-center justify-center hover:text-primary ${isNightMode ? 'bg-gray-800 text-gray-300' : 'bg-white'}`}
+        >
           <span className="material-symbols-outlined">my_location</span>
         </button>
       </div>
 
-      {/* 선택된 아이템 정보 */}
-      {selectedItem && (
-        <div className="absolute top-36 left-6 z-30 bg-white rounded-2xl shadow-2xl p-4 max-w-sm">
-          <button
-            onClick={() => setSelectedItem(null)}
-            className="absolute -top-2 -right-2 size-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200"
-          >
-            <span className="material-symbols-outlined text-sm">close</span>
-          </button>
-          {(() => {
-            const info = getItemInfo(selectedItem);
-            return (
-              <>
-                {info.image && (
-                  <img src={info.image} alt={info.title} className="w-full h-32 object-cover rounded-xl mb-3" />
-                )}
-                <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded">{info.type}</span>
-                <h4 className="font-bold text-navy mt-2">{info.title}</h4>
-                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+      {/* 선택된 아이템 정보 - 포스터 크기 카드 */}
+      {selectedItem && (() => {
+        const info = getItemInfo(selectedItem);
+        return (
+          <div className={`absolute top-24 left-6 z-30 w-[360px] rounded-2xl shadow-2xl overflow-hidden ${isNightMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-100'}`}>
+            <button
+              onClick={() => setSelectedItem(null)}
+              className={`absolute top-3 right-3 z-10 size-8 rounded-full flex items-center justify-center backdrop-blur-md ${isNightMode ? 'bg-gray-900/60 text-white hover:bg-gray-900/80' : 'bg-white/60 text-gray-600 hover:bg-white/80'}`}
+            >
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+
+            {/* 포스터 이미지 - 큰 사이즈 */}
+            <div className="relative w-full h-[280px] bg-gray-100">
+              {info.image ? (
+                <img src={info.image} alt={info.title} className="w-full h-full object-contain bg-gray-50" />
+              ) : (
+                <div className={`w-full h-full flex items-center justify-center ${isNightMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                  <span className={`material-symbols-outlined text-6xl ${isNightMode ? 'text-gray-500' : 'text-gray-300'}`}>
+                    {info.category === '문화행사' ? 'event' : info.category === '문화공간' ? 'museum' : 'nightlight'}
+                  </span>
+                </div>
+              )}
+              <div className="absolute top-3 left-3 flex gap-2">
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                  isNightMode ? 'bg-indigo-600 text-white' : 'bg-primary text-white'
+                }`}>{info.type}</span>
+              </div>
+            </div>
+
+            {/* 상세 정보 */}
+            <div className="p-5 space-y-3">
+              <h4 className={`font-black text-lg leading-tight ${isNightMode ? 'text-white' : 'text-navy'}`}>{info.title}</h4>
+              <div className="space-y-2">
+                <p className={`text-xs font-bold flex items-center gap-1.5 ${isNightMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   <span className="material-symbols-outlined text-sm">location_on</span>
                   {info.location}
                 </p>
                 {info.date && (
-                  <p className="text-xs text-gray-400 mt-1">{info.date}</p>
+                  <p className={`text-xs font-bold flex items-center gap-1.5 ${isNightMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <span className="material-symbols-outlined text-sm">schedule</span>
+                    {info.date}
+                  </p>
                 )}
-              </>
-            );
-          })()}
-        </div>
-      )}
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => toggleFavorite({
+                    id: info.id,
+                    type: info.favType,
+                    title: info.title,
+                    location: info.location,
+                    image: info.image,
+                    category: info.type,
+                    date: info.date,
+                  })}
+                  className={`flex-1 py-2.5 rounded-full font-bold text-sm flex items-center justify-center gap-1.5 transition-all ${
+                    isFavorite(info.id, info.favType)
+                      ? isNightMode ? 'bg-indigo-600 text-white' : 'bg-primary text-white'
+                      : isNightMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-navy hover:bg-gray-200'
+                  }`}
+                >
+                  <span className={`material-symbols-outlined text-lg ${isFavorite(info.id, info.favType) ? 'fill' : ''}`}>favorite</span>
+                  {isFavorite(info.id, info.favType) ? '저장됨' : '저장'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
-      {/* 하단 카드 캐러셀 */}
-      <div className="absolute bottom-10 left-0 right-0 z-20 px-6">
+      {/* 하단 Swiper 카드 슬라이드 */}
+      <div className="absolute bottom-8 left-0 right-0 z-20 px-6">
         <div className="max-w-[1200px] mx-auto">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-navy font-black text-xl bg-white/50 backdrop-blur-md px-4 py-1 rounded-full w-fit">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className={`font-black text-lg px-4 py-1.5 rounded-full w-fit backdrop-blur-md ${
+              isNightMode ? 'bg-gray-900/60 text-white' : 'bg-white/70 text-navy'
+            }`}>
               {selectedCategory === '전체' ? '추천 장소' : selectedCategory}
-              <span className="text-primary ml-2">
+              <span className={`ml-2 ${isNightMode ? 'text-indigo-400' : 'text-primary'}`}>
                 {selectedCategory === '전체'
                   ? events.length + spaces.length + spots.length
                   : selectedCategory === '문화행사'
@@ -270,56 +348,73 @@ const MapDiscovery = () => {
               </span>
             </h3>
           </div>
-          <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 snap-x">
+          <Swiper
+            modules={[FreeMode, Mousewheel]}
+            freeMode={{ enabled: true, sticky: false, momentumBounce: false }}
+            mousewheel={{ forceToAxis: true }}
+            slidesPerView="auto"
+            spaceBetween={16}
+            className="!overflow-visible"
+          >
             {getRecentItems().map(({ item, category }, i) => {
               const info = getItemInfo(item);
               return (
-                <div
-                  key={i}
-                  onClick={() => setSelectedItem(item)}
-                  className="min-w-[320px] bg-white rounded-2xl overflow-hidden shadow-2xl snap-center flex flex-col border border-gray-100 cursor-pointer hover:border-primary transition-colors"
-                >
-                  <div className="relative h-40">
-                    {info.image ? (
-                      <img className="w-full h-full object-cover" src={info.image} alt={info.title} />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <span className="material-symbols-outlined text-4xl text-gray-400">image</span>
+                <SwiperSlide key={i} style={{ width: '280px' }}>
+                  <div
+                    onClick={() => setSelectedItem(item)}
+                    className={`rounded-2xl overflow-hidden shadow-2xl flex flex-col cursor-pointer transition-all hover:scale-[1.02] ${
+                      isNightMode
+                        ? 'bg-gray-800 border border-gray-700 hover:border-indigo-500'
+                        : 'bg-white border border-gray-100 hover:border-primary'
+                    }`}
+                  >
+                    <div className="relative h-36">
+                      {info.image ? (
+                        <img className="w-full h-full object-cover" src={info.image} alt={info.title} />
+                      ) : (
+                        <div className={`w-full h-full flex items-center justify-center ${isNightMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                          <span className={`material-symbols-outlined text-4xl ${isNightMode ? 'text-gray-500' : 'text-gray-300'}`}>image</span>
+                        </div>
+                      )}
+                      <div className={`absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md text-[10px] font-black text-white ${
+                        isNightMode ? 'bg-indigo-600' : 'bg-navy'
+                      }`}>
+                        {category}
                       </div>
-                    )}
-                    <div className="absolute top-3 left-3 px-2 py-1 rounded-md text-[10px] font-black text-white bg-navy">
-                      {category}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite({
+                            id: info.id,
+                            type: info.favType,
+                            title: info.title,
+                            location: info.location,
+                            image: info.image,
+                            category: info.type,
+                            date: info.date,
+                          });
+                        }}
+                        className={`absolute top-2.5 right-2.5 size-8 rounded-full flex items-center justify-center backdrop-blur-md ${
+                          isFavorite(info.id, info.favType)
+                            ? 'bg-primary/80 text-white'
+                            : 'bg-white/50 text-gray-600 hover:text-primary'
+                        }`}
+                      >
+                        <span className={`material-symbols-outlined text-lg ${isFavorite(info.id, info.favType) ? 'fill' : ''}`}>favorite</span>
+                      </button>
                     </div>
-                    <button className="absolute top-3 right-3 size-8 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center hover:text-primary">
-                      <span className="material-symbols-outlined text-xl">favorite</span>
-                    </button>
-                  </div>
-                  <div className="p-4 bg-white">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-bold text-navy truncate w-48">{info.title}</h4>
-                        <p className="text-xs text-gray-400 font-bold flex items-center gap-1 mt-1">
-                          <span className="material-symbols-outlined text-sm">location_on</span>
-                          {info.location}
-                        </p>
-                      </div>
-                      <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-1 rounded">
-                        {info.type}
-                      </span>
+                    <div className={`p-4 ${isNightMode ? 'bg-gray-800' : 'bg-white'}`}>
+                      <h4 className={`font-bold truncate ${isNightMode ? 'text-white' : 'text-navy'}`}>{info.title}</h4>
+                      <p className={`text-xs font-bold flex items-center gap-1 mt-1.5 ${isNightMode ? 'text-gray-400' : 'text-gray-400'}`}>
+                        <span className="material-symbols-outlined text-sm">location_on</span>
+                        <span className="truncate">{info.location}</span>
+                      </p>
                     </div>
-                    {info.date && (
-                      <div className="flex items-center justify-between mt-4">
-                        <p className="text-xs font-bold text-gray-500">{info.date}</p>
-                        <button className="text-primary text-xs font-bold flex items-center">
-                          상세보기 <span className="material-symbols-outlined text-sm">chevron_right</span>
-                        </button>
-                      </div>
-                    )}
                   </div>
-                </div>
+                </SwiperSlide>
               );
             })}
-          </div>
+          </Swiper>
         </div>
       </div>
     </div>
