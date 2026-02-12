@@ -10,11 +10,26 @@ import type { Event, CulturalSpace, NightViewSpot, KakaoMap, KakaoMarker } from 
 
 type CategoryType = '전체' | '문화행사' | '문화공간' | '야경명소';
 
+const MARKER_COLORS: Record<string, string> = {
+  '문화행사': '#ff6933',
+  '문화공간': '#10b981',
+  '야경명소': '#8b5cf6',
+};
+const SELECTED_COLOR = '#ef4444';
+
+const createMarkerSvg = (color: string, size: number) => {
+  const h = Math.round(size * 1.4);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${h}" viewBox="0 0 24 34"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 22 12 22s12-13 12-22C24 5.4 18.6 0 12 0z" fill="${color}" stroke="white" stroke-width="1.5"/><circle cx="12" cy="12" r="5" fill="white"/></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+};
+
+type MarkerEntry = { marker: KakaoMarker; item: Event | CulturalSpace | NightViewSpot; category: string };
+
 const MapDiscovery = () => {
   const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
-  const markersRef = useRef<KakaoMarker[]>([]);
+  const markersRef = useRef<MarkerEntry[]>([]);
 
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('전체');
   const [selectedItem, setSelectedItem] = useState<Event | CulturalSpace | NightViewSpot | null>(null);
@@ -43,6 +58,15 @@ const MapDiscovery = () => {
     mapInstanceRef.current = new kakao.maps.Map(mapRef.current, mapOption);
   }, [isLoaded]);
 
+  // 마커 이미지 생성 헬퍼
+  const getMarkerImage = (category: string, selected: boolean) => {
+    const { kakao } = window;
+    const size = selected ? 40 : 28;
+    const color = selected ? SELECTED_COLOR : (MARKER_COLORS[category] || '#ff6933');
+    const h = Math.round(size * 1.4);
+    return new kakao.maps.MarkerImage(createMarkerSvg(color, size), new kakao.maps.Size(size, h));
+  };
+
   // 마커 업데이트
   useEffect(() => {
     if (!isLoaded || !mapInstanceRef.current) return;
@@ -50,19 +74,20 @@ const MapDiscovery = () => {
     const { kakao } = window;
     const map = mapInstanceRef.current;
 
-    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current.forEach(({ marker }) => marker.setMap(null));
     markersRef.current = [];
 
-    const createMarker = (lat: number, lng: number, item: Event | CulturalSpace | NightViewSpot) => {
+    const addMarker = (lat: number, lng: number, item: Event | CulturalSpace | NightViewSpot, category: string) => {
       const position = new kakao.maps.LatLng(lat, lng);
-      const marker = new kakao.maps.Marker({ position, map });
+      const image = getMarkerImage(category, false);
+      const marker = new kakao.maps.Marker({ position, map, image });
 
       kakao.maps.event.addListener(marker, 'click', () => {
         setSelectedItem(item);
         map.panTo(position);
       });
 
-      return marker;
+      markersRef.current.push({ marker, item, category });
     };
 
     if (selectedCategory === '전체' || selectedCategory === '문화행사') {
@@ -71,7 +96,7 @@ const MapDiscovery = () => {
           const lat = parseFloat(event.LAT);
           const lng = parseFloat(event.LOT);
           if (!isNaN(lat) && !isNaN(lng)) {
-            markersRef.current.push(createMarker(lat, lng, event));
+            addMarker(lat, lng, event, '문화행사');
           }
         }
       });
@@ -79,8 +104,10 @@ const MapDiscovery = () => {
 
     if (selectedCategory === '전체' || selectedCategory === '문화공간') {
       spaces.forEach(space => {
-        if (space.X_COORD && space.Y_COORD) {
-          markersRef.current.push(createMarker(space.Y_COORD, space.X_COORD, space));
+        const x = parseFloat(String(space.X_COORD));
+        const y = parseFloat(String(space.Y_COORD));
+        if (!isNaN(x) && !isNaN(y) && x !== 0 && y !== 0) {
+          addMarker(y, x, space, '문화공간');
         }
       });
     }
@@ -91,12 +118,20 @@ const MapDiscovery = () => {
           const lat = parseFloat(spot.LA);
           const lng = parseFloat(spot.LO);
           if (!isNaN(lat) && !isNaN(lng)) {
-            markersRef.current.push(createMarker(lat, lng, spot));
+            addMarker(lat, lng, spot, '야경명소');
           }
         }
       });
     }
   }, [isLoaded, selectedCategory, events, spaces, spots]);
+
+  // 선택된 마커 하이라이트
+  useEffect(() => {
+    if (!isLoaded) return;
+    markersRef.current.forEach(({ marker, item, category }) => {
+      marker.setImage(getMarkerImage(category, item === selectedItem));
+    });
+  }, [selectedItem, isLoaded]);
 
   const moveToCurrentLocation = () => {
     if (!mapInstanceRef.current) return;

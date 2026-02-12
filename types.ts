@@ -98,6 +98,8 @@ declare global {
         LatLng: new (lat: number, lng: number) => KakaoLatLng;
         Map: new (container: HTMLElement, options: KakaoMapOptions) => KakaoMap;
         Marker: new (options: KakaoMarkerOptions) => KakaoMarker;
+        MarkerImage: new (src: string, size: KakaoSize, options?: { offset?: { x: number; y: number } }) => KakaoMarkerImageInstance;
+        Size: new (width: number, height: number) => KakaoSize;
         InfoWindow: new (options: KakaoInfoWindowOptions) => KakaoInfoWindow;
         CustomOverlay: new (options: KakaoCustomOverlayOptions) => KakaoCustomOverlay;
         MarkerClusterer: new (options: KakaoMarkerClustererOptions) => KakaoMarkerClusterer;
@@ -134,12 +136,20 @@ export interface KakaoMap {
 export interface KakaoMarkerOptions {
   position: KakaoLatLng;
   map?: KakaoMap;
-  image?: KakaoMarkerImage;
+  image?: KakaoMarkerImageInstance;
 }
 
 export interface KakaoMarker {
   setMap: (map: KakaoMap | null) => void;
   getPosition: () => KakaoLatLng;
+  setImage: (image: KakaoMarkerImageInstance) => void;
+}
+
+export interface KakaoMarkerImageInstance {}
+
+export interface KakaoSize {
+  width: number;
+  height: number;
 }
 
 export interface KakaoMarkerImage {

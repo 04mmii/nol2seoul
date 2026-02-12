@@ -8,6 +8,4 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
-interface Window {
-  kakao: any;
-}
+// kakao type is declared in types.ts
