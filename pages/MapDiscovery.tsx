@@ -162,20 +162,24 @@ const MapDiscovery = () => {
     const items: Array<{ item: Event | CulturalSpace | NightViewSpot; category: string }> = [];
 
     if (selectedCategory === '전체') {
-      // 전체: 각 카테고리에서 랜덤으로 섞어서
-      const all: Array<{ item: Event | CulturalSpace | NightViewSpot; category: string }> = [
-        ...events.map(e => ({ item: e as Event | CulturalSpace | NightViewSpot, category: '문화행사' })),
-        ...spaces.map(s => ({ item: s as Event | CulturalSpace | NightViewSpot, category: '문화공간' })),
-        ...spots.map(s => ({ item: s as Event | CulturalSpace | NightViewSpot, category: '야경명소' })),
+      // 전체: 각 카테고리에서 라운드 로빈으로 골고루 뽑기
+      const buckets = [
+        events.slice(0, 10).map(e => ({ item: e as Event | CulturalSpace | NightViewSpot, category: '문화행사' })),
+        spaces.slice(0, 10).map(s => ({ item: s as Event | CulturalSpace | NightViewSpot, category: '문화공간' })),
+        spots.slice(0, 10).map(s => ({ item: s as Event | CulturalSpace | NightViewSpot, category: '야경명소' })),
       ];
-      // 시드 기반 셔플 (매 렌더마다 바뀌지 않도록 길이 기반)
-      const seed = all.length;
-      const shuffled = [...all].sort((a, b) => {
-        const ha = (a.category.charCodeAt(0) * 31 + a.category.length) % seed;
-        const hb = (b.category.charCodeAt(0) * 31 + b.category.length) % seed;
-        return ha - hb || Math.sin(seed + all.indexOf(a)) - Math.sin(seed + all.indexOf(b));
-      });
-      return shuffled.slice(0, 10);
+      const mixed: typeof items = [];
+      for (let i = 0; mixed.length < 10; i++) {
+        let added = false;
+        for (const bucket of buckets) {
+          if (i < bucket.length) {
+            mixed.push(bucket[i]);
+            added = true;
+          }
+        }
+        if (!added) break;
+      }
+      return mixed.slice(0, 10);
     }
 
     if (selectedCategory === '문화행사') {
@@ -391,6 +395,15 @@ const MapDiscovery = () => {
                     상세보기
                   </Link>
                 )}
+                {'FAC_NAME' in selectedItem && (
+                  <Link
+                    to={`/space/${info.id}`}
+                    className="flex-1 py-2.5 rounded-full font-bold text-sm flex items-center justify-center gap-1.5 bg-primary text-white hover:brightness-110 transition-all"
+                  >
+                    <span className="material-symbols-outlined text-lg">arrow_forward</span>
+                    상세보기
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -419,7 +432,6 @@ const MapDiscovery = () => {
                     }`}
                   >
                     문화행사
-                    <span className={`${isNightMode ? 'text-indigo-400' : 'text-primary'}`}>{events.length}건</span>
                     <span className="material-symbols-outlined text-sm">arrow_forward</span>
                   </Link>
                 ) : (
@@ -430,13 +442,15 @@ const MapDiscovery = () => {
                     }`}
                   >
                     {selectedCategory === '전체' ? '추천 장소' : selectedCategory}
-                    <span className={`${isNightMode ? 'text-indigo-400' : 'text-primary'}`}>
-                      {selectedCategory === '전체'
-                        ? events.length + spaces.length + spots.length
-                        : selectedCategory === '문화공간'
-                          ? spaces.length
-                          : spots.length}건
-                    </span>
+                    {isListOpen && (
+                      <span className={`${isNightMode ? 'text-indigo-400' : 'text-primary'}`}>
+                        {selectedCategory === '전체'
+                          ? events.length + spaces.length + spots.length
+                          : selectedCategory === '문화공간'
+                            ? spaces.length
+                            : spots.length}건
+                      </span>
+                    )}
                     <span className={`material-symbols-outlined text-sm transition-transform ${isListOpen ? 'rotate-180' : ''}`}>expand_less</span>
                   </button>
                 )}
@@ -481,6 +495,8 @@ const MapDiscovery = () => {
                       onClick={() => {
                         if (isEvent) {
                           navigate(`/event/${info.id}`);
+                        } else if ('FAC_NAME' in item) {
+                          navigate(`/space/${info.id}`);
                         } else {
                           setSelectedItem(item);
                           setIsListOpen(false);
@@ -583,6 +599,8 @@ const MapDiscovery = () => {
                             onClick={() => {
                               if ('CODENAME' in item) {
                                 navigate(`/event/${info.id}`);
+                              } else if ('FAC_NAME' in item) {
+                                navigate(`/space/${info.id}`);
                               } else {
                                 setSelectedItem(item);
                               }

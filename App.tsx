@@ -4,6 +4,7 @@ import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-ro
 import Home from './pages/Home';
 import EventList from './pages/EventList';
 import EventDetail from './pages/EventDetail';
+import SpaceDetail from './pages/SpaceDetail';
 import MapDiscovery from './pages/MapDiscovery';
 import MyPage from './pages/MyPage';
 import SearchOverlay from './components/SearchOverlay';
@@ -30,6 +31,7 @@ const App: React.FC = () => {
             <Route path="/" element={<Home />} />
             <Route path="/events" element={<EventList />} />
             <Route path="/event/:id" element={<EventDetail />} />
+            <Route path="/space/:id" element={<SpaceDetail />} />
             <Route path="/map" element={<MapDiscovery />} />
             <Route path="/mypage" element={<MyPage />} />
           </Routes>
