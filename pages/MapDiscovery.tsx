@@ -159,13 +159,30 @@ const MapDiscovery = () => {
   const getRecentItems = () => {
     const items: Array<{ item: Event | CulturalSpace | NightViewSpot; category: string }> = [];
 
-    if (selectedCategory === '전체' || selectedCategory === '문화행사') {
+    if (selectedCategory === '전체') {
+      // 전체: 각 카테고리에서 랜덤으로 섞어서
+      const all: Array<{ item: Event | CulturalSpace | NightViewSpot; category: string }> = [
+        ...events.map(e => ({ item: e as Event | CulturalSpace | NightViewSpot, category: '문화행사' })),
+        ...spaces.map(s => ({ item: s as Event | CulturalSpace | NightViewSpot, category: '문화공간' })),
+        ...spots.map(s => ({ item: s as Event | CulturalSpace | NightViewSpot, category: '야경명소' })),
+      ];
+      // 시드 기반 셔플 (매 렌더마다 바뀌지 않도록 길이 기반)
+      const seed = all.length;
+      const shuffled = [...all].sort((a, b) => {
+        const ha = (a.category.charCodeAt(0) * 31 + a.category.length) % seed;
+        const hb = (b.category.charCodeAt(0) * 31 + b.category.length) % seed;
+        return ha - hb || Math.sin(seed + all.indexOf(a)) - Math.sin(seed + all.indexOf(b));
+      });
+      return shuffled.slice(0, 10);
+    }
+
+    if (selectedCategory === '문화행사') {
       events.slice(0, 4).forEach(e => items.push({ item: e, category: '문화행사' }));
     }
-    if (selectedCategory === '전체' || selectedCategory === '문화공간') {
+    if (selectedCategory === '문화공간') {
       spaces.slice(0, 4).forEach(s => items.push({ item: s, category: '문화공간' }));
     }
-    if (selectedCategory === '전체' || selectedCategory === '야경명소') {
+    if (selectedCategory === '야경명소') {
       spots.slice(0, 4).forEach(s => items.push({ item: s, category: '야경명소' }));
     }
 
@@ -525,7 +542,7 @@ const MapDiscovery = () => {
                     const isSpotCard = !('CODENAME' in item) && !('FAC_NAME' in item);
 
                     return (
-                      <SwiperSlide key={i} style={{ width: isSpotCard ? '260px' : '280px' }}>
+                      <SwiperSlide key={i} style={{ width: '280px' }}>
                         {isSpotCard ? (
                           <NightSpotSlideCard
                             spot={item as NightViewSpot}
