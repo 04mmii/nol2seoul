@@ -632,7 +632,7 @@ const MapDiscovery = () => {
                                 : 'bg-white border border-gray-100 hover:border-primary'
                             }`}
                           >
-                            <div className="relative h-36">
+                            <div className="relative h-[144px]">
                               {info.image ? (
                                 <img className="w-full h-full object-cover" src={info.image} alt={info.title} />
                               ) : (
@@ -659,7 +659,7 @@ const MapDiscovery = () => {
                                 <span className={`material-symbols-outlined text-lg ${isFavorite(info.id, info.favType) ? 'fill' : ''}`}>favorite</span>
                               </button>
                             </div>
-                            <div className={`p-4 ${isNightMode ? 'bg-gray-800' : 'bg-white'}`}>
+                            <div className={`p-4 h-[74px] ${isNightMode ? 'bg-gray-800' : 'bg-white'}`}>
                               <h4 className={`font-bold truncate ${isNightMode ? 'text-white' : 'text-navy'}`}>{info.title}</h4>
                               <p className="text-xs font-bold flex items-center gap-1 mt-1.5 text-gray-400">
                                 <span className="material-symbols-outlined text-sm">location_on</span>

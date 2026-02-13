@@ -14,7 +14,7 @@ export const NightSpotSlideCard: React.FC<NightSpotCardProps> = ({ spot, isFavor
     onClick={onClick}
     className="rounded-2xl overflow-hidden shadow-2xl flex flex-col cursor-pointer transition-all hover:scale-[1.02] bg-gradient-to-br from-indigo-950 via-slate-900 to-violet-950 border border-indigo-500/20 hover:border-indigo-400/50"
   >
-    <div className="p-5 flex flex-col">
+    <div className="p-5 flex flex-col h-[218px]">
       <div className="flex items-center justify-between mb-3">
         <span className="bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md text-[10px] font-black border border-indigo-500/20">야경명소</span>
         <button
