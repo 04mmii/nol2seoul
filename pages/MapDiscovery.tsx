@@ -528,14 +528,8 @@ const MapDiscovery = () => {
                     <div
                       key={i}
                       onClick={() => {
-                        if (isEvent) {
-                          navigate(`/event/${info.id}`);
-                        } else if ('FAC_NAME' in item) {
-                          navigate(`/space/${info.id}`);
-                        } else {
-                          setSelectedItem(item);
-                          setIsListOpen(false);
-                        }
+                        setSelectedItem(item);
+                        setIsListOpen(false);
                       }}
                       className={`flex gap-4 p-3.5 rounded-xl cursor-pointer transition-all ${
                         isNightMode
@@ -631,15 +625,7 @@ const MapDiscovery = () => {
                           />
                         ) : (
                           <div
-                            onClick={() => {
-                              if ('CODENAME' in item) {
-                                navigate(`/event/${info.id}`);
-                              } else if ('FAC_NAME' in item) {
-                                navigate(`/space/${info.id}`);
-                              } else {
-                                setSelectedItem(item);
-                              }
-                            }}
+                            onClick={() => setSelectedItem(item)}
                             className={`rounded-2xl overflow-hidden shadow-2xl flex flex-col cursor-pointer transition-all hover:scale-[1.02] ${
                               isNightMode
                                 ? 'bg-gray-800 border border-gray-700 hover:border-indigo-500'
