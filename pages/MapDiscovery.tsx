@@ -104,10 +104,11 @@ const MapDiscovery = () => {
 
     if (selectedCategory === '전체' || selectedCategory === '문화공간') {
       spaces.forEach(space => {
-        const x = parseFloat(String(space.X_COORD));
-        const y = parseFloat(String(space.Y_COORD));
-        if (!isNaN(x) && !isNaN(y) && x !== 0 && y !== 0) {
-          addMarker(y, x, space, '문화공간');
+        // API에서 X_COORD=위도(37.xx), Y_COORD=경도(127.xx)로 반대로 내려옴
+        const lat = parseFloat(String(space.X_COORD));
+        const lng = parseFloat(String(space.Y_COORD));
+        if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+          addMarker(lat, lng, space, '문화공간');
         }
       });
     }
@@ -522,8 +523,6 @@ const MapDiscovery = () => {
                   const isSpotItem = !('CODENAME' in item) && !('FAC_NAME' in item);
                   const spotData = isSpotItem ? item as NightViewSpot : null;
 
-                  const isEvent = 'CODENAME' in item;
-
                   return (
                     <div
                       key={i}
@@ -614,7 +613,7 @@ const MapDiscovery = () => {
                     const isSpotCard = !('CODENAME' in item) && !('FAC_NAME' in item);
 
                     return (
-                      <SwiperSlide key={i} style={{ width: '280px' }}>
+                      <SwiperSlide key={i} style={{ width: '280px', height: '218px' }}>
                         {isSpotCard ? (
                           <NightSpotSlideCard
                             spot={item as NightViewSpot}
@@ -626,13 +625,13 @@ const MapDiscovery = () => {
                         ) : (
                           <div
                             onClick={() => setSelectedItem(item)}
-                            className={`rounded-2xl overflow-hidden shadow-2xl flex flex-col cursor-pointer transition-all hover:scale-[1.02] ${
+                            className={`rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full cursor-pointer transition-all hover:scale-[1.02] ${
                               isNightMode
                                 ? 'bg-gray-800 border border-gray-700 hover:border-indigo-500'
                                 : 'bg-white border border-gray-100 hover:border-primary'
                             }`}
                           >
-                            <div className="relative h-[144px]">
+                            <div className="relative h-[144px] shrink-0">
                               {info.image ? (
                                 <img className="w-full h-full object-cover" src={info.image} alt={info.title} />
                               ) : (
@@ -659,7 +658,7 @@ const MapDiscovery = () => {
                                 <span className={`material-symbols-outlined text-lg ${isFavorite(info.id, info.favType) ? 'fill' : ''}`}>favorite</span>
                               </button>
                             </div>
-                            <div className={`p-4 h-[74px] ${isNightMode ? 'bg-gray-800' : 'bg-white'}`}>
+                            <div className={`p-4 flex-1 ${isNightMode ? 'bg-gray-800' : 'bg-white'}`}>
                               <h4 className={`font-bold truncate ${isNightMode ? 'text-white' : 'text-navy'}`}>{info.title}</h4>
                               <p className="text-xs font-bold flex items-center gap-1 mt-1.5 text-gray-400">
                                 <span className="material-symbols-outlined text-sm">location_on</span>
