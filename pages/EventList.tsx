@@ -1,190 +1,249 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { useEvents, useFavorites } from '../hooks';
+
+const ITEMS_PER_PAGE = 12;
 
 const EventList: React.FC = () => {
-  const [filter, setFilter] = useState("latest");
+  const { events, loading, isError } = useEvents();
+  const { toggleFavorite, isFavorite } = useFavorites();
+  const [selectedCategory, setSelectedCategory] = useState('전체');
+  const [feeFilter, setFeeFilter] = useState<'all' | 'free' | 'paid'>('all');
+  const [page, setPage] = useState(1);
 
-  const eventList = [
-    {
-      id: "1",
-      title: "2024 서울 드럼페스티벌",
-      date: "2024.05.25 ~ 2024.05.26",
-      location: "노들섬 특설무대",
-      tags: ["누구나", "가족"],
-      isFree: true,
-      image: "https://picsum.photos/seed/drum/600/400",
-    },
-    {
-      id: "2",
-      title: "현대미술 기획전: 서울의 얼굴",
-      date: "2024.04.10 ~ 2024.06.30",
-      location: "서울시립미술관 본관",
-      tags: ["청소년", "성인"],
-      isFree: false,
-      image: "https://picsum.photos/seed/face/600/400",
-    },
-    {
-      id: "3",
-      title: "한강 별빛 클래식 콘서트",
-      date: "2024.06.01 ~ 2024.06.01",
-      location: "여의도 한강공원 물빛무대",
-      tags: ["누구나"],
-      isFree: true,
-      image: "https://picsum.photos/seed/classic/600/400",
-    },
-    {
-      id: "4",
-      title: "연극: 기억의 습작",
-      date: "2024.05.01 ~ 2024.05.30",
-      location: "대학로 소극장 혜화",
-      tags: ["성인"],
-      isFree: false,
-      image: "https://picsum.photos/seed/theater/600/400",
-    },
-  ];
+  // 카테고리 목록
+  const categories = useMemo(() => {
+    const codes = [...new Set(events.map(e => e.CODENAME).filter(Boolean))];
+    return ['전체', ...codes];
+  }, [events]);
+
+  // 필터링
+  const filteredEvents = useMemo(() => {
+    let list = events;
+    if (selectedCategory !== '전체') {
+      list = list.filter(e => e.CODENAME === selectedCategory);
+    }
+    if (feeFilter === 'free') {
+      list = list.filter(e => e.IS_FREE === '무료');
+    } else if (feeFilter === 'paid') {
+      list = list.filter(e => e.IS_FREE !== '무료');
+    }
+    return list;
+  }, [events, selectedCategory, feeFilter]);
+
+  // 페이지네이션
+  const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE);
+  const pagedEvents = filteredEvents.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+  const getPageNumbers = () => {
+    const pages: (number | '...')[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (page > 3) pages.push('...');
+      for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i);
+      if (page < totalPages - 2) pages.push('...');
+      pages.push(totalPages);
+    }
+    return pages;
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-[1200px] mx-auto px-6 py-20 flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-navy font-bold">문화행사를 불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="max-w-[1200px] mx-auto px-6 py-20 text-center">
+        <span className="material-symbols-outlined text-5xl text-gray-300 mb-4 block">error</span>
+        <p className="text-gray-500 font-bold">문화행사를 불러올 수 없습니다.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-[900px] mx-auto px-6 py-10 pb-24">
-      {/* Search Header */}
-
-      <div className="mb-10 space-y-4">
+    <div className="max-w-[1200px] mx-auto px-6 py-10 pb-24">
+      {/* 헤더 */}
+      <div className="mb-8 space-y-4">
         <h2 className="text-3xl font-black">문화행사 탐색</h2>
+
+        {/* 카테고리 필터 */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar py-2">
-          {["자치구 선택", "장르", "유료/무료", "기간 설정"].map((item) => (
+          {categories.map(cat => (
             <button
-              key={item}
-              className="flex items-center gap-1 px-4 py-2 rounded-full bg-white border border-gray-200 text-sm font-medium hover:border-primary whitespace-nowrap"
+              key={cat}
+              onClick={() => { setSelectedCategory(cat); setPage(1); }}
+              className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${
+                selectedCategory === cat
+                  ? 'bg-primary text-white'
+                  : 'bg-white border border-gray-200 text-gray-600 hover:border-primary'
+              }`}
             >
-              {item}{" "}
-              <span className="material-symbols-outlined text-gray-400">
-                expand_more
-              </span>
+              {cat}
             </button>
           ))}
-          <button className="ml-auto p-2 rounded-full hover:bg-gray-100">
-            <span className="material-symbols-outlined">tune</span>
-          </button>
+        </div>
+
+        {/* 유무료 필터 */}
+        <div className="flex gap-2">
+          {([['all', '전체'], ['free', '무료'], ['paid', '유료']] as const).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => { setFeeFilter(key); setPage(1); }}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
+                feeFilter === key
+                  ? 'bg-navy text-white'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Sorting & Result Count */}
+      {/* 결과 수 */}
       <div className="flex items-baseline justify-between mb-8">
         <h3 className="text-lg font-bold">
-          총 <span className="text-primary">124</span>건의 문화행사
+          총 <span className="text-primary">{filteredEvents.length}</span>건의 문화행사
         </h3>
-        <div className="flex gap-4 text-sm font-bold text-gray-400">
+      </div>
+
+      {/* 행사 목록 */}
+      {pagedEvents.length === 0 ? (
+        <div className="py-20 text-center">
+          <span className="material-symbols-outlined text-5xl text-gray-300 block mb-4">search_off</span>
+          <p className="text-gray-400 font-bold">조건에 맞는 행사가 없습니다.</p>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {pagedEvents.map((event) => {
+            const idx = events.indexOf(event);
+            const favId = String(idx);
+            const isFree = event.IS_FREE === '무료';
+
+            return (
+              <div
+                key={idx}
+                className="bg-white rounded-xl overflow-hidden border border-gray-100 flex flex-col md:flex-row group hover:shadow-xl transition-all"
+              >
+                {/* 이미지 */}
+                <div className="relative w-full md:w-64 h-48 md:h-auto overflow-hidden shrink-0">
+                  {event.MAIN_IMG ? (
+                    <img
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      src={event.MAIN_IMG}
+                      alt={event.TITLE}
+                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/event/600/400'; }}
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-5xl text-gray-300">event</span>
+                    </div>
+                  )}
+                  <div className={`absolute top-3 left-3 px-3 py-1 ${isFree ? 'bg-primary' : 'bg-gray-500'} text-white text-[10px] font-bold rounded-full shadow-lg`}>
+                    {isFree ? '무료' : '유료'}
+                  </div>
+                  {event.CODENAME && (
+                    <div className="absolute bottom-3 left-3 px-2.5 py-1 bg-navy/80 backdrop-blur-sm text-white text-[10px] font-bold rounded-full">
+                      {event.CODENAME}
+                    </div>
+                  )}
+                </div>
+
+                {/* 정보 */}
+                <div className="flex-1 p-6 flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-start mb-2">
+                      <Link to={`/event/${idx}`} className="text-xl font-bold leading-snug group-hover:text-primary transition-colors">
+                        {event.TITLE}
+                      </Link>
+                      <button
+                        onClick={() => toggleFavorite({ id: favId, type: 'event', title: event.TITLE, location: event.PLACE || event.GUNAME, image: event.MAIN_IMG, category: event.CODENAME, date: event.DATE })}
+                        className={`shrink-0 ml-3 transition-colors ${isFavorite(favId, 'event') ? 'text-primary' : 'text-gray-300 hover:text-primary'}`}
+                      >
+                        <span className={`material-symbols-outlined ${isFavorite(favId, 'event') ? 'fill' : ''}`}>favorite</span>
+                      </button>
+                    </div>
+                    <div className="space-y-1 text-sm text-gray-500 font-medium">
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary/70 text-base">calendar_month</span>
+                        <span>{event.DATE}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary/70 text-base">location_on</span>
+                        <span>{event.PLACE || event.GUNAME}</span>
+                      </div>
+                      {event.USE_FEE && (
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined text-primary/70 text-base">payments</span>
+                          <span className="truncate">{event.USE_FEE}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between">
+                    {event.USE_TRGT && (
+                      <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold truncate max-w-[200px]">
+                        {event.USE_TRGT}
+                      </span>
+                    )}
+                    <Link
+                      to={`/event/${idx}`}
+                      className="px-6 py-2 bg-navy text-white rounded-full text-sm font-bold hover:bg-primary transition-colors ml-auto"
+                    >
+                      상세보기
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 페이지네이션 */}
+      {totalPages > 1 && (
+        <div className="mt-16 flex justify-center items-center gap-2">
           <button
-            className={`${filter === "latest" ? "text-primary" : "hover:text-navy"} transition-colors`}
-            onClick={() => setFilter("latest")}
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center hover:text-primary disabled:opacity-30"
           >
-            최신순
+            <span className="material-symbols-outlined">chevron_left</span>
           </button>
+          {getPageNumbers().map((p, i) =>
+            p === '...' ? (
+              <span key={`dot-${i}`} className="px-2 text-gray-400">...</span>
+            ) : (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`w-10 h-10 rounded-full font-bold ${
+                  page === p ? 'bg-primary text-white' : 'border border-gray-100 hover:text-primary'
+                }`}
+              >
+                {p}
+              </button>
+            )
+          )}
           <button
-            className={`${filter === "ending" ? "text-primary" : "hover:text-navy"} transition-colors`}
-            onClick={() => setFilter("ending")}
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center hover:text-primary disabled:opacity-30"
           >
-            종료임박순
-          </button>
-          <button
-            className={`${filter === "popular" ? "text-primary" : "hover:text-navy"} transition-colors`}
-            onClick={() => setFilter("popular")}
-          >
-            인기순
+            <span className="material-symbols-outlined">chevron_right</span>
           </button>
         </div>
-      </div>
+      )}
 
-      {/* List Grid */}
-      <div className="space-y-6">
-        {eventList.map((event) => (
-          <div
-            key={event.id}
-            className="bg-white rounded-xl overflow-hidden border border-gray-100 flex flex-col md:flex-row group hover:shadow-xl transition-all"
-          >
-            <div className="relative w-full md:w-64 h-48 md:h-auto overflow-hidden">
-              <img
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                src={event.image}
-                alt={event.title}
-              />
-              <div
-                className={`absolute top-3 left-3 px-3 py-1 ${event.isFree ? "bg-primary" : "bg-gray-500"} text-white text-[10px] font-bold rounded-full shadow-lg`}
-              >
-                {event.isFree ? "무료" : "유료"}
-              </div>
-            </div>
-            <div className="flex-1 p-6 flex flex-col justify-between">
-              <div>
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="text-xl font-bold leading-snug group-hover:text-primary transition-colors cursor-pointer">
-                    {event.title}
-                  </h4>
-                  <button className="text-gray-300 hover:text-primary transition-colors">
-                    <span className="material-symbols-outlined">favorite</span>
-                  </button>
-                </div>
-                <div className="space-y-1 text-sm text-gray-500 font-medium">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary/70 text-base">
-                      calendar_month
-                    </span>
-                    <span>{event.date}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary/70 text-base">
-                      location_on
-                    </span>
-                    <span>{event.location}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-6 flex flex-wrap gap-2 items-center justify-between">
-                <div className="flex gap-2">
-                  {event.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <Link
-                  to={`/event/${event.id}`}
-                  className="px-6 py-2 bg-navy text-white rounded-full text-sm font-bold hover:bg-primary transition-colors"
-                >
-                  상세보기
-                </Link>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Pagination */}
-      <div className="mt-16 flex justify-center items-center gap-2">
-        <button className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center hover:text-primary">
-          <span className="material-symbols-outlined">chevron_left</span>
-        </button>
-        <button className="w-10 h-10 rounded-full bg-primary text-white font-bold">
-          1
-        </button>
-        <button className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center hover:text-primary">
-          2
-        </button>
-        <button className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center hover:text-primary">
-          3
-        </button>
-        <span className="px-2 text-gray-400">...</span>
-        <button className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center hover:text-primary">
-          12
-        </button>
-        <button className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center hover:text-primary">
-          <span className="material-symbols-outlined">chevron_right</span>
-        </button>
-      </div>
-
-      {/* Floating Action Button */}
+      {/* 지도 보기 FAB */}
       <Link
         to="/map"
         className="fixed bottom-10 right-10 bg-primary text-white flex items-center gap-2 px-6 py-4 rounded-full shadow-2xl font-bold transition-transform hover:scale-105 active:scale-95 z-40"
