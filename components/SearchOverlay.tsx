@@ -96,7 +96,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({ onClose }) => {
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && query.trim()) addRecent(query.trim()); }}
-            className="flex-1 bg-transparent border-none focus:ring-0 text-lg font-medium placeholder:text-gray-400"
+            className="flex-1 bg-transparent border-none focus:ring-0 text-base md:text-lg font-medium placeholder:text-gray-400 truncate"
             placeholder="행사, 장소, 키워드를 검색해보세요"
           />
           {query && (
@@ -142,7 +142,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({ onClose }) => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-bold group-hover:text-primary transition-colors truncate">{event.TITLE}</p>
-                            <p className="text-xs text-gray-400 font-bold mt-0.5">{event.PLACE} · {event.CODENAME}</p>
+                            <p className="text-xs text-gray-400 font-bold mt-0.5 truncate">{event.PLACE} · {event.CODENAME}</p>
                           </div>
                           <span className="material-symbols-outlined text-gray-200 group-hover:text-primary shrink-0">arrow_forward_ios</span>
                         </Link>
@@ -237,7 +237,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({ onClose }) => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-bold group-hover:text-primary transition-colors truncate">{event.TITLE}</p>
-                          <p className="text-xs text-gray-400 font-bold mt-0.5">{event.PLACE} · {event.CODENAME}</p>
+                          <p className="text-xs text-gray-400 font-bold mt-0.5 truncate">{event.PLACE} · {event.CODENAME}</p>
                         </div>
                         <span className="material-symbols-outlined text-gray-200 group-hover:text-primary">north_west</span>
                       </Link>

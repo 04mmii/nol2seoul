@@ -118,7 +118,7 @@ const Home: React.FC = () => {
         ))}
 
         {/* Content */}
-        <div className="relative h-full flex flex-col justify-center px-10 lg:px-20 text-white max-w-2xl z-10">
+        <div className="relative h-full flex flex-col justify-center px-6 md:px-10 lg:px-20 text-white max-w-2xl z-10">
           <span
             className={`inline-block px-3 py-1 bg-primary rounded-full text-xs font-bold mb-4 uppercase tracking-widest w-fit transition-all duration-500 ${
               isTransitioning ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
@@ -127,7 +127,7 @@ const Home: React.FC = () => {
             {slide.badge}
           </span>
           <h2
-            className={`text-4xl lg:text-5xl font-extrabold leading-tight mb-4 transition-all duration-500 delay-100 ${
+            className={`text-2xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-4 break-keep transition-all duration-500 delay-100 ${
               isTransitioning ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
             }`}
           >
@@ -135,7 +135,7 @@ const Home: React.FC = () => {
             <span className="text-primary">{slide.highlight}</span>
           </h2>
           <p
-            className={`text-lg text-gray-200 mb-8 opacity-90 transition-all duration-500 delay-200 ${
+            className={`text-sm md:text-lg text-gray-200 mb-6 md:mb-8 opacity-90 break-keep transition-all duration-500 delay-200 ${
               isTransitioning ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
             }`}
           >

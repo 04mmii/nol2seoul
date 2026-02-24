@@ -224,10 +224,10 @@ const EventList: React.FC = () => {
             return (
               <div
                 key={idx}
-                className="bg-white rounded-xl overflow-hidden border border-gray-100 flex flex-col md:flex-row group hover:shadow-xl transition-all"
+                className="bg-white rounded-xl overflow-hidden border border-gray-100 flex flex-col group hover:shadow-xl transition-all h-full"
               >
                 {/* 이미지 */}
-                <div className="relative w-full md:w-64 h-48 md:h-auto overflow-hidden shrink-0">
+                <div className="relative w-full h-48 overflow-hidden shrink-0">
                   {event.MAIN_IMG ? (
                     <img
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -258,12 +258,12 @@ const EventList: React.FC = () => {
                 </div>
 
                 {/* 정보 */}
-                <div className="flex-1 p-6 flex flex-col justify-between">
-                  <div>
+                <div className="flex-1 p-5 flex flex-col min-h-0">
+                  <div className="flex-1 min-h-0">
                     <div className="flex justify-between items-start mb-2">
                       <Link
                         to={`/event/${idx}`}
-                        className="text-xl font-bold leading-snug group-hover:text-primary transition-colors"
+                        className="flex-1 min-w-0 text-lg font-bold leading-snug group-hover:text-primary transition-colors line-clamp-2 break-keep"
                       >
                         {event.TITLE}
                       </Link>
@@ -290,20 +290,20 @@ const EventList: React.FC = () => {
                     </div>
                     <div className="space-y-1 text-sm text-gray-500 font-medium">
                       <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary/70 text-base">
+                        <span className="material-symbols-outlined text-primary/70 text-base shrink-0">
                           calendar_month
                         </span>
-                        <span>{event.DATE}</span>
+                        <span className="truncate">{event.DATE}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary/70 text-base">
+                        <span className="material-symbols-outlined text-primary/70 text-base shrink-0">
                           location_on
                         </span>
-                        <span>{event.PLACE || event.GUNAME}</span>
+                        <span className="truncate">{event.PLACE || event.GUNAME}</span>
                       </div>
                       {event.USE_FEE && (
                         <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-primary/70 text-base">
+                          <span className="material-symbols-outlined text-primary/70 text-base shrink-0">
                             payments
                           </span>
                           <span className="truncate">{event.USE_FEE}</span>
@@ -311,15 +311,17 @@ const EventList: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  <div className="mt-4 flex items-center justify-between">
-                    {event.USE_TRGT && (
-                      <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold truncate max-w-[200px]">
+                  <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+                    {event.USE_TRGT ? (
+                      <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold truncate max-w-[160px]">
                         {event.USE_TRGT}
                       </span>
+                    ) : (
+                      <span />
                     )}
                     <Link
                       to={`/event/${idx}`}
-                      className="px-6 py-2 bg-navy text-white rounded-full text-sm font-bold hover:bg-primary transition-colors ml-auto"
+                      className="shrink-0 w-[90px] h-[36px] flex items-center justify-center bg-navy text-white rounded-full text-sm font-bold hover:bg-primary transition-colors"
                     >
                       상세보기
                     </Link>

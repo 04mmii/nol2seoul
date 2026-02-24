@@ -66,12 +66,20 @@ const Header: React.FC<{ onSearchClick: () => void }> = ({ onSearchClick }) => {
         </div>
         
         <div className="flex items-center gap-4">
-          <div 
+          {/* 모바일: 아이콘만 */}
+          <button
             onClick={onSearchClick}
-            className="hidden sm:flex items-center bg-gray-100 rounded-full px-4 py-2 gap-3 cursor-pointer hover:bg-gray-200 transition-colors"
+            className="md:hidden p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+          >
+            <span className="material-symbols-outlined">search</span>
+          </button>
+          {/* 데스크톱: 검색창 전체 */}
+          <div
+            onClick={onSearchClick}
+            className="hidden md:flex items-center bg-gray-100 rounded-full px-4 py-2 gap-3 cursor-pointer hover:bg-gray-200 transition-colors"
           >
             <span className="material-symbols-outlined text-gray-400 text-xl">search</span>
-            <span className="text-gray-400 text-sm w-32 lg:w-48">행사나 장소를 검색하세요</span>
+            <span className="text-gray-400 text-sm w-32 lg:w-48 whitespace-nowrap">행사나 장소를 검색하세요</span>
           </div>
           <div className="flex items-center gap-2">
             <button className="p-2 rounded-full hover:bg-gray-100 text-navy transition-colors">
