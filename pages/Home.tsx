@@ -120,14 +120,14 @@ const Home: React.FC = () => {
         {/* Content */}
         <div className="relative h-full flex flex-col justify-center px-6 md:px-10 lg:px-20 text-white max-w-2xl z-10">
           <span
-            className={`inline-block px-3 py-1 bg-primary rounded-full text-xs font-bold mb-4 uppercase tracking-widest w-fit transition-all duration-500 ${
+            className={`hidden md:inline-block px-3 py-1 bg-primary rounded-full text-xs font-bold mb-4 uppercase tracking-widest w-fit transition-all duration-500 ${
               isTransitioning ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
             }`}
           >
             {slide.badge}
           </span>
           <h2
-            className={`text-2xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-4 break-keep transition-all duration-500 delay-100 ${
+            className={`text-xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-2 md:mb-4 break-keep transition-all duration-500 delay-100 ${
               isTransitioning ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
             }`}
           >
@@ -135,14 +135,14 @@ const Home: React.FC = () => {
             <span className="text-primary">{slide.highlight}</span>
           </h2>
           <p
-            className={`text-sm md:text-lg text-gray-200 mb-6 md:mb-8 opacity-90 break-keep transition-all duration-500 delay-200 ${
+            className={`hidden md:block text-lg text-gray-200 mb-8 opacity-90 break-keep transition-all duration-500 delay-200 ${
               isTransitioning ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
             }`}
           >
             {slide.description}
           </p>
           <div
-            className={`flex gap-4 transition-all duration-500 delay-300 ${
+            className={`hidden md:flex gap-4 transition-all duration-500 delay-300 ${
               isTransitioning ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'
             }`}
           >
@@ -202,7 +202,7 @@ const Home: React.FC = () => {
               </div>
               <div>
                 <p className="font-bold text-lg">문화행사</p>
-                <p className="text-sm text-gray-500">서울 전역 축제 & 전시</p>
+                <p className="hidden md:block text-sm text-gray-500">서울 전역 축제 & 전시</p>
               </div>
             </div>
             <span className="material-symbols-outlined text-gray-300 group-hover:text-primary transition-colors">arrow_forward_ios</span>
@@ -214,7 +214,7 @@ const Home: React.FC = () => {
               </div>
               <div>
                 <p className="font-bold text-lg">문화공간</p>
-                <p className="text-sm text-gray-500">박물관, 미술관, 공연장</p>
+                <p className="hidden md:block text-sm text-gray-500">박물관, 미술관, 공연장</p>
               </div>
             </div>
             <span className="material-symbols-outlined text-gray-300 group-hover:text-blue-600 transition-colors">arrow_forward_ios</span>
@@ -226,7 +226,7 @@ const Home: React.FC = () => {
               </div>
               <div>
                 <p className="font-bold text-lg">야경명소</p>
-                <p className="text-sm text-gray-500">서울에서 가장 빛나는 곳</p>
+                <p className="hidden md:block text-sm text-gray-500">서울에서 가장 빛나는 곳</p>
               </div>
             </div>
             <span className="material-symbols-outlined text-gray-300 group-hover:text-indigo-600 transition-colors">arrow_forward_ios</span>
