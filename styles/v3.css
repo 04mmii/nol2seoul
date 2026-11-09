@@ -1,0 +1,51 @@
+/*
+ * Redesign v3 — shared primitives (ported from design-ref/src/styles-v3.css).
+ * Class names are prefixed with `v3-` so they never collide with Tailwind utilities.
+ * Tokens come from /index.css.
+ */
+
+.v3-shell { max-width: var(--v3-maxw); margin: 0 auto; padding: 0 var(--v3-gutter); }
+.v3-mono { font-family: var(--v3-font-mono); letter-spacing: 0; }
+/* Hangul in display type runs optically larger than Latin — pull it back */
+.v3-ko { font-family: var(--v3-font-sans); font-weight: 800; font-size: 0.94em; letter-spacing: -0.035em; }
+
+/* ---------- Buttons ---------- */
+.v3-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 20px; border-radius: 3px;
+  font-family: var(--v3-font-sans); font-weight: 600; font-size: 14px; line-height: 1.2;
+  border: 1px solid rgb(var(--v3-ink)); background: transparent; color: rgb(var(--v3-ink));
+  white-space: nowrap; cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.v3-btn:hover { background: rgb(var(--v3-ink)); color: rgb(var(--v3-bone)); }
+.v3-btn--primary { background: rgb(var(--v3-ink)); color: rgb(var(--v3-bone)); }
+.v3-btn--primary:hover { background: rgb(var(--v3-tangerine)); border-color: rgb(var(--v3-tangerine)); color: #fff; }
+.v3-btn--ghost-light { color: rgb(var(--v3-bone)); border-color: rgb(var(--v3-bone) / 0.18); }
+.v3-btn--ghost-light:hover { background: rgb(var(--v3-bone)); color: rgb(var(--v3-ink)); border-color: rgb(var(--v3-bone)); }
+
+/* Shared keyboard focus style for v3 interactive elements */
+.v3-btn:focus-visible,
+.v3-focus:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+/* ---------- Section rhythm ---------- */
+.v3-eyebrow {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--v3-font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgb(var(--v3-mute));
+}
+.v3-eyebrow__dash { width: 20px; height: 1px; background: currentColor; flex-shrink: 0; }
+
+.v3-section-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; margin-bottom: 40px; }
+.v3-section-title {
+  font-family: var(--v3-font-display); font-weight: 700;
+  font-size: clamp(34px, 3.4vw, 50px); line-height: 1.02; letter-spacing: -0.035em;
+  margin: 14px 0 0;
+}
+.v3-section-title em { font-style: normal; color: rgb(var(--v3-tangerine)); }
+.v3-sub-title { font-family: var(--v3-font-sans); font-weight: 800; font-size: 28px; line-height: 1.15; letter-spacing: -0.035em; margin: 12px 0 0; }
+.v3-sub-title em { font-style: normal; color: rgb(var(--v3-tangerine)); }
+
+@media (max-width: 900px) {
+  .v3-section-header { flex-direction: column; align-items: flex-start; gap: 20px; }
+}

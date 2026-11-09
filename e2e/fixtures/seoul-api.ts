@@ -1,0 +1,200 @@
+/**
+ * Synthetic fixtures for `/api/seoulapi?type=event|space|night`.
+ *
+ * These are NOT real Seoul Open API records. They imitate the response shape the app reads
+ * (`data.culturalEventInfo.row`, `data.culturalSpaceInfo.row`, `data.viewNightSpot.row`) and are
+ * designed around a fixed "today" so date-dependent UI (Home 오늘/이번주) is deterministic.
+ *
+ * Array ORDER matters: the app uses array positions as IDs (DESIGN.md BUG-08), so tests rely on
+ * the indexes documented below.
+ */
+
+/** Fixed clock for every test: 2026-11-03 12:00 KST (03:00 UTC). Home compares UTC ISO dates. */
+export const FIXED_NOW = new Date('2026-11-03T03:00:00.000Z');
+
+/** Image URLs on this host are fulfilled with a 1×1 PNG by the network guard. */
+export const FIXTURE_IMAGE_HOST = 'fixtures.nolseoul.test';
+const img = (n: number) => `https://${FIXTURE_IMAGE_HOST}/event-${n}.png`;
+
+type EventRow = Record<string, string>;
+
+const baseEvent = (overrides: EventRow): EventRow => ({
+  CODENAME: '',
+  GUNAME: '',
+  TITLE: '',
+  DATE: '',
+  PLACE: '',
+  ORG_NAME: '[픽스처] 주최기관',
+  USE_TRGT: '누구나',
+  USE_FEE: '',
+  PLAYER: '',
+  PROGRAM: '',
+  ETC_DESC: '',
+  ORG_LINK: '',
+  MAIN_IMG: '',
+  STRTDATE: '',
+  END_DATE: '',
+  THEMECODE: '',
+  LOT: '',
+  LAT: '',
+  IS_FREE: '유료',
+  HMPG_ADDR: '',
+  ...overrides,
+});
+
+/** Named events with known indexes. */
+export const EV = {
+  /** index 0 — future (December), paid, 종로구. Not shown on Home 오늘/이번주. */
+  futureExhibition: {
+    index: 0,
+    title: '[픽스처] 12월 미래 전시',
+  },
+  /** index 1 — ongoing today, IS_FREE=무료, 강남구. */
+  todayFreeClassic: {
+    index: 1,
+    title: '[픽스처] 오늘 무료 클래식',
+  },
+  /** index 2 — ongoing today, IS_FREE=유료 but USE_FEE says 무료 (BUG-03 case), 마포구. */
+  todayFestivalFeeText: {
+    index: 2,
+    title: '[픽스처] 오늘 축제 무료입장',
+  },
+  /** index 3 — starts in 3 days (this week only), paid, 강남구. */
+  thisWeekPlay: {
+    index: 3,
+    title: '[픽스처] 이번주 연극',
+  },
+} as const;
+
+const namedEvents: EventRow[] = [
+  baseEvent({
+    TITLE: EV.futureExhibition.title,
+    CODENAME: '전시/미술',
+    GUNAME: '종로구',
+    PLACE: '[픽스처] 종로 갤러리',
+    DATE: '2026-12-01~2026-12-31',
+    STRTDATE: '2026-12-01 00:00:00.0',
+    END_DATE: '2026-12-31 00:00:00.0',
+    USE_FEE: '10,000원',
+    IS_FREE: '유료',
+    MAIN_IMG: img(0),
+    PROGRAM: '[픽스처] 미래 전시 프로그램 소개',
+  }),
+  baseEvent({
+    TITLE: EV.todayFreeClassic.title,
+    CODENAME: '클래식',
+    GUNAME: '강남구',
+    PLACE: '[픽스처] 강남 콘서트홀',
+    DATE: '2026-11-01~2026-11-05',
+    STRTDATE: '2026-11-01 00:00:00.0',
+    END_DATE: '2026-11-05 00:00:00.0',
+    USE_FEE: '',
+    IS_FREE: '무료',
+    MAIN_IMG: img(1),
+  }),
+  baseEvent({
+    TITLE: EV.todayFestivalFeeText.title,
+    CODENAME: '축제-문화/예술',
+    GUNAME: '마포구',
+    PLACE: '[픽스처] 마포 광장',
+    DATE: '2026-11-02~2026-11-04',
+    STRTDATE: '2026-11-02 00:00:00.0',
+    END_DATE: '2026-11-04 00:00:00.0',
+    USE_FEE: '무료(사전예약)',
+    IS_FREE: '유료',
+    MAIN_IMG: img(2),
+  }),
+  baseEvent({
+    TITLE: EV.thisWeekPlay.title,
+    CODENAME: '연극',
+    GUNAME: '강남구',
+    PLACE: '[픽스처] 강남 소극장',
+    DATE: '2026-11-06~2026-11-08',
+    STRTDATE: '2026-11-06 00:00:00.0',
+    END_DATE: '2026-11-08 00:00:00.0',
+    USE_FEE: '30,000원',
+    IS_FREE: '유료',
+    MAIN_IMG: img(3),
+  }),
+];
+
+/** indexes 4–15 — 12 future filler events (paid, 서초구) to exercise pagination. */
+const fillerEvents: EventRow[] = Array.from({ length: 12 }, (_, i) => {
+  const n = String(i + 1).padStart(2, '0');
+  return baseEvent({
+    TITLE: `[픽스처] 기타 행사 ${n}`,
+    CODENAME: i % 2 === 0 ? '교육/체험' : '국악',
+    GUNAME: '서초구',
+    PLACE: `[픽스처] 서초 문화센터 ${n}`,
+    DATE: '2027-01-10~2027-01-20',
+    STRTDATE: '2027-01-10 00:00:00.0',
+    END_DATE: '2027-01-20 00:00:00.0',
+    USE_FEE: '5,000원',
+    IS_FREE: '유료',
+    MAIN_IMG: img(4 + i),
+  });
+});
+
+export const EVENTS: EventRow[] = [...namedEvents, ...fillerEvents];
+
+/** Expected counts derived from the fixture (keep in sync with the data above). */
+export const EXPECT = {
+  total: EVENTS.length, // 16
+  perPage: 12,
+  gangnam: 2, // todayFreeClassic + thisWeekPlay
+  freeByIsFree: 1, // only todayFreeClassic has IS_FREE=무료
+} as const;
+
+export const SPACES = [
+  {
+    NUM: '1',
+    SUBJCODE: '미술관',
+    FAC_CODE: '9001',
+    FAC_NAME: '[픽스처] 서울 미술관',
+    ADDR: '서울특별시 종로구 픽스처로 1',
+    X_COORD: 37.57,
+    Y_COORD: 126.98,
+    PHNE: '02-000-0000',
+    FAX: '',
+    HOMEPAGE: '',
+    CLOSEDAY: '월요일',
+    MAIN_IMG: '',
+    DTLCONT: '[픽스처] 문화공간 설명',
+    TICKET_YN: 'N',
+  },
+];
+
+export const SPOTS = [
+  {
+    NUM: '1',
+    SUBJECT_CD: '공원',
+    TITLE: '[픽스처] 남산 야경',
+    ADDR: '서울특별시 중구 픽스처길 2',
+    LA: '37.55',
+    LO: '126.99',
+    TEL_NO: '',
+    URL: '',
+    OPERATING_TIME: '18:00~24:00',
+    ENTR_FEE: '무료',
+    CONTENTS: '',
+    CONTENT: '[픽스처] 야경 설명',
+    SUBWAY: '',
+    BUS: '',
+  },
+];
+
+const wrap = (key: string, row: unknown[]) => ({
+  [key]: { list_total_count: row.length, RESULT: { CODE: 'INFO-000', MESSAGE: '정상 처리되었습니다' }, row },
+});
+
+export const API_RESPONSES: Record<string, unknown> = {
+  event: wrap('culturalEventInfo', EVENTS),
+  space: wrap('culturalSpaceInfo', SPACES),
+  night: wrap('viewNightSpot', SPOTS),
+};
+
+/** 1×1 transparent PNG. */
+export const PNG_1X1 = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+  'base64',
+);

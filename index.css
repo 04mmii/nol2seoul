@@ -1,0 +1,51 @@
+/*
+ * NOLSEOUL design tokens — Redesign v3 (approved 2026-11-09)
+ * Source of truth for values: design-ref/src/styles-v3.css (:root).
+ *
+ * Colors are stored as RGB channels so Tailwind (index.html → tailwind.config) can use them with
+ * opacity modifiers, e.g. `bg-ink/20`. Hex values are kept in comments for humans/Figma.
+ *
+ * Migration status: tokens are available globally, but only the site Header/Footer use them so far.
+ * Other screens still use the legacy palette (primary/navy/background) until they are migrated
+ * one screen at a time. See DESIGN.md §2.
+ */
+:root {
+  /* Neutrals — light editorial surface */
+  --v3-bone: 246 242 234;      /* #f6f2ea  page background */
+  --v3-bone-2: 239 233 221;    /* #efe9dd  subtle surface, hover */
+  --v3-sand: 221 213 197;      /* #ddd5c5  placeholder fill */
+  --v3-ink: 20 19 15;          /* #14130f  primary text, inverse surface */
+  --v3-ink-2: 61 57 49;        /* #3d3931  secondary text */
+  --v3-mute: 107 101 89;       /* #6b6559  tertiary text, captions */
+
+  /* Accent — sunset */
+  --v3-tangerine: 226 84 47;   /* #e2542f  fills, large type (≥24px or ≥18.66px bold) */
+  --v3-tangerine-deep: 177 60 27; /* #b13c1b small labels/text on bone */
+
+  /* Night */
+  --v3-night: 17 29 56;        /* #111d38 */
+  --v3-night-2: 27 42 76;      /* #1b2a4c */
+  --v3-ember: 232 183 129;     /* #e8b781  warm highlight on night/ink */
+
+  /* Legacy tokens kept by the v3 reference (not used in app code yet) */
+  --v3-electric: 36 53 110;    /* #24356e */
+  --v3-acid: 232 201 139;      /* #e8c98b */
+
+  /* Layout */
+  --v3-gutter: 40px;
+  --v3-maxw: 1480px;
+  --v3-sec-y: 104px;
+
+  /* Type */
+  --v3-font-sans: "Pretendard Variable", "Pretendard", "Space Grotesk", system-ui, sans-serif;
+  --v3-font-display: "Space Grotesk", "Pretendard Variable", sans-serif;
+  --v3-font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+  --v3-font-serif: "Instrument Serif", "Noto Serif KR", serif; /* Latin italic accents only (Noto Serif KR not loaded) */
+}
+
+@media (max-width: 1280px) {
+  :root { --v3-gutter: 28px; --v3-sec-y: 80px; }
+}
+@media (max-width: 900px) {
+  :root { --v3-sec-y: 64px; }
+}
