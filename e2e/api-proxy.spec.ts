@@ -4,7 +4,7 @@
  * The last test checks that the dev server actually serves /api/seoulapi through this code.
  */
 import { test, expect } from '@playwright/test';
-import { seoulApiResponse, addMonths, inEventWindow, kstToday, CACHE_OK, CACHE_PARTIAL, CACHE_NONE, MAX_PARALLEL } from '../api/_lib/seoulApi';
+import { seoulApiResponse, addMonths, inEventWindow, kstToday, CACHE_OK, CACHE_PARTIAL, CACHE_NONE, MAX_PARALLEL, FIELDS } from '../api/_lib/seoulApi';
 
 const KEY = 'TEST_KEY_123';
 // 2026-11-09 15:30 UTC = 2026-11-10 00:30 KST → "today" is 2026-11-10 in Korea, 11-09 in UTC.
@@ -115,6 +115,27 @@ test.describe('Seoul API proxy — event window (running today + starting within
     expect(addMonths('2026-11-30', 3)).toBe('2027-02-28');
     expect(inEventWindow({ STRTDATE: '2026-12-01', END_DATE: '' }, '2026-11-10')).toBe(true);
     expect(inEventWindow({ STRTDATE: '', END_DATE: '2026-11-01' }, '2026-11-10')).toBe(false);
+  });
+});
+
+test.describe('Seoul API proxy — field whitelist', () => {
+  test('only the fields the UI reads are returned (space: FAC_DESC kept, GNGU/SUBWAY/… dropped)', async () => {
+    const S = 'culturalSpaceInfo';
+    const full = { NUM: '1', SUBJCODE: '미술관', FAC_NAME: '공간', ADDR: '주소', GNGU: '종로구', X_COORD: '37.5', Y_COORD: '126.9', PHNE: '02', FAX: '', HOMEPAGE: 'h', OPENHOUR: '9-6', ENTR_FEE: '무료', CLOSEDAY: '월', OPEN_DAY: '', SEAT_CNT: '', MAIN_IMG: 'i', ETC_DESC: '', FAC_DESC: '설명', ENTRFREE: '', SUBWAY: '', BUSSTOP: '', YELLOW: '', GREEN: '', BLUE: '', RED: '', AIRPORT: '' };
+    const r = await seoulApiResponse('space', KEY, { fetchImpl: fakeFetch({ [S]: { 1: () => ok(block(S, [full as any], 1)) } }).impl });
+    const row = (r.body as any)[S].row[0];
+    expect(Object.keys(row).sort()).toEqual([...FIELDS[S]].sort());
+    expect(row.FAC_DESC).toBe('설명');
+    expect(row.GNGU).toBeUndefined();
+  });
+
+  test('events keep every field the UI reads (TICKET dropped); night keeps CONTENTS for BUG-12', async () => {
+    const E = 'culturalEventInfo';
+    const r = await seoulApiResponse('event', KEY, { fetchImpl: fakeFetch({ [E]: { 1: () => ok(block(E, [ev(1, '2026-10-01', '2026-12-31', { TICKET: '시민', USE_FEE: '무료', IS_FREE: '무료' })], 1)) } }).impl, now: NOW });
+    const row = (r.body as any)[E].row[0];
+    expect(row.TICKET).toBeUndefined();
+    expect(row).toMatchObject({ TITLE: '행사 1', USE_FEE: '무료', IS_FREE: '무료', HMPG_ADDR: expect.stringContaining('cultcode=1') });
+    expect(FIELDS.viewNightSpot).toContain('CONTENTS');
   });
 });
 

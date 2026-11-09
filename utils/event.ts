@@ -9,6 +9,20 @@ export const eventDay = (s?: string) => (s || '').slice(0, 10);
 /** Today's date in Korea (UTC+9, no DST) as YYYY-MM-DD. (Same formula as api/_lib/seoulApi.ts `kstToday`.) */
 export const kstToday = (now: Date = new Date()) => new Date(now.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
+/** Not ended as of today in Korea. A missing/invalid END_DATE counts as not ended (same rule as the proxy). */
+export const isNotEndedKst = (e: Pick<Event, 'END_DATE'>, now: Date = new Date()) => {
+  const end = (e.END_DATE || '').slice(0, 10);
+  return !/^\d{4}-\d{2}-\d{2}$/.test(end) || end >= kstToday(now);
+};
+
+/**
+ * Client-side guard (TECH-10): the proxy response is CDN-cached for up to 24 h (+24 h stale), so an
+ * event can end while the cached list still contains it. `useEvents` runs every list through this,
+ * so Home, EventList, EventDetail ("다음으로 가볼 곳"), search and the map never show ended events.
+ */
+export const dropEndedEvents = <T extends Pick<Event, 'END_DATE'>>(events: T[], now: Date = new Date()) =>
+  events.filter((e) => isNotEndedKst(e, now));
+
 /**
  * Date keys as UTC ISO dates (YYYY-MM-DD) — same semantics as the pre-v3 pages, so results don't
  * change. Note: between 00:00 and 09:00 KST, "today" is still the previous UTC day (DESIGN.md §12).

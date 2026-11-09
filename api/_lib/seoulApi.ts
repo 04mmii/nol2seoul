@@ -11,6 +11,7 @@
  *     start date), so all pages are needed. Rows are deduped (cultcode) and kept only when running
  *     today (KST) or starting within 3 months; ended events and later starts are dropped.
  *   - space (culturalSpaceInfo), night (viewNightSpot): all rows, unfiltered.
+ * Only the fields in `FIELDS` are returned (what the UI reads).
  * Cache: `s-maxage=86400, stale-while-revalidate=86400` → the Seoul API is called about once a day
  * per edge region. A failed later page → partial data, flagged, cached for 60 s only.
  */
@@ -20,6 +21,34 @@ export const ENDPOINTS: Record<string, string> = {
   night: 'viewNightSpot',
   space: 'culturalSpaceInfo',
 };
+
+/**
+ * Fields the app actually reads (audited 2026-11-09 against pages/, components/, utils/, hooks/).
+ * The proxy returns only these, to keep responses small. Add a field here before using it in the UI.
+ */
+export const FIELDS: Record<string, readonly string[]> = {
+  culturalEventInfo: [
+    'CODENAME', 'GUNAME', 'TITLE', 'DATE', 'PLACE', 'ORG_NAME', 'USE_TRGT', 'USE_FEE', 'INQUIRY', 'PLAYER',
+    'PROGRAM', 'ETC_DESC', 'ORG_LINK', 'MAIN_IMG', 'RGSTDATE', 'STRTDATE', 'END_DATE', 'THEMECODE',
+    'LOT', 'LAT', 'IS_FREE', 'HMPG_ADDR', 'PRO_TIME',
+  ], // dropped: TICKET
+  culturalSpaceInfo: [
+    'NUM', 'SUBJCODE', 'FAC_NAME', 'ADDR', 'X_COORD', 'Y_COORD', 'PHNE', 'FAX', 'HOMEPAGE', 'CLOSEDAY', 'MAIN_IMG', 'FAC_DESC',
+  ], // dropped: GNGU, OPENHOUR, ENTR_FEE, OPEN_DAY, SEAT_CNT, ETC_DESC, ENTRFREE, SUBWAY, BUSSTOP, YELLOW, GREEN, BLUE, RED, AIRPORT
+  viewNightSpot: [
+    'NUM', 'SUBJECT_CD', 'TITLE', 'ADDR', 'LA', 'LO', 'URL', 'OPERATING_TIME', 'ENTR_FEE', 'SUBWAY', 'BUS',
+    'CONTENTS', // kept on purpose: NightSpotCard reads `CONTENT` (typo, DESIGN.md BUG-12) — the fix needs this field
+  ], // dropped: TEL_NO, FREE_YN, PARKING_INFO, REG_DATE, MOD_DATE
+};
+
+/** Keeps only `fields` (missing ones are simply absent, as in the raw API). */
+export function pickFields<T extends Row>(rows: T[], fields: readonly string[]): Row[] {
+  return rows.map((r) => {
+    const out: Row = {};
+    for (const f of fields) if (f in r) out[f] = r[f];
+    return out;
+  });
+}
 
 export const PAGE_SIZE = 1000;
 /** Parallel upstream calls per request (the Seoul API is a public service — stay polite). */
@@ -166,9 +195,10 @@ export async function seoulApiResponse(
   const all = await fetchAllRows(fetchImpl, apiKey, endpoint);
   if (all.kind === 'error') return fail(all, apiKey);
 
-  const rows = endpoint === ENDPOINTS.event
+  const kept = endpoint === ENDPOINTS.event
     ? dedupeEvents(all.rows).filter((r) => inEventWindow(r, kstToday(opts.now)))
     : all.rows;
+  const rows = pickFields(kept, FIELDS[endpoint]);
   return {
     status: 200,
     headers: { 'Cache-Control': all.partial ? CACHE_PARTIAL : CACHE_OK, ...(all.partial ? { 'X-Seoulapi-Partial': '1' } : {}) },
