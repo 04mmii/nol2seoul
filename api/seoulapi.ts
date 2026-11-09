@@ -4,7 +4,8 @@ import { seoulApiResponse } from "./_lib/seoulApi.js";
 
 /**
  * Vercel serverless proxy for the Seoul Open API. All logic lives in api/_lib/seoulApi.ts
- * (shared with the Vite dev server). type=event merges rows 1–4,000 and drops ended events (TECH-10).
+ * (shared with the Vite dev server): every type fetches all pages, 24 h CDN cache; events are limited
+ * to running today + starting within 3 months (TECH-10).
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const type = typeof req.query.type === "string" ? req.query.type : undefined;
