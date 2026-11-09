@@ -4,7 +4,7 @@
  *
  * Old favorites are seeded before the app boots, exactly as an older version stored them.
  */
-import { test, expect, readStorage, seedStorageOnce, STORAGE, type StoredFavorite } from './support/test';
+import { test, expect, eventListHeading, eventListCard, heartIn, expectSaved, readStorage, seedStorageOnce, STORAGE, type StoredFavorite } from './support/test';
 import { EV, FIXTURE_IMAGE_HOST } from './fixtures/seoul-api';
 
 const OLD: StoredFavorite[] = [
@@ -84,9 +84,9 @@ test.describe('Favorites migration (BUG-08)', () => {
     await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), STORAGE.favoritesVersion)).toBe('2');
     const first = await readStorage<StoredFavorite[]>(page, STORAGE.favorites);
     await page.goto('/#/events');
-    await expect(page.getByRole('heading', { name: '문화행사 탐색' })).toBeVisible();
+    await expect(eventListHeading(page)).toBeVisible();
     await page.reload();
-    await expect(page.getByRole('heading', { name: '문화행사 탐색' })).toBeVisible();
+    await expect(eventListHeading(page)).toBeVisible();
     expect(await readStorage<StoredFavorite[]>(page, STORAGE.favorites)).toEqual(first);
   });
 
@@ -94,10 +94,8 @@ test.describe('Favorites migration (BUG-08)', () => {
     await seedStorageOnce(page, { [STORAGE.favorites]: OLD });
     await page.goto('/#/events');
     await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), STORAGE.favoritesVersion)).toBe('2');
-    const heart = page.getByRole('link', { name: EV.todayFreeClassic.title, exact: true })
-      .locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " group ")][1]')
-      .locator('button').first();
-    await expect(heart.locator('.fill')).toHaveCount(1);
+    await expectSaved(heartIn(eventListCard(page, EV.todayFreeClassic.title)), true);
+    await expectSaved(heartIn(eventListCard(page, EV.futureExhibition.title)), false);
   });
 
   test('does not migrate while event data is unavailable (API error)', async ({ page }) => {

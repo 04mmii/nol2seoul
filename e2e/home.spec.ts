@@ -1,4 +1,5 @@
 import {
+  eventListHeading,
   test,
   expect,
   homeCard,
@@ -65,8 +66,15 @@ test.describe('Home (v3)', () => {
 
   test('cards show the compact design-ref date (MM.DD — MM.DD) and the full price', async ({ page }) => {
     const card = homeCard(page, EV.todayFreeClassic.title); // 2026-11-01 ~ 2026-11-05, free
-    await expect(card.getByText('11.01 — 11.05', { exact: true })).toBeVisible();
+    // innerText: only the visible separator counts (" — " on wide screens, "–" ≤560px).
+    await expect(card.locator('.v3-event-card__date')).toHaveText('11.01 — 11.05', { useInnerText: true });
     await expect(card.getByText('무료', { exact: true })).toBeVisible();
+  });
+
+  test('narrow screens shorten the card date separator to "–"', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const card = homeCard(page, EV.todayFreeClassic.title);
+    await expect(card.locator('.v3-event-card__date')).toHaveText('11.01–11.05', { useInnerText: true });
   });
 
   test('오늘 tab shows only events running today', async ({ page }) => {
@@ -110,7 +118,7 @@ test.describe('Home (v3)', () => {
   test('"전체 문화행사 보기" navigates to the event list', async ({ page }) => {
     await page.getByRole('link', { name: /전체 문화행사 보기/ }).click();
     await expect(page).toHaveURL(/#\/events$/);
-    await expect(page.getByRole('heading', { name: '문화행사 탐색' })).toBeVisible();
+    await expect(eventListHeading(page)).toBeVisible();
   });
 
   // ---- BUG-01 regression (fixed in the v3 Home) -----------------------------------------

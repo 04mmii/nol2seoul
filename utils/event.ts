@@ -33,7 +33,10 @@ export const eventVenue = (e: Event) => e.PLACE || e.GUNAME || '';
  * different years → the end date carries a 2-digit year: "12.20 — 26.01.10".
  * Falls back to the raw DATE field when the dates can't be parsed. Detail pages keep full dates.
  */
-export function eventCardDate(e: Event): string {
+export type CardDateParts = { start: string; end: string | null } | null;
+
+/** Parts of the compact card date: start "MM.DD", end "MM.DD" / "YY.MM.DD" (null for a single day). */
+export function eventCardDateParts(e: Event): CardDateParts {
   const [rawStart, rawEnd] = (e.DATE || '').split('~').map((s) => s.trim());
   const parse = (s?: string) => {
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || '');
@@ -41,9 +44,15 @@ export function eventCardDate(e: Event): string {
   };
   const start = parse(e.STRTDATE) ?? parse(rawStart);
   const end = parse(e.END_DATE) ?? parse(rawEnd) ?? start;
-  if (!start || !end) return e.DATE || '';
-  if (start.y === end.y && start.md === end.md) return start.md;
-  return start.y === end.y ? `${start.md} — ${end.md}` : `${start.md} — ${end.y.slice(2)}.${end.md}`;
+  if (!start || !end) return null;
+  if (start.y === end.y && start.md === end.md) return { start: start.md, end: null };
+  return { start: start.md, end: start.y === end.y ? end.md : `${end.y.slice(2)}.${end.md}` };
+}
+
+export function eventCardDate(e: Event): string {
+  const p = eventCardDateParts(e);
+  if (!p) return e.DATE || '';
+  return p.end ? `${p.start} — ${p.end}` : p.start;
 }
 
 /** "2026-11-01 ~ 2026-11-05", or the raw DATE field. */

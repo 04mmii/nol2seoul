@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Event } from '../../types';
-import { eventCardDate, eventVenue } from '../../utils/event';
+import { eventCardDateParts, eventVenue } from '../../utils/event';
 import FeeBadge from './FeeBadge';
 
 /**
@@ -20,6 +20,7 @@ const EventCard: React.FC<{
   const [broken, setBroken] = useState(false);
   const showImage = !!event.MAIN_IMG && !broken;
   const Heading = headingLevel;
+  const dateParts = eventCardDateParts(event);
 
   return (
     <article className="v3-event-card">
@@ -48,7 +49,24 @@ const EventCard: React.FC<{
         </Heading>
         <div className="v3-event-card__venue">{eventVenue(event)}</div>
         <div className="v3-event-card__foot">
-          <span className="v3-event-card__date">{eventCardDate(event)}</span>
+          {/* "11.01 — 11.05"; on narrow screens the separator shrinks to "–" (CSS swaps the two spans,
+              display:none keeps only one in the accessibility tree). */}
+          <span className="v3-event-card__date">
+            {dateParts ? (
+              <>
+                {dateParts.start}
+                {dateParts.end && (
+                  <>
+                    <span className="v3-date-sep v3-date-sep--wide"> — </span>
+                    <span className="v3-date-sep v3-date-sep--narrow">–</span>
+                    {dateParts.end}
+                  </>
+                )}
+              </>
+            ) : (
+              event.DATE
+            )}
+          </span>
           <FeeBadge event={event} className="v3-event-card__price" />
         </div>
       </div>

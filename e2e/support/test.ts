@@ -103,12 +103,19 @@ export async function writeStorage(page: Page, key: string, value: unknown) {
   await page.evaluate(([k, v]) => window.localStorage.setItem(k, v), [key, JSON.stringify(value)] as const);
 }
 
-/** EventList card container (the card `div.group` that contains the title link). */
+/** EventList (v3) card: an <article> in the "문화행사 목록" region whose heading is the event title. */
 export function eventListCard(page: Page, title: string): Locator {
   return page
-    .getByRole('link', { name: title, exact: true })
-    .locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " group ")][1]');
+    .getByRole('region', { name: '문화행사 목록' })
+    .getByRole('article')
+    .filter({ has: page.getByRole('heading', { name: title, exact: true }) });
 }
+
+/** All cards on the current EventList page. */
+export const eventListCards = (page: Page) => page.getByRole('region', { name: '문화행사 목록' }).getByRole('article');
+
+/** EventList (v3) has loaded: its h1 ("서울에서 지금 하고 있는 N가지 일."). */
+export const eventListHeading = (page: Page) => page.getByRole('heading', { level: 1, name: /하고 있는/ });
 
 /** Home (v3) event card: an <article> whose heading is the event title. */
 export function homeCard(page: Page, title: string): Locator {
@@ -124,20 +131,18 @@ export function homeHeart(card: Locator): Locator {
 }
 
 /** Heart icon button inside a container; `fill` class on the icon means "saved". */
+/** Heart button of a v3 event card ("<title> 찜하기" / "<title> 찜 해제"). */
 export function heartIn(container: Locator): Locator {
-  return container.getByRole('button', { name: 'favorite' });
+  return container.getByRole('button', { name: /(찜하기|찜 해제)$/ });
 }
 
 export async function expectSaved(heart: Locator, saved: boolean) {
-  const icon = heart.locator('span.material-symbols-outlined');
-  if (saved) await expect(icon).toHaveClass(/(^|\s)fill(\s|$)/);
-  else await expect(icon).not.toHaveClass(/(^|\s)fill(\s|$)/);
+  await expect(heart).toHaveAttribute('aria-pressed', String(saved));
 }
 
-/** Opens a DropdownFilter by its default label and picks an option. */
-export async function pickFilter(page: Page, triggerLabel: RegExp, option: string) {
-  await page.getByRole('button', { name: triggerLabel }).click();
-  await page.getByRole('button', { name: option, exact: true }).click();
+/** EventList (v3) sidebar filter: clicks `option` inside the filter group ("카테고리" | "지역" | "관람료"). */
+export async function pickFilter(page: Page, group: '카테고리' | '지역' | '관람료', option: string) {
+  await page.getByRole('group', { name: group }).getByRole('button', { name: new RegExp(`^${option.replace(/[/\\^$*+?.()|[\]{}]/g, '\\$&')}(\\s|\\d|$)`) }).click();
 }
 
 export async function openSearch(page: Page) {
