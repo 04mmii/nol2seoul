@@ -249,7 +249,7 @@ const EventList: React.FC = () => {
                     </div>
                   )}
                   {/* Fee badge (BUG-03 option D); "확인 필요" shows no badge — the fee text is listed below. */}
-                  <FeeBadge event={event} hideCheck className="absolute top-3 left-3" />
+                  <FeeBadge event={event} hideCheck className="absolute top-3 left-3 v3-fee--on-media" />
                   {event.CODENAME && (
                     <div className="absolute bottom-3 left-3 px-2.5 py-1 bg-navy/80 backdrop-blur-sm text-white text-[10px] font-bold rounded-full">
                       {event.CODENAME}

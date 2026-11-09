@@ -106,8 +106,11 @@ Applied on Home (2026-11-09). Other screens adopt it when they are migrated. Tok
 | 7 | Signature block (대표 블록) | Map Promo left panel (ink text) |
 | 8 | Brand mark | footer wordmark dot "놀 서울**.**" |
 | 9 | Map highlight pin (지도 강조 핀) | accent dot + opaque `accent-tint` ring (replaces the 18% translucent halo) |
+| 10 | Fee badge — 무료 (요금 배지) | `accent-text` (tangerine-deep) fill + **white** text (5.95). The only white-on-tangerine-family pair; it uses the deep shade, so it passes 4.5 at 10px. Partial (일부 무료) uses `accent-text` as outline + text only. |
 
-**Nothing else uses tangerine.** `accent-text` (tangerine-deep) is a separate token for small text on bone and isn't counted in this list.
+**Nothing else uses tangerine.** `accent-text` (tangerine-deep) is a separate token for small text on bone and isn't counted in this list, except as the 무료 fee badge fill (#10).
+
+**Night on fee badges (2026-11-09):** `--v3-night` (#111d38) is also a fee-badge colour on light surfaces: 유료 = night fill + white text (16.71); 가격 상이 = night outline + night text (14.97 on bone, 13.59 on `accent-tint`).
 
 #### Component states
 
@@ -120,7 +123,7 @@ Applied on Home (2026-11-09). Other screens adopt it when they are migrated. Tok
 | **Category cell** | bone background, ink text, ↗ hidden | accent 100% fill, ink text (num, label, desc), ↗ shown | — | same as hover + focus ring |
 | **Day Pill** | transparent, 1px line border | line-hover border | `aria-pressed=true`: ink fill, bone text (no tangerine) | focus ring |
 | **Category chip (분류 칩)** | accent fill, ink text, mono 11px uppercase, padding 4px 8px, radius 2px, no text-shadow | — (not interactive on its own) | — | parent link has the focus ring |
-| **Fee badge** (무료 / 유료 / 일부 무료 / 가격 상이) | bone background, 1px border, mono 10px. 무료 = `accent-text` solid; 일부 무료 = `accent-text` dashed; 유료 = ink-2 + line-strong solid; 가격 상이 = ink-2 + line-strong dashed. 확인 필요 = plain fee text, no badge | — (not interactive) | — | — |
+| **Fee badge** (무료 / 유료 / 일부 무료 / 가격 상이) | mono 10px, 1px border, radius 2px. 무료 = `accent-text` fill + white (5.95); 유료 = night fill + white (16.71); 일부 무료 = transparent, `accent-text` outline + text (5.33 on bone, 4.84 on accent-tint); 가격 상이 = transparent, night outline + text (14.97). On photos (`.v3-fee--on-media`, EventList) the outline badges get an opaque bone backing. 확인 필요 = plain fee text, no badge | — (not interactive) | — | — |
 | **Hero category line** | uses the category chip | — | — | — |
 
 #### Decisions (2026-11-09)
@@ -433,15 +436,15 @@ BUG-02 and BUG-06 are recorded as expected-to-fail Playwright tests (BUG-01 and 
 
 | Kind | Rule (in order) | Shown as |
 |---|---|---|
-| 일부 무료 (`partial`) | text says "일부", or says 무료 *and* paid (a positive amount, "유료", or "상이") | badge, dashed `accent-text` |
+| 일부 무료 (`partial`) | text says "일부", or says 무료 *and* paid (a positive amount, "유료", or "상이") | badge: `accent-text` outline + text |
 | 확인 필요 (`check`) | contradiction: `IS_FREE=무료` + a price in the text, or `IS_FREE=유료` + text only saying 무료 | **no badge**, raw fee text |
-| 무료 (`free`) | `IS_FREE=무료` otherwise | badge, solid `accent-text` |
-| 가격 상이 (`varies`) | `IS_FREE=유료`, "상이" and no amount | badge, dashed ink-2 / line-strong |
-| 유료 (`paid`) | `IS_FREE=유료` otherwise | badge, solid ink-2 / line-strong |
+| 무료 (`free`) | `IS_FREE=무료` otherwise | badge: `accent-text` fill + white |
+| 가격 상이 (`varies`) | `IS_FREE=유료`, "상이" and no amount | badge: night outline + text |
+| 유료 (`paid`) | `IS_FREE=유료` otherwise | badge: night fill + white |
 
 Deposits ("예약금", "보증금", "노쇼", on either side of the amount) are ignored. Amounts: "10,000원", "1만원", "3천원"; "0원" is not a price.
 Filters: EventList **무료 = `free` only; 유료 = every other kind** (so every event stays reachable). Home **무료 tab = not ended + `free`**.
-Badge colours follow §2.0.1: no tangerine fill; free/partial use `accent-text` (5.33 on bone), paid/varies ink-2. Component: `components/v3/FeeBadge.tsx`, styles `.v3-fee*` in `styles/v3.css`.
+Badge colours follow §2.0.1 (tangerine use #10 and the night note). Component: `components/v3/FeeBadge.tsx`, styles `.v3-fee*` in `styles/v3.css`.
 
 #### BUG-03 options (live data, 1,000 events, 2026-11-09) — analysis kept for reference
 
@@ -576,6 +579,7 @@ Target option: React Native + Expo **after** shared design semantics and domain/
 **Maintenance:** Update this file when a design decision is approved. Keep the `Current` / `Unused` / `Proposed` / `Implemented` labels accurate and update usage counts when code changes. Link PRs, Figma frames and visual QA evidence when available. Close backlog items (§7) only with a linked PR.
 
 **Changelog**
+- v0.9 (2026-11-09, branch `redesign-v3`): Fee badge colours: 무료 accent-text fill + white, 유료 night fill + white, 일부 무료 accent-text outline, 가격 상이 night outline; tangerine use #10 "요금 배지(무료)" and night-on-badge recorded.
 - v0.8 (2026-11-09, branch `redesign-v3`): BUG-03 resolved with option D (`utils/fee.ts`, `FeeBadge`, four badges + 확인 필요 without badge) across EventList, Home and EventDetail. EventDetail about section: eyebrow "ABOUT", title "행사 소개."; its small tangerine-deep text uses `--v3-accent-text`.
 - v0.7 (2026-11-09, branch `redesign-v3`): Card thumbnails 3:4 cover (top); equal grid columns (`minmax(0,1fr)`, 2 columns ≤1100px); card date + price on one line with price ellipsis; compact card dates ("11.01 — 11.05"); category strip cells keep full padding, hover fill = cell box. Added §2.0.1 State & accent layer, **approved** with decisions C1–C5 and applied on Home: opaque state tokens (no translucent brand colour), 9 allowed tangerine uses, component state table, text on tangerine always ink. Poster rule: Hero banner exception (cover + bottom gradient + caption).
 - v0.6 (2026-11-09, branch `redesign-v3`): Added the `--v3-content-max` (1400px) token and the layout rule (one content width, full-bleed backgrounds). Home Header, Hero, category strip and Map Promo now align to it. Hero banner shows the poster uncropped with the caption beside/below it (no text over the image). Event cards use contain posters in a fixed 3:4 box with equal heights.
