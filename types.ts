@@ -36,24 +36,24 @@ export interface EventItem {
 
 // Cultural Space Types
 export interface CulturalSpace {
-  FAC_CODE: string | number;
+  /** Fields as sent by the live culturalSpaceInfo API (checked 2026-11-09, BUG-13). */
+  NUM: string;
   FAC_NAME: string;
   ADDR: string;
   PHNE: string;
   FAX?: string;
   HOMEPAGE?: string;
-  X_COORD: number;
-  Y_COORD: number;
-  DTLCONT: string;
-  IMG_URL?: string;
-  RELATE_SUBJ_NM?: string;
-  TICKET_YN?: string;
-  CLOSEDAY?: string;
-  TRAFFIC_INFO?: string;
-  MAIN_IMG?: string;
+  X_COORD: number | string;
+  Y_COORD: number | string;
   SUBJCODE?: string;
+  CLOSEDAY?: string;
+  MAIN_IMG?: string;
+  /** HTML — render through utils/space.ts `spaceDescription`. */
   FAC_DESC?: string;
-  NUM?: string;
+  /** "무료" | "유료". */
+  ENTRFREE?: string;
+  SUBWAY?: string;
+  BUSSTOP?: string;
 }
 
 // Night View Spot Types
@@ -66,6 +66,7 @@ export interface NightViewSpot {
   URL: string;
   OPERATING_TIME: string;
   ENTR_FEE: string;
+  /** Description (BUG-12: the code used to read a non-existent CONTENT). */
   CONTENTS?: string;
   SUBWAY: string;
   BUS: string;
@@ -75,7 +76,6 @@ export interface NightViewSpot {
   PARKING_INFO?: string;
   REG_DATE?: string;
   MOD_DATE?: string;
-  CONTENT: string;
 }
 
 // User Profile Types

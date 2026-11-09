@@ -178,7 +178,6 @@ export const SPACES = [
   {
     NUM: '1',
     SUBJCODE: '미술관',
-    FAC_CODE: '9001',
     FAC_NAME: '[픽스처] 서울 미술관',
     ADDR: '서울특별시 종로구 픽스처로 1',
     X_COORD: 37.57,
@@ -188,8 +187,11 @@ export const SPACES = [
     HOMEPAGE: '',
     CLOSEDAY: '월요일',
     MAIN_IMG: '',
-    DTLCONT: '[픽스처] 문화공간 설명',
-    TICKET_YN: 'N',
+    // Live-API shape (BUG-13): FAC_DESC is HTML; ENTRFREE / SUBWAY / BUSSTOP replace the old fake fields.
+    FAC_DESC: '<div><span style="font-size: 12pt;">[픽스처] 문화공간 설명 첫 문단&nbsp;&amp; 소개</span></div><p>[픽스처] 둘째 문단</p>',
+    ENTRFREE: '유료',
+    SUBWAY: '3호선 경복궁역 5번 출구',
+    BUSSTOP: '12', // bare number as seen in live data → not shown
   },
 ];
 
@@ -205,8 +207,7 @@ export const SPOTS = [
     URL: '',
     OPERATING_TIME: '18:00~24:00',
     ENTR_FEE: '무료',
-    CONTENTS: '',
-    CONTENT: '[픽스처] 야경 설명',
+    CONTENTS: '[픽스처] 야경 설명', // live field name (BUG-12)
     SUBWAY: '',
     BUS: '',
   },

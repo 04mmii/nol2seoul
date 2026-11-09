@@ -176,7 +176,7 @@ const MapDiscovery = () => {
         title: item.FAC_NAME,
         location: item.ADDR,
         date: item.CLOSEDAY ? `휴관일: ${item.CLOSEDAY}` : '',
-        image: item.MAIN_IMG || item.IMG_URL,
+        image: item.MAIN_IMG,
         type: '문화공간',
         category: '문화공간' as const,
         favType: 'space' as const,

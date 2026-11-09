@@ -131,9 +131,9 @@ export const NightSpotDetailCard: React.FC<NightSpotDetailProps> = ({ spot, isFa
             </div>
           </div>
         )}
-        {spot.CONTENT && (
+        {spot.CONTENTS && (
           <p className={`text-xs leading-relaxed line-clamp-3 ${isNightMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            {spot.CONTENT}
+            {spot.CONTENTS}
           </p>
         )}
       </div>

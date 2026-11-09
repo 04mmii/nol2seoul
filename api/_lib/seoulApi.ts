@@ -34,10 +34,11 @@ export const FIELDS: Record<string, readonly string[]> = {
   ], // dropped: TICKET
   culturalSpaceInfo: [
     'NUM', 'SUBJCODE', 'FAC_NAME', 'ADDR', 'X_COORD', 'Y_COORD', 'PHNE', 'FAX', 'HOMEPAGE', 'CLOSEDAY', 'MAIN_IMG', 'FAC_DESC',
-  ], // dropped: GNGU, OPENHOUR, ENTR_FEE, OPEN_DAY, SEAT_CNT, ETC_DESC, ENTRFREE, SUBWAY, BUSSTOP, YELLOW, GREEN, BLUE, RED, AIRPORT
+    'ENTRFREE', 'SUBWAY', 'BUSSTOP', // BUG-13: SpaceDetail 입장료 / 교통 안내
+  ], // dropped: GNGU, OPENHOUR, ENTR_FEE, OPEN_DAY, SEAT_CNT, ETC_DESC, YELLOW, GREEN, BLUE, RED, AIRPORT
   viewNightSpot: [
     'NUM', 'SUBJECT_CD', 'TITLE', 'ADDR', 'LA', 'LO', 'URL', 'OPERATING_TIME', 'ENTR_FEE', 'SUBWAY', 'BUS',
-    'CONTENTS', // kept on purpose: NightSpotCard reads `CONTENT` (typo, DESIGN.md BUG-12) — the fix needs this field
+    'CONTENTS', // NightSpotCard description (BUG-12 fixed)
   ], // dropped: TEL_NO, FREE_YN, PARKING_INFO, REG_DATE, MOD_DATE
 };
 

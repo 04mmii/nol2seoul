@@ -19,7 +19,7 @@ const MapPromo: React.FC<Props> = ({ spaces, loading }) => {
     for (const s of spaces) {
       const ll = spaceLatLng(s);
       const pos = ll && projectToSeoulBox(ll.lat, ll.lng);
-      if (pos) out.push({ key: `${s.FAC_CODE}-${out.length}`, ...pos, label: s.FAC_NAME });
+      if (pos) out.push({ key: `${s.NUM}-${out.length}`, ...pos, label: s.FAC_NAME });
       if (out.length >= MAX_PINS) break;
     }
     return out;

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { spaceDescription, spaceTransit } from '../utils/space';
 import { useCulturalSpaces, useFavorites } from '../hooks';
 
 const SpaceDetail: React.FC = () => {
@@ -29,8 +30,13 @@ const SpaceDetail: React.FC = () => {
     );
   }
 
-  const image = space.MAIN_IMG || space.IMG_URL;
-  const hasTicket = space.TICKET_YN === 'Y';
+  // BUG-13: fields the live API actually sends (IMG_URL → MAIN_IMG, TICKET_YN → ENTRFREE,
+  // DTLCONT → FAC_DESC as plain text, TRAFFIC_INFO → SUBWAY/BUSSTOP).
+  const image = space.MAIN_IMG;
+  const entryFee = space.ENTRFREE?.trim() || '';
+  const hasTicket = entryFee === '유료';
+  const description = spaceDescription(space.FAC_DESC);
+  const transit = spaceTransit(space);
   const favId = String(spaceIndex);
 
   // 비슷한 분류의 공간
@@ -89,10 +95,8 @@ const SpaceDetail: React.FC = () => {
               공간 소개
             </h3>
             <div className="text-gray-600 leading-relaxed text-lg font-medium space-y-4">
-              {space.FAC_DESC ? (
-                <p>{space.FAC_DESC}</p>
-              ) : space.DTLCONT ? (
-                <div dangerouslySetInnerHTML={{ __html: space.DTLCONT.replace(/<[^>]*>/g, ' ').trim() || `${space.FAC_NAME} - 서울의 문화공간입니다.` }} />
+              {description.length > 0 ? (
+                description.map((para, i) => <p key={i}>{para}</p>)
               ) : (
                 <p>{space.FAC_NAME} - 서울에 위치한 문화공간입니다.</p>
               )}
@@ -100,14 +104,16 @@ const SpaceDetail: React.FC = () => {
           </section>
 
           {/* 교통 정보 */}
-          {space.TRAFFIC_INFO && (
+          {transit.length > 0 && (
             <section className="space-y-6">
               <h3 className="text-2xl font-black flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary">directions</span>
                 교통 안내
               </h3>
               <div className="bg-primary/5 rounded-xl p-5 border border-primary/10">
-                <p className="text-sm text-gray-600 font-medium leading-relaxed">{space.TRAFFIC_INFO}</p>
+                {transit.map((t) => (
+                  <p key={t.label} className="text-sm text-gray-600 font-medium leading-relaxed"><b>{t.label}</b> {t.value}</p>
+                ))}
               </div>
             </section>
           )}
@@ -137,7 +143,7 @@ const SpaceDetail: React.FC = () => {
                 { label: '전화', value: space.PHNE, icon: 'call' },
                 ...(space.FAX ? [{ label: '팩스', value: space.FAX, icon: 'fax' }] : []),
                 ...(space.CLOSEDAY ? [{ label: '휴관일', value: space.CLOSEDAY, icon: 'event_busy' }] : []),
-                { label: '입장료', value: hasTicket ? '유료' : '무료', icon: 'payments', highlight: true },
+                ...(entryFee ? [{ label: '입장료', value: entryFee, icon: 'payments', highlight: true }] : []),
                 ...(space.SUBJCODE ? [{ label: '분류', value: space.SUBJCODE, icon: 'category' }] : []),
               ].map(info => (
                 <div key={info.label} className="flex gap-4">
@@ -192,7 +198,7 @@ const SpaceDetail: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {similarSpaces.map((s, i) => {
               const idx = spaces.indexOf(s);
-              const sImg = s.MAIN_IMG || s.IMG_URL;
+              const sImg = s.MAIN_IMG;
               return (
                 <Link to={`/space/${idx}`} key={i} className="group cursor-pointer">
                   <div className="relative aspect-[4/3] rounded-xl overflow-hidden mb-4">

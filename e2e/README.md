@@ -41,10 +41,11 @@ Playwright starts its own Vite dev server on `http://127.0.0.1:4310` (it does no
 | `fee.spec.ts` | BUG-03 regression (option D): EventList shows the four fee badges (무료/유료/일부 무료/가격 상이) and none for 확인 필요; Home, EventList and EventDetail agree on the same event. |
 | `favorites-migration.spec.ts` | BUG-08: old index-ID favorites (seeded before boot) are re-matched by image → title+start date → title+location; backup kept; duplicates dropped; unmatched kept as orphans (MyPage note, no link, removable); runs once; no migration while the event API fails; old `/event/12` links show the outdated-link message. |
 | `api-proxy.spec.ts` | TECH-10: shared proxy logic (`api/_lib/seoulApi.ts`) with a fake `fetch` — paging by `list_total_count` for all three APIs (max 5 parallel), event window (running today + starting within 3 months, KST), dedupe, field whitelist, INFO-200, partial/first-page failures and cache headers (24 h + SWR), key scrubbing, input checks; plus one request to the dev server to prove the middleware is wired. No browser, no real API. |
+| `space-detail.spec.ts` | BUG-13: SpaceDetail reads live-API fields — FAC_DESC HTML as plain text, 입장료 from ENTRFREE, 교통 안내 from SUBWAY/BUSSTOP (bare numbers hidden). |
 | `ended-guard.spec.ts` | TECH-10 client guard: an event that ended yesterday but is still in a (stale) API response is not shown in EventList, related events, the detail page or search. |
 | `known-issues.spec.ts` | Expected-to-fail tests for open bugs (below). |
 
-Not covered yet: MapDiscovery (needs a Kakao SDK strategy), SpaceDetail, mobile viewports, visual screenshots, accessibility audit, Vercel function behavior.
+Not covered yet: MapDiscovery (needs a Kakao SDK strategy), most of SpaceDetail (only the BUG-13 fields), mobile viewports, visual screenshots, accessibility audit, Vercel function behavior.
 
 ## Known issues (`@known-issue`, `test.fail()`)
 
