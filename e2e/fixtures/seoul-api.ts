@@ -5,8 +5,10 @@
  * (`data.culturalEventInfo.row`, `data.culturalSpaceInfo.row`, `data.viewNightSpot.row`) and are
  * designed around a fixed "today" so date-dependent UI (Home 오늘/이번주) is deterministic.
  *
- * Array ORDER matters: the app uses array positions as IDs (DESIGN.md BUG-08), so tests rely on
- * the indexes documented below.
+ * IDs (BUG-08, utils/eventId.ts): each event's route/favorite ID is the `cultcode` in HMPG_ADDR.
+ * Synthetic cultcodes are 9000xx so they can't be mistaken for real ones. `thisWeekPlay` has no
+ * HMPG_ADDR on purpose → it exercises the hash fallback. `index` is the array position, kept for
+ * BUG-08 migration tests (old favorites stored indexes).
  */
 
 /** Fixed clock for every test: 2026-11-03 12:00 KST (03:00 UTC). Home compares UTC ISO dates. */
@@ -15,6 +17,8 @@ export const FIXED_NOW = new Date('2026-11-03T03:00:00.000Z');
 /** Image URLs on this host are fulfilled with a 1×1 PNG by the network guard. */
 export const FIXTURE_IMAGE_HOST = 'fixtures.nolseoul.test';
 const img = (n: number) => `https://${FIXTURE_IMAGE_HOST}/event-${n}.png`;
+const cultcode = (n: number) => String(900000 + n);
+const portal = (n: number) => `https://culture.example.test/cultureEvent/view.do?cultcode=${cultcode(n)}&menuNo=200008`;
 
 type EventRow = Record<string, string>;
 
@@ -47,21 +51,26 @@ export const EV = {
   /** index 0 — future (December), paid, 종로구. Not shown on Home 오늘/이번주. */
   futureExhibition: {
     index: 0,
+    id: '900000',
     title: '[픽스처] 12월 미래 전시',
   },
   /** index 1 — ongoing today, IS_FREE=무료, 강남구. */
   todayFreeClassic: {
     index: 1,
+    id: '900001',
     title: '[픽스처] 오늘 무료 클래식',
   },
   /** index 2 — ongoing today, IS_FREE=유료 but USE_FEE says 무료 (BUG-03 case → fee kind "확인 필요"), 마포구. */
   todayFestivalFeeText: {
     index: 2,
+    id: '900002',
     title: '[픽스처] 오늘 축제 무료입장',
   },
   /** index 3 — starts in 3 days (this week only), paid, 강남구. */
   thisWeekPlay: {
     index: 3,
+    /** No cultcode → hash fallback: eventId() of TITLE | STRTDATE | PLACE. Every test that opens this event checks it. */
+    id: 'hxrizkd',
     title: '[픽스처] 이번주 연극',
   },
 } as const;
@@ -82,7 +91,7 @@ const namedEvents: EventRow[] = [
     // Fields seen in live data (2026-11-09) that the v3 detail page uses:
     ETC_DESC: `https://${FIXTURE_IMAGE_HOST}/etc-desc-0.jpg`, // live ETC_DESC is sometimes just an image URL
     ORG_LINK: 'https://tickets.example.test/goods/0',
-    HMPG_ADDR: 'https://culture.example.test/cultureEvent/view.do?cultcode=0',
+    HMPG_ADDR: portal(0),
     PRO_TIME: '10:00~18:00',
     INQUIRY: '02-000-0000',
     PLAYER: '[픽스처] 작가 미상',
@@ -102,6 +111,7 @@ const namedEvents: EventRow[] = [
     USE_FEE: '',
     IS_FREE: '무료',
     MAIN_IMG: img(1),
+    HMPG_ADDR: portal(1),
   }),
   baseEvent({
     TITLE: EV.todayFestivalFeeText.title,
@@ -114,6 +124,7 @@ const namedEvents: EventRow[] = [
     USE_FEE: '무료(사전예약)',
     IS_FREE: '유료',
     MAIN_IMG: img(2),
+    HMPG_ADDR: portal(2),
   }),
   baseEvent({
     TITLE: EV.thisWeekPlay.title,
@@ -146,10 +157,14 @@ const fillerEvents: EventRow[] = Array.from({ length: 12 }, (_, i) => {
     USE_FEE: i === 0 ? '티켓별 상이' : i === 1 ? '무료(일부 프로그램 유료)' : '5,000원',
     IS_FREE: '유료',
     MAIN_IMG: img(4 + i),
+    HMPG_ADDR: portal(4 + i),
   });
 });
 
 export const EVENTS: EventRow[] = [...namedEvents, ...fillerEvents];
+
+/** Stable ID of filler n (1-based, "기타 행사 0n"). */
+export const fillerId = (n: number) => cultcode(3 + n);
 
 /** Expected counts derived from the fixture (keep in sync with the data above). */
 export const EXPECT = {

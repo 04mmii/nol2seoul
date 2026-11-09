@@ -41,7 +41,7 @@ test.describe('Home (v3)', () => {
     await expect(caption).toBeVisible();
     await expect(caption).toContainText('FEATURED · 클래식');
     await caption.click();
-    await expect(page).toHaveURL(new RegExp(`#/event/${EV.todayFreeClassic.index}$`));
+    await expect(page).toHaveURL(new RegExp(`#/event/${EV.todayFreeClassic.id}$`));
     await expect(detailHeading(page, EV.todayFreeClassic.title)).toBeVisible();
   });
 
@@ -116,7 +116,7 @@ test.describe('Home (v3)', () => {
   // ---- BUG-01 regression (fixed in the v3 Home) -----------------------------------------
   test('BUG-01 fixed: card opens the event that was clicked', async ({ page }) => {
     await homeCard(page, EV.todayFreeClassic.title).getByRole('link').click();
-    await expect(page).toHaveURL(new RegExp(`#/event/${EV.todayFreeClassic.index}$`));
+    await expect(page).toHaveURL(new RegExp(`#/event/${EV.todayFreeClassic.id}$`));
     await expect(detailHeading(page, EV.todayFreeClassic.title)).toBeVisible();
   });
 
@@ -128,7 +128,7 @@ test.describe('Home (v3)', () => {
     const stored = await readStorage<StoredFavorite[]>(page, STORAGE.favorites);
     expect(stored).toHaveLength(1);
     expect(stored![0]).toMatchObject({
-      id: String(EV.todayFreeClassic.index),
+      id: EV.todayFreeClassic.id,
       type: 'event',
       title: EV.todayFreeClassic.title,
       category: '클래식',

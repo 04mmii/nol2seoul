@@ -8,6 +8,8 @@ import SpaceDetail from './pages/SpaceDetail';
 import MapDiscovery from './pages/MapDiscovery';
 import MyPage from './pages/MyPage';
 import SearchOverlay from './components/SearchOverlay';
+import { useEvents } from './hooks';
+import { useFavoritesMigration } from './hooks/useFavoritesMigration';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -17,12 +19,20 @@ const ScrollToTop = () => {
   return null;
 };
 
+/** BUG-08: one-time favorites migration to stable event IDs, on every route (shares the cached event query). */
+const FavoritesMigration = () => {
+  const { events } = useEvents();
+  useFavoritesMigration(events);
+  return null;
+};
+
 const App: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   return (
     <Router>
       <ScrollToTop />
+      <FavoritesMigration />
       <div className="flex flex-col min-h-screen relative">
         <Header onSearchClick={() => setIsSearchOpen(true)} />
 

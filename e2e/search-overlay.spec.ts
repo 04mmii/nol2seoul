@@ -34,7 +34,7 @@ test.describe('SearchOverlay', () => {
     const input = await openSearch(page);
     await input.fill('클래식');
     await resultSection(page, '문화행사').getByRole('link').filter({ hasText: EV.todayFreeClassic.title }).click();
-    await expect(page).toHaveURL(new RegExp(`#/event/${EV.todayFreeClassic.index}$`));
+    await expect(page).toHaveURL(new RegExp(`#/event/${EV.todayFreeClassic.id}$`));
     await expect(detailHeading(page, EV.todayFreeClassic.title)).toBeVisible();
     await expect(page.getByPlaceholder('행사, 장소, 키워드를 검색해보세요')).toHaveCount(0);
   });

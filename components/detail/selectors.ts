@@ -6,19 +6,20 @@
 import type { Event } from '../../types';
 import { eventDateRange, eventDay, eventStatus, isFreeEvent } from '../../utils/event';
 import { FEE_BADGE_LABEL, feeKind } from '../../utils/fee';
+import { eventId } from '../../utils/eventId';
 
-export type RelatedEvent = { event: Event; id: number };
+export type RelatedEvent = { event: Event; id: string };
 
 /**
  * "다음으로 가볼 곳": up to `n` other events sharing CODENAME or GUNAME.
  * Ranking: not-ended first → same genre AND district → same genre → same district → API order.
  */
-export function pickRelatedEvents(events: Event[], currentIndex: number, now: Date = new Date(), n = 4): RelatedEvent[] {
-  const current = events[currentIndex];
+export function pickRelatedEvents(events: Event[], current: Event | undefined, now: Date = new Date(), n = 4): RelatedEvent[] {
   if (!current) return [];
-  const scored: Array<{ event: Event; id: number; score: number }> = [];
-  events.forEach((e, id) => {
-    if (id === currentIndex) return;
+  const scored: Array<{ event: Event; id: string; score: number }> = [];
+  events.forEach((e) => {
+    if (e === current) return;
+    const id = eventId(e);
     const sameGenre = !!current.CODENAME && e.CODENAME === current.CODENAME;
     const sameDistrict = !!current.GUNAME && e.GUNAME === current.GUNAME;
     if (!sameGenre && !sameDistrict) return;

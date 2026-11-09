@@ -4,6 +4,10 @@ import { Link } from 'react-router-dom';
 import { useFavorites } from '../hooks';
 import type { FavoriteType } from '../hooks';
 
+/** Link when `to` is set; a plain, non-interactive block otherwise (orphaned favorites). */
+const MaybeLink: React.FC<{ to: string | null; children: React.ReactNode }> = ({ to, children }) =>
+  to ? <Link to={to}>{children}</Link> : <div aria-disabled="true">{children}</div>;
+
 const MyPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<FavoriteType>('event');
   const { favorites, removeFavorite, getByType, eventCount, spaceCount, spotCount } = useFavorites();
@@ -117,8 +121,9 @@ const MyPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {currentItems.map(item => (
                 <div key={`${item.type}-${item.id}`} className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all">
-                  <Link to={item.type === 'event' ? `/event/${item.id}` : '/map'}>
-                    <div className="relative h-52 overflow-hidden bg-gray-50">
+                  {/* BUG-08: orphaned favorites (couldn't be matched to current data) have no link. */}
+                  <MaybeLink to={item.orphan ? null : item.type === 'event' ? `/event/${item.id}` : '/map'}>
+                    <div className={`relative h-52 overflow-hidden bg-gray-50 ${item.orphan ? 'grayscale opacity-60' : ''}`}>
                       {item.image ? (
                         <img
                           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
@@ -133,12 +138,17 @@ const MyPage: React.FC = () => {
                         </div>
                       )}
                     </div>
-                  </Link>
+                  </MaybeLink>
                   <div className="p-5">
                     <div className="flex justify-between items-start">
                       <div className="min-w-0 flex-1">
                         {item.category && <p className="text-[10px] font-black text-primary uppercase mb-1 tracking-widest">{item.category}</p>}
                         <h4 className="font-black text-navy mb-3 truncate">{item.title}</h4>
+                        {item.orphan && (
+                          <p className="mb-2 text-xs font-bold text-gray-500" role="note">
+                            정보를 불러올 수 없는 행사
+                          </p>
+                        )}
                         <div className="space-y-1 text-xs text-gray-400 font-bold">
                           {item.date && <p className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">calendar_today</span> {item.date}</p>}
                           <p className="flex items-center gap-1 truncate"><span className="material-symbols-outlined text-sm">location_on</span> {item.location}</p>
@@ -146,6 +156,7 @@ const MyPage: React.FC = () => {
                       </div>
                       <button
                         onClick={() => removeFavorite(item.id, item.type)}
+                        aria-label={`${item.title} 찜 삭제`}
                         className="text-primary shrink-0 ml-2 hover:scale-110 transition-transform"
                       >
                         <span className="material-symbols-outlined fill">favorite</span>

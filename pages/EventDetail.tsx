@@ -12,6 +12,7 @@ import {
   pickRelatedEvents,
 } from '../components/detail/selectors';
 import { eventDateRange, eventLatLng, eventStatus, eventStatusLabel, eventVenue } from '../utils/event';
+import { cultcodeOf, eventId, findEventById, isLegacyIndexId } from '../utils/eventId';
 import '../components/detail/detail-v3.css';
 
 /**
@@ -26,9 +27,10 @@ const EventDetail: React.FC = () => {
   const { toggleFavorite, isFavorite } = useFavorites();
   const now = useMemo(() => new Date(), []);
 
-  const eventIndex = Number(id);
-  const event = events[eventIndex];
-  const related = useMemo(() => pickRelatedEvents(events, eventIndex, now), [events, eventIndex, now]);
+  // BUG-08: stable IDs (cultcode, hash fallback). Old index links ("/event/12") can't be resolved.
+  const event = useMemo(() => findEventById(events, id), [events, id]);
+  const legacyLink = !!id && isLegacyIndexId(id);
+  const related = useMemo(() => pickRelatedEvents(events, event, now), [events, event, now]);
 
   if (loading) {
     return (
@@ -44,14 +46,15 @@ const EventDetail: React.FC = () => {
     return (
       <div className="v3-detail">
         <div className="v3-shell v3-detail-status" role="alert">
-          <p>행사 정보를 찾을 수 없습니다.</p>
+          <p>{legacyLink ? '오래된 링크라 행사를 찾을 수 없습니다.' : '행사 정보를 찾을 수 없습니다.'}</p>
           <Link to="/events" className="v3-btn">목록으로 돌아가기</Link>
         </div>
       </div>
     );
   }
 
-  const favId = String(eventIndex);
+  const favId = eventId(event);
+  const cultcode = cultcodeOf(event);
   const saved = isFavorite(favId, 'event');
   const dateRange = eventDateRange(event);
   const status = eventStatusLabel(eventStatus(event, now));
@@ -85,7 +88,7 @@ const EventDetail: React.FC = () => {
             </ol>
           </nav>
           <div className="v3-detail-crumbs__status">
-            EVENT № {String(eventIndex + 1).padStart(3, '0')}{status && ` · ${status}`}
+            {cultcode ? `EVENT № ${cultcode}` : 'EVENT'}{status && ` · ${status}`}
           </div>
         </div>
       </div>
@@ -94,7 +97,7 @@ const EventDetail: React.FC = () => {
       <section className="v3-detail-hero" aria-labelledby="event-title">
         <div className="v3-shell v3-detail-hero__grid">
           <div className="v3-detail-hero__media">
-            <HeroImage key={event.MAIN_IMG ?? eventIndex} src={event.MAIN_IMG} />
+            <HeroImage key={event.MAIN_IMG ?? favId} src={event.MAIN_IMG} />
           </div>
           <div className="v3-detail-hero__body">
             <div>
@@ -206,10 +209,10 @@ const EventDetail: React.FC = () => {
                   key={rid}
                   event={e}
                   id={rid}
-                  saved={isFavorite(String(rid), 'event')}
+                  saved={isFavorite(rid, 'event')}
                   onToggleFavorite={() =>
                     toggleFavorite({
-                      id: String(rid),
+                      id: rid,
                       type: 'event',
                       title: e.TITLE,
                       location: eventVenue(e),

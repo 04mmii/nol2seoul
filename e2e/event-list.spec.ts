@@ -75,7 +75,7 @@ test.describe('EventList', () => {
 
   test('"상세보기" opens the matching event detail', async ({ page }) => {
     await eventListCard(page, EV.thisWeekPlay.title).getByRole('link', { name: '상세보기' }).click();
-    await expect(page).toHaveURL(new RegExp(`#/event/${EV.thisWeekPlay.index}$`));
+    await expect(page).toHaveURL(new RegExp(`#/event/${EV.thisWeekPlay.id}$`));
     await expect(detailHeading(page, EV.thisWeekPlay.title)).toBeVisible();
   });
 

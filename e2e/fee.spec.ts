@@ -28,9 +28,9 @@ test.describe('Fee classification (BUG-03 option D)', () => {
     await expect(homeCard(page, EV.todayFestivalFeeText.title).locator('[title]')).toHaveText('무료(사전예약)');
     await expect(homeCard(page, EV.todayFreeClassic.title).locator('[title]')).toHaveText('무료');
 
-    await page.goto(`/#/event/${EV.todayFestivalFeeText.index}`);
+    await page.goto(`/#/event/${EV.todayFestivalFeeText.id}`);
     await expect(specValue(page, EV.todayFestivalFeeText.title, '관람료')).toHaveText('무료(사전예약)');
-    await page.goto(`/#/event/${EV.todayFreeClassic.index}`);
+    await page.goto(`/#/event/${EV.todayFreeClassic.id}`);
     await expect(specValue(page, EV.todayFreeClassic.title, '관람료')).toHaveText('무료'); // badge only, no repeated text
   });
 });

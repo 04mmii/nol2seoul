@@ -4,7 +4,7 @@ import type { Event } from '../../types';
 import { HERO_COPY } from '../../constants/home';
 import { eventPrice, eventVenue, formatCount, formatMastheadDate } from './selectors';
 
-export type HeroBanner = { event: Event; id: number };
+export type HeroBanner = { event: Event; id: string };
 export type HeroStats = { ongoing: number; spaces: number; weekStarts: number };
 
 const AUTOPLAY_MS = 6000;

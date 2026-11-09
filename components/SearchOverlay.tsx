@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useEvents, useCulturalSpaces, useNightViewSpots } from '../hooks';
+import { eventId } from '../utils/eventId';
 
 interface SearchOverlayProps {
   onClose: () => void;
@@ -123,7 +124,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({ onClose }) => {
                   </h2>
                   <div className="space-y-2">
                     {searchResults.events.map((event, i) => {
-                      const idx = events.indexOf(event);
+                      const idx = eventId(event);
                       return (
                         <Link
                           key={i}
@@ -218,7 +219,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({ onClose }) => {
                 </h2>
                 <div className="space-y-2">
                   {recommended.map((event, i) => {
-                    const idx = events.indexOf(event);
+                    const idx = eventId(event);
                     return (
                       <Link
                         key={i}

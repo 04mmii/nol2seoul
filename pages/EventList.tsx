@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useEvents, useFavorites } from "../hooks";
 import { isFree } from "../utils/fee";
 import FeeBadge from "../components/v3/FeeBadge";
+import { eventId } from "../utils/eventId";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -221,8 +222,8 @@ const EventList: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {pagedEvents.map((event) => {
-            const idx = events.indexOf(event);
-            const favId = String(idx);
+            const idx = eventId(event); // stable ID (BUG-08)
+            const favId = idx;
 
             return (
               <div

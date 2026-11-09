@@ -65,7 +65,22 @@ export { expect };
 export const STORAGE = {
   favorites: 'nolseoul-favorites',
   recent: 'nolseoul-recent',
+  /** BUG-08 migration flag ("2" = stable event IDs) and the untouched pre-migration copy. */
+  favoritesVersion: 'nolseoul-favorites-version',
+  favoritesBackup: 'nolseoul-favorites-v1-backup',
 } as const;
+
+/**
+ * Seed localStorage BEFORE the app boots, once per test (a sessionStorage guard stops reloads from
+ * re-seeding). Use for data written by an older app version, e.g. favorites with index IDs.
+ */
+export async function seedStorageOnce(page: Page, entries: Record<string, unknown>) {
+  await page.addInitScript((data) => {
+    if (sessionStorage.getItem('__seeded')) return;
+    sessionStorage.setItem('__seeded', '1');
+    for (const [k, v] of Object.entries(data)) localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+  }, entries);
+}
 
 export type StoredFavorite = {
   id: string;
@@ -76,6 +91,7 @@ export type StoredFavorite = {
   category?: string;
   date?: string;
   savedAt: number;
+  orphan?: boolean;
 };
 
 export async function readStorage<T>(page: Page, key: string): Promise<T | null> {

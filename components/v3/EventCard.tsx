@@ -11,8 +11,8 @@ import FeeBadge from './FeeBadge';
  */
 const EventCard: React.FC<{
   event: Event;
-  /** Route ID (index in the full events array — DESIGN.md BUG-08). */
-  id: number;
+  /** Stable route ID (utils/eventId.ts — BUG-08). */
+  id: string;
   saved: boolean;
   onToggleFavorite: () => void;
   headingLevel?: 'h3' | 'h4';

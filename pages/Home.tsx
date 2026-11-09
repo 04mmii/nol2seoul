@@ -13,6 +13,7 @@ import {
   pickNightSpots,
   topCounts,
 } from '../components/home/selectors';
+import { eventId } from '../utils/eventId';
 import '../components/home/home-v3.css';
 
 /**
@@ -29,7 +30,7 @@ const Home: React.FC = () => {
   const now = useMemo(() => new Date(), []);
 
   const heroBanners: HeroBanner[] = useMemo(
-    () => pickHeroEvents(events, now).map((event) => ({ event, id: events.indexOf(event) })),
+    () => pickHeroEvents(events, now).map((event) => ({ event, id: eventId(event) })),
     [events, now],
   );
   const ongoingCount = useMemo(() => filterEventsByTab(events, 'today', now).length, [events, now]);

@@ -425,10 +425,17 @@ BUG-02 and BUG-06 are recorded as expected-to-fail Playwright tests (BUG-01 and 
 | BUG-05 | Medium | `MapDiscovery.tsx:40-45` | Map ignores data-fetch errors from all three hooks; only the Kakao SDK error is shown. Failures result in a map with no markers and no message. | Surface per-dataset error (non-blocking banner). |
 | BUG-06 | Medium | `SearchOverlay.tsx:164-174, 188-198` | 문화공간 and 야경명소 result rows are styled as clickable (`cursor-pointer`, hover) but have no action. `/space/:id` exists and could be linked. | Link spaces to `/space/:id`; decide spot behavior (e.g. open on map), or remove clickable styling. |
 | BUG-07 | Low | `MyPage.tsx:120` | Saved **spaces** link to `/map` instead of `/space/:id`; saved spots link to `/map` without selecting the spot. | Link spaces to detail; spots need a map deep-link design. |
-| BUG-08 | **High (structural)** | `EventDetail.tsx:11-12`, `SpaceDetail.tsx:10-11`, all `indexOf` callers, `useFavorites` | Routes and favorites use **array positions** from the API response. Any change in API order or content silently re-points links and favorites. The `Event` type has no unique ID field. | Design a stable key (e.g. a composite of `TITLE` + `STRTDATE` + `PLACE`, to be validated against real data) and a `nolseoul-favorites` migration. Separate ticket. |
+| BUG-08 — **RESOLVED for events 2026-11-09** | ~~High~~ | `utils/eventId.ts`, `utils/favoritesMigration.ts`, `hooks/useFavoritesMigration.ts`; spaces/spots still index-based (`SpaceDetail.tsx`, `MapDiscovery.tsx`) | Event routes and favorites now use a **stable ID**: the `cultcode` from `HMPG_ADDR` (19,750/19,750 rows, 0 duplicates, live check 2026-11-09), with an FNV-1a hash of `TITLE`+start date+`PLACE` as fallback (`h…`). Old favorites are migrated once (see "BUG-08 decision" below). Old index links (`/event/12`) show "오래된 링크라 행사를 찾을 수 없습니다." | **Open:** space (`FAC_CODE` candidate) and night-spot IDs — separate ticket. |
 | BUG-09 | Low | `MapDiscovery.tsx:483-487` | Expanded bottom-sheet count shows the total dataset size, not the sub-filtered count. | Use `filteredItems.length`. |
 | BUG-10 | Low | `EventDetail.tsx:150` vs `EventList.tsx:279`, `Home.tsx:303` | Favorites store `date` inconsistently (`dateRange` vs raw `DATE`); map stores space `category` as '문화공간' while SpaceDetail stores `SUBJCODE`. MyPage shows whichever was saved last. | Normalize in the favorite-migration ticket. |
 | BUG-11 | Low (needs browser check) | `MapDiscovery.tsx:376`, `NightSpotCard.tsx:71` | Selection panel is fixed `w-[360px]` at `left-6` (384px total). On viewports narrower than ~384px (e.g. 375px phones) it may overflow. | Verify at 375/390px; make it responsive. |
+
+#### BUG-08 decision — stable event IDs, implemented 2026-11-09
+
+- **ID:** option A, `cultcode` from `HMPG_ADDR` (e.g. `…view.do?cultcode=158770` → `/event/158770`); fallback option B, `"h" + FNV-1a(TITLE | STRTDATE[0..10] | PLACE)`. Computed in the client (`eventId()`); the API contract is unchanged. Cultcodes are ≥6 digits, so they never collide with old indexes (`isLegacyIndexId` = 1–5 digits).
+- **EventDetail:** looks the event up by ID; the "EVENT №" label shows the cultcode.
+- **Favorites migration** (`nolseoul-favorites-version` = `"2"` when done; the original is kept in `nolseoul-favorites-v1-backup`): runs once on any route after event data loads, never while it is empty or failed. Old index IDs are not trusted (BUG-01). Each event favorite is re-matched by poster URL → title + start date → title + location, taking a rule only when it has exactly one candidate. Duplicates (two old entries → one event) keep the newest. Unmatched → kept as an **orphan** (`orphan: true`, `id: "legacy-<old>"`): MyPage shows title/location/date, the note "정보를 불러올 수 없는 행사", no link, and a remove button. Space/spot favorites are untouched.
+- **Sync:** `useFavorites` instances now re-read storage on a change event (and on cross-tab `storage` events), and writes start from current storage, so a component holding stale state can't overwrite migrated data.
 
 #### BUG-03 decision — option D, implemented 2026-11-09
 
@@ -571,7 +578,7 @@ Target option: React Native + Expo **after** shared design semantics and domain/
 - [ ] Decide what to do with Unused tokens (`primary-light`, `navy-50`, `navy-900`, `background-dark`).
 - [ ] Agree on first representative flow: recommended `EventList` filters + event card + detail.
 - [ ] Confirm Figma file, MCP access and tokens-to-code strategy.
-- [ ] Decide stable IDs for event/space/spot records and the favorites migration. (BUG-01, BUG-08)
+- [x] Stable event IDs + favorites migration decided and implemented 2026-11-09 (BUG-08). Space/spot IDs still open.
 - [ ] Determine whether dark/night mode is limited to the map (current) or becomes a global product mode.
 - [ ] Decide fate of placeholder controls (footer links, header heart/bell, MyPage profile/menu/membership). (A11Y-11)
 
@@ -579,6 +586,7 @@ Target option: React Native + Expo **after** shared design semantics and domain/
 **Maintenance:** Update this file when a design decision is approved. Keep the `Current` / `Unused` / `Proposed` / `Implemented` labels accurate and update usage counts when code changes. Link PRs, Figma frames and visual QA evidence when available. Close backlog items (§7) only with a linked PR.
 
 **Changelog**
+- v1.0 (2026-11-09, branch `redesign-v3`): BUG-08 resolved for events (cultcode IDs with hash fallback, one-time favorites migration with backup and orphans, favorites sync between hook instances).
 - v0.9 (2026-11-09, branch `redesign-v3`): Fee badge colours: 무료 accent-text fill + white, 유료 night fill + white, 일부 무료 accent-text outline, 가격 상이 night outline; tangerine use #10 "요금 배지(무료)" and night-on-badge recorded.
 - v0.8 (2026-11-09, branch `redesign-v3`): BUG-03 resolved with option D (`utils/fee.ts`, `FeeBadge`, four badges + 확인 필요 without badge) across EventList, Home and EventDetail. EventDetail about section: eyebrow "ABOUT", title "행사 소개."; its small tangerine-deep text uses `--v3-accent-text`.
 - v0.7 (2026-11-09, branch `redesign-v3`): Card thumbnails 3:4 cover (top); equal grid columns (`minmax(0,1fr)`, 2 columns ≤1100px); card date + price on one line with price ellipsis; compact card dates ("11.01 — 11.05"); category strip cells keep full padding, hover fill = cell box. Added §2.0.1 State & accent layer, **approved** with decisions C1–C5 and applied on Home: opaque state tokens (no translucent brand colour), 9 allowed tangerine uses, component state table, text on tangerine always ink. Poster rule: Hero banner exception (cover + bottom gradient + caption).

@@ -7,6 +7,7 @@ import 'swiper/css/free-mode';
 import { useKakaoLoader, useEvents, useCulturalSpaces, useNightViewSpots, useFavorites } from '../hooks';
 import { NightSpotSlideCard, NightSpotDetailCard } from '../components/NightSpotCard';
 import type { Event, CulturalSpace, NightViewSpot, KakaoMap, KakaoMarker } from '../types';
+import { eventId } from '../utils/eventId';
 
 type CategoryType = '전체' | '문화행사' | '문화공간' | '야경명소';
 
@@ -160,7 +161,7 @@ const MapDiscovery = () => {
   const getItemInfo = (item: Event | CulturalSpace | NightViewSpot) => {
     if ('CODENAME' in item) {
       return {
-        id: String(events.indexOf(item)),
+        id: eventId(item), // stable event ID (BUG-08); spaces/spots still use indexes
         title: item.TITLE,
         location: item.PLACE || item.GUNAME,
         date: item.DATE,

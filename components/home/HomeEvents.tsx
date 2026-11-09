@@ -4,6 +4,7 @@ import type { Event } from '../../types';
 import type { FavoriteItem, FavoriteType } from '../../hooks';
 import { EVENT_TABS, HOME_EVENT_LIMIT } from '../../constants/home';
 import EventCard from '../v3/EventCard';
+import { eventId } from '../../utils/eventId';
 import { eventVenue, filterEventsByTab, formatCount, type EventTab } from './selectors';
 
 interface Props {
@@ -31,17 +32,17 @@ const HomeEvents: React.FC<Props> = ({ events, loading, isError, now, isFavorite
     body = (
       <div className="v3-event-grid">
         {shown.map((ev) => {
-          // BUG-01 fix: use the index in the full events array (same ID scheme as EventList/detail).
-          const id = events.indexOf(ev);
+          // Stable ID (BUG-08), same scheme everywhere.
+          const id = eventId(ev);
           return (
             <EventCard
               key={id}
               event={ev}
               id={id}
-              saved={isFavorite(String(id), 'event')}
+              saved={isFavorite(id, 'event')}
               onToggleFavorite={() =>
                 toggleFavorite({
-                  id: String(id),
+                  id,
                   type: 'event',
                   title: ev.TITLE,
                   location: eventVenue(ev),

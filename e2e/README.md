@@ -39,6 +39,7 @@ Playwright starts its own Vite dev server on `http://127.0.0.1:4310` (it does no
 | `search-overlay.spec.ts` | Open from header / close with 취소; grouped results (events, spaces, spots); event result → detail + overlay closes; no-result message; `nolseoul-recent` save on Enter (trimmed), de-dup, max 8, remove one, clear all, reopen shows recents. |
 | `favorites.spec.ts` | `nolseoul-favorites` toggle from EventList and EventDetail; stored shape (`id` = array index, `type`, `title`, `location`, `category`, `date`, `savedAt`); persistence across reload; MyPage list, link, remove + empty state; pre-existing data from the current format still renders; corrupted JSON falls back to empty. |
 | `fee.spec.ts` | BUG-03 regression (option D): EventList shows the four fee badges (무료/유료/일부 무료/가격 상이) and none for 확인 필요; Home, EventList and EventDetail agree on the same event. |
+| `favorites-migration.spec.ts` | BUG-08: old index-ID favorites (seeded before boot) are re-matched by image → title+start date → title+location; backup kept; duplicates dropped; unmatched kept as orphans (MyPage note, no link, removable); runs once; no migration while the event API fails; old `/event/12` links show the outdated-link message. |
 | `known-issues.spec.ts` | Expected-to-fail tests for open bugs (below). |
 
 Not covered yet: MapDiscovery (needs a Kakao SDK strategy), SpaceDetail, mobile viewports, visual screenshots, accessibility audit, Vercel function behavior.
@@ -69,4 +70,4 @@ These are brittle by nature. When components are extracted (Stage 1+), add acces
 
 ## Fixtures
 
-`fixtures/seoul-api.ts` contains **synthetic** records prefixed `[픽스처]`, not real Seoul data. Array order matters because the app uses array positions as IDs (BUG-08). Index 0 is a future event, 1 and 2 run today (2 is the BUG-03 case), 3 starts this week, and 4–15 are fillers for pagination. If you change the data, update `EXPECT`.
+`fixtures/seoul-api.ts` contains **synthetic** records prefixed `[픽스처]`, not real Seoul data. Event IDs are the synthetic `cultcode`s in `HMPG_ADDR` (`9000xx`, `EV.*.id`, `fillerId(n)`); `thisWeekPlay` has no cultcode and uses the hash fallback (BUG-08). `EV.*.index` (array position) is only used to build old-format favorites in migration tests. Index 0 is a future event, 1 and 2 run today (2 is the BUG-03 case), 3 starts this week, and 4–15 are fillers for pagination. If you change the data, update `EXPECT`.
