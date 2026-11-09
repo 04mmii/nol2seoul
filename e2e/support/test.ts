@@ -1,4 +1,6 @@
 import { test as base, expect, type Page, type Locator } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { API_RESPONSES, FIXED_NOW, FIXTURE_IMAGE_HOST, PNG_1X1 } from '../fixtures/seoul-api';
 
 /**
@@ -156,4 +158,15 @@ export async function openSearch(page: Page) {
 /** Event detail title — an h1 since the v3 detail page (was h2 before). */
 export function detailHeading(page: Page, title: string): Locator {
   return page.getByRole('heading', { level: 1, name: title, exact: true });
+}
+
+/**
+ * Serve the Kakao Maps SDK test double (e2e/fixtures/kakao-stub.js) instead of the real SDK.
+ * Without this, the network guard aborts the SDK and the map shows its error state.
+ */
+const KAKAO_STUB = readFileSync(fileURLToPath(new URL('../fixtures/kakao-stub.js', import.meta.url)), 'utf8');
+export async function useKakaoStub(page: Page) {
+  await page.route('https://dapi.kakao.com/v2/maps/sdk.js**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/javascript', body: KAKAO_STUB }),
+  );
 }

@@ -207,7 +207,7 @@ export const SPOTS = [
     URL: '',
     OPERATING_TIME: '18:00~24:00',
     ENTR_FEE: '무료',
-    CONTENTS: '[픽스처] 야경 설명', // live field name (BUG-12)
+    CONTENTS: '<p class="0">[픽스처] 야경 설명&nbsp;입니다</p>', // live field name (BUG-12); live values are HTML
     SUBWAY: '',
     BUS: '',
   },

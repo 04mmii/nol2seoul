@@ -2,24 +2,10 @@
  * Helpers for culturalSpaceInfo rows (BUG-13, 2026-11-09): read the fields the live API actually sends.
  */
 import type { CulturalSpace } from '../types';
+import { htmlToParagraphs } from './text';
 
-const ENTITIES: Record<string, string> = { '&nbsp;': ' ', '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&middot;': '·' };
-
-/**
- * FAC_DESC arrives as HTML (e.g. `<div><span style="…">…</span></div>`). Returns plain-text paragraphs:
- * block tags become line breaks, all other tags are removed, common entities decoded. Rendered as text
- * (never as HTML), so nothing from the API is injected into the page.
- */
-export function spaceDescription(html?: string): string[] {
-  if (!html) return [];
-  const text = html
-    .replace(/<\s*br\s*\/?>/gi, '\n')
-    .replace(/<\/\s*(p|div|h[1-6]|li|tr)\s*>/gi, '\n')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&(nbsp|amp|lt|gt|quot|#39|middot);/g, (m) => ENTITIES[m] ?? m)
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)));
-  return text.split(/\n+/).map((s) => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
-}
+/** FAC_DESC arrives as HTML (e.g. `<div><span style="…">…</span></div>`) → plain-text paragraphs. */
+export const spaceDescription = (html?: string): string[] => htmlToParagraphs(html);
 
 /** A transit value worth showing: non-empty and not just a bare number (live data has e.g. "12"). */
 const meaningful = (v?: string) => {

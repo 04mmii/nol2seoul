@@ -98,7 +98,8 @@ declare global {
         LatLng: new (lat: number, lng: number) => KakaoLatLng;
         Map: new (container: HTMLElement, options: KakaoMapOptions) => KakaoMap;
         Marker: new (options: KakaoMarkerOptions) => KakaoMarker;
-        MarkerImage: new (src: string, size: KakaoSize, options?: { offset?: { x: number; y: number } }) => KakaoMarkerImageInstance;
+        MarkerImage: new (src: string, size: KakaoSize, options?: { offset?: KakaoPoint }) => KakaoMarkerImageInstance;
+        Point: new (x: number, y: number) => KakaoPoint;
         Size: new (width: number, height: number) => KakaoSize;
         InfoWindow: new (options: KakaoInfoWindowOptions) => KakaoInfoWindow;
         CustomOverlay: new (options: KakaoCustomOverlayOptions) => KakaoCustomOverlay;
@@ -131,21 +132,32 @@ export interface KakaoMap {
   getLevel: () => number;
   getCenter: () => KakaoLatLng;
   panTo: (latlng: KakaoLatLng) => void;
+  /** Moves the centre by (dx, dy) pixels, animated. */
+  panBy: (dx: number, dy: number) => void;
 }
 
 export interface KakaoMarkerOptions {
   position: KakaoLatLng;
   map?: KakaoMap;
   image?: KakaoMarkerImageInstance;
+  /** Tooltip text (Kakao Maps v2 option). */
+  title?: string;
+  zIndex?: number;
 }
 
 export interface KakaoMarker {
   setMap: (map: KakaoMap | null) => void;
   getPosition: () => KakaoLatLng;
   setImage: (image: KakaoMarkerImageInstance) => void;
+  setZIndex: (zIndex: number) => void;
 }
 
 export interface KakaoMarkerImageInstance {}
+
+export interface KakaoPoint {
+  x: number;
+  y: number;
+}
 
 export interface KakaoSize {
   width: number;
@@ -171,6 +183,9 @@ export interface KakaoCustomOverlayOptions {
   content: string | HTMLElement;
   position: KakaoLatLng;
   map?: KakaoMap;
+  /** 0 = top of the content at the position, 1 = bottom (Kakao default 0.5). */
+  yAnchor?: number;
+  zIndex?: number;
 }
 
 export interface KakaoCustomOverlay {

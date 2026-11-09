@@ -1,3 +1,4 @@
+import { htmlToParagraphs } from '../utils/text';
 import type { NightViewSpot } from '../types';
 
 interface NightSpotCardProps {
@@ -133,7 +134,7 @@ export const NightSpotDetailCard: React.FC<NightSpotDetailProps> = ({ spot, isFa
         )}
         {spot.CONTENTS && (
           <p className={`text-xs leading-relaxed line-clamp-3 ${isNightMode ? 'text-gray-400' : 'text-gray-500'}`}>
-            {spot.CONTENTS}
+            {htmlToParagraphs(spot.CONTENTS).join(' ')}
           </p>
         )}
       </div>

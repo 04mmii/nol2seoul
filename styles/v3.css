@@ -6,6 +6,8 @@
 
 .v3-shell { max-width: var(--v3-maxw); margin: 0 auto; padding: 0 var(--v3-gutter); }
 .v3-mono { font-family: var(--v3-font-mono); letter-spacing: 0; }
+/* Visually hidden but available to screen readers (labels for icon-only/placeholder inputs). */
+.v3-visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 /* Hangul in display type runs optically larger than Latin — pull it back */
 .v3-ko { font-family: var(--v3-font-sans); font-weight: 800; font-size: 0.94em; letter-spacing: -0.035em; }
 
