@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useFavorites } from '../hooks';
 import type { FavoriteType } from '../hooks';
+import { orphanNote } from '../utils/favoritesMigration';
 
 /** Link when `to` is set; a plain, non-interactive block otherwise (orphaned favorites). */
 const MaybeLink: React.FC<{ to: string | null; children: React.ReactNode }> = ({ to, children }) =>
@@ -146,7 +147,7 @@ const MyPage: React.FC = () => {
                         <h4 className="font-black text-navy mb-3 truncate">{item.title}</h4>
                         {item.orphan && (
                           <p className="mb-2 text-xs font-bold text-gray-500" role="note">
-                            정보를 불러올 수 없는 행사
+                            {orphanNote(item)}
                           </p>
                         )}
                         <div className="space-y-1 text-xs text-gray-400 font-bold">

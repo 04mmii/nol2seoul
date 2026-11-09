@@ -14,8 +14,12 @@ const OLD: StoredFavorite[] = [
   { id: '3', type: 'event', title: EV.thisWeekPlay.title, location: '[픽스처] 강남 소극장', category: '연극', date: '2026-11-06 ~ 2026-11-08', savedAt: 1700000000004 },
   // 3. Same event as #1 saved twice under another old index → dropped as a duplicate.
   { id: '7', type: 'event', title: EV.todayFreeClassic.title, location: '[픽스처] 강남 콘서트홀', category: '클래식', date: '2026-11-01~2026-11-05', savedAt: 1700000000003 },
-  // 4. Not in the current data → kept as an orphan.
+  // 4. Not in the current data, end date already past → orphan shown as "종료된 행사".
   { id: '12', type: 'event', title: '[레거시] 사라진 행사', location: '레거시 장소', category: '전시/미술', date: '2025-01-01~2025-01-31', savedAt: 1700000000002 },
+  // 6. Not in the current data, not ended yet (detail-page date format) → "정보를 불러올 수 없는 행사".
+  { id: '13', type: 'event', title: '[레거시] 아직 안 끝난 행사', location: '레거시 장소 2', category: '연극', date: '2026-11-01 ~ 2026-12-31', savedAt: 1700000000001.5 },
+  // 7. Not in the current data, no end date → "정보를 불러올 수 없는 행사".
+  { id: '14', type: 'event', title: '[레거시] 날짜 없는 행사', location: '레거시 장소 3', savedAt: 1700000000001.2 },
   // 5. Space favorite: out of scope, untouched.
   { id: '0', type: 'space', title: '[레거시] 저장된 공간', location: '레거시 주소', category: '미술관', savedAt: 1700000000001 },
 ];
@@ -31,6 +35,8 @@ test.describe('Favorites migration (BUG-08)', () => {
       ['event', EV.todayFreeClassic.id, EV.todayFreeClassic.title, false],
       ['event', EV.thisWeekPlay.id, EV.thisWeekPlay.title, false],
       ['event', 'legacy-12', '[레거시] 사라진 행사', true],
+      ['event', 'legacy-13', '[레거시] 아직 안 끝난 행사', true],
+      ['event', 'legacy-14', '[레거시] 날짜 없는 행사', true],
       ['space', '0', '[레거시] 저장된 공간', false],
     ]);
     // Untouched copy of the original data.
@@ -48,7 +54,7 @@ test.describe('Favorites migration (BUG-08)', () => {
     const orphanTitle = page.getByRole('heading', { level: 4, name: '[레거시] 사라진 행사' });
     await expect(orphanTitle).toBeVisible();
     const orphanCard = orphanTitle.locator('xpath=ancestor::div[contains(@class,"group")][1]');
-    await expect(orphanCard.getByText('정보를 불러올 수 없는 행사')).toBeVisible();
+    await expect(orphanCard.getByText('종료된 행사', { exact: true })).toBeVisible(); // ended 2025-01-31 < today (KST)
     await expect(orphanCard.getByText('2025-01-01~2025-01-31')).toBeVisible();
     await expect(orphanCard.getByText('레거시 장소')).toBeVisible();
     await expect(orphanCard.locator('a')).toHaveCount(0); // link disabled
@@ -57,6 +63,19 @@ test.describe('Favorites migration (BUG-08)', () => {
     await expect(orphanTitle).toHaveCount(0);
     const stored = await readStorage<StoredFavorite[]>(page, STORAGE.favorites);
     expect(stored?.some((f) => f.id === 'legacy-12')).toBe(false);
+  });
+
+  test('orphan note: "종료된 행사" only when the stored end date is before today (KST)', async ({ page }) => {
+    await seedStorageOnce(page, { [STORAGE.favorites]: OLD });
+    await page.goto('/#/mypage');
+    await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), STORAGE.favoritesVersion)).toBe('2');
+    const note = (title: string) =>
+      page.getByRole('heading', { level: 4, name: title }).locator('xpath=ancestor::div[contains(@class,"group")][1]').getByRole('note');
+    await expect(note('[레거시] 사라진 행사')).toHaveText('종료된 행사');
+    await expect(note('[레거시] 아직 안 끝난 행사')).toHaveText('정보를 불러올 수 없는 행사');
+    await expect(note('[레거시] 날짜 없는 행사')).toHaveText('정보를 불러올 수 없는 행사');
+    // Matched favorites have no note.
+    await expect(note(EV.todayFreeClassic.title)).toHaveCount(0);
   });
 
   test('runs only once: a reload does not change migrated data', async ({ page }) => {

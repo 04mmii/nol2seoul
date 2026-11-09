@@ -7,13 +7,15 @@
  *   1. same poster URL (`image` === MAIN_IMG)
  *   2. same title + same start date (stored `date` is "YYYY-MM-DD~…" or "YYYY-MM-DD ~ …")
  *   3. same title + same location (PLACE, or GUNAME when PLACE is empty)
- * No match / several matches → the favorite is kept as an orphan ("정보를 불러올 수 없는 행사"):
+ * No match / several matches → the favorite is kept as an orphan (MyPage note: "종료된 행사" when the stored
+ * end date is before today in KST, otherwise "정보를 불러올 수 없는 행사" — see `orphanNote`):
  * it keeps title/location/date, gets `orphan: true` and an id of "legacy-<old id>".
  * Space/spot favorites are not touched (their IDs are a separate ticket).
  */
 import type { Event } from '../types';
 import type { FavoriteItem } from '../hooks/useFavorites';
 import { eventId, isLegacyIndexId } from './eventId';
+import { kstToday } from './event';
 
 export type MigrationStats = { matched: number; orphaned: number; duplicatesDropped: number; untouched: number };
 
@@ -73,4 +75,19 @@ export function migrateFavorites(items: FavoriteItem[], events: Event[]): { item
     out.push(next);
   }
   return { items: out, stats };
+}
+
+/**
+ * End date stored with a favorite, when the stored `date` is a range
+ * ("YYYY-MM-DD~YYYY-MM-DD" or "YYYY-MM-DD ~ YYYY-MM-DD"). A single date or no date → null (unknown).
+ */
+export function favoriteEndDate(item: Pick<FavoriteItem, 'date'>): string | null {
+  const dates = (item.date || '').match(/\d{4}-\d{2}-\d{2}/g) || [];
+  return dates.length >= 2 ? dates[dates.length - 1] : null;
+}
+
+/** MyPage note for an orphaned favorite: "종료된 행사" when its stored end date is before today (KST). */
+export function orphanNote(item: Pick<FavoriteItem, 'date'>, now: Date = new Date()): string {
+  const end = favoriteEndDate(item);
+  return end && end < kstToday(now) ? '종료된 행사' : '정보를 불러올 수 없는 행사';
 }

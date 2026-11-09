@@ -6,6 +6,9 @@ import { feeLabel, isFree } from './fee';
 
 export const eventDay = (s?: string) => (s || '').slice(0, 10);
 
+/** Today's date in Korea (UTC+9, no DST) as YYYY-MM-DD. */
+export const kstToday = (now: Date = new Date()) => new Date(now.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
 /**
  * Date keys as UTC ISO dates (YYYY-MM-DD) — same semantics as the pre-v3 pages, so results don't
  * change. Note: between 00:00 and 09:00 KST, "today" is still the previous UTC day (DESIGN.md §12).
