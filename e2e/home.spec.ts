@@ -90,20 +90,21 @@ test.describe('Home (v3)', () => {
     await expect(region.getByText('3건 표시 · 3건 중')).toBeVisible();
     await expect(homeCard(page, EV.futureExhibition.title)).toHaveCount(0);
 
-    // Free = not ended + Home free rule (IS_FREE or USE_FEE text).
+    // Free = not ended + fee kind "free" (BUG-03 option D). The IS_FREE=유료 + "무료(사전예약)" event is
+    // "확인 필요", not free, so it stays out.
     await region.getByRole('button', { name: '무료', exact: true }).click();
-    await expect(region.getByText('2건 표시 · 2건 중')).toBeVisible();
+    await expect(region.getByText('1건 표시 · 1건 중')).toBeVisible();
     await expect(homeCard(page, EV.todayFreeClassic.title)).toBeVisible();
-    await expect(homeCard(page, EV.todayFestivalFeeText.title)).toBeVisible();
+    await expect(homeCard(page, EV.todayFestivalFeeText.title)).toHaveCount(0);
 
     await region.getByRole('button', { name: '오늘', exact: true }).click();
     await expect(homeCard(page, EV.thisWeekPlay.title)).toHaveCount(0);
   });
 
-  test('card price uses the Home free rule (IS_FREE or USE_FEE text)', async ({ page }) => {
-    await expect(homeCard(page, EV.todayFreeClassic.title)).toContainText('무료');
-    // IS_FREE=유료 but USE_FEE contains 무료 → Home labels it free (see BUG-03).
-    await expect(homeCard(page, EV.todayFestivalFeeText.title).locator('[title]')).toHaveText('무료');
+  test('card fee slot follows BUG-03 option D (badge, or raw text for 확인 필요)', async ({ page }) => {
+    await expect(homeCard(page, EV.todayFreeClassic.title).locator('[title]')).toHaveText('무료');
+    // IS_FREE=유료 but USE_FEE only says 무료 → "확인 필요": no badge, the fee text as is.
+    await expect(homeCard(page, EV.todayFestivalFeeText.title).locator('[title]')).toHaveText('무료(사전예약)');
   });
 
   test('"전체 문화행사 보기" navigates to the event list', async ({ page }) => {

@@ -54,7 +54,7 @@ export const EV = {
     index: 1,
     title: '[픽스처] 오늘 무료 클래식',
   },
-  /** index 2 — ongoing today, IS_FREE=유료 but USE_FEE says 무료 (BUG-03 case), 마포구. */
+  /** index 2 — ongoing today, IS_FREE=유료 but USE_FEE says 무료 (BUG-03 case → fee kind "확인 필요"), 마포구. */
   todayFestivalFeeText: {
     index: 2,
     title: '[픽스처] 오늘 축제 무료입장',
@@ -129,7 +129,10 @@ const namedEvents: EventRow[] = [
   }),
 ];
 
-/** indexes 4–15 — 12 future filler events (paid, 서초구) to exercise pagination. */
+/**
+ * indexes 4–15 — 12 future filler events (IS_FREE=유료, 서초구) to exercise pagination.
+ * Fee text varies to cover every fee kind (utils/fee.ts): filler 01 = 가격 상이, 02 = 일부 무료, rest = 유료.
+ */
 const fillerEvents: EventRow[] = Array.from({ length: 12 }, (_, i) => {
   const n = String(i + 1).padStart(2, '0');
   return baseEvent({
@@ -140,7 +143,7 @@ const fillerEvents: EventRow[] = Array.from({ length: 12 }, (_, i) => {
     DATE: '2027-01-10~2027-01-20',
     STRTDATE: '2027-01-10 00:00:00.0',
     END_DATE: '2027-01-20 00:00:00.0',
-    USE_FEE: '5,000원',
+    USE_FEE: i === 0 ? '티켓별 상이' : i === 1 ? '무료(일부 프로그램 유료)' : '5,000원',
     IS_FREE: '유료',
     MAIN_IMG: img(4 + i),
   });
@@ -153,7 +156,7 @@ export const EXPECT = {
   total: EVENTS.length, // 16
   perPage: 12,
   gangnam: 2, // todayFreeClassic + thisWeekPlay
-  freeByIsFree: 1, // only todayFreeClassic has IS_FREE=무료
+  freeByIsFree: 1, // only todayFreeClassic is fee kind "free" (BUG-03 option D)
 } as const;
 
 export const SPACES = [

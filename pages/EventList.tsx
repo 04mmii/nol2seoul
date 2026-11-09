@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useEvents, useFavorites } from "../hooks";
+import { isFree } from "../utils/fee";
+import FeeBadge from "../components/v3/FeeBadge";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -92,10 +94,12 @@ const EventList: React.FC = () => {
     if (selectedRegion !== "전체") {
       list = list.filter((e) => e.GUNAME === selectedRegion);
     }
+    // BUG-03 option D: 무료 = fee kind "free"; 유료 = everything else (유료, 일부 무료, 가격 상이, 확인 필요),
+    // so every event stays reachable through one of the two filters.
     if (feeFilter === "무료") {
-      list = list.filter((e) => e.IS_FREE === "무료");
+      list = list.filter((e) => isFree(e));
     } else if (feeFilter === "유료") {
-      list = list.filter((e) => e.IS_FREE !== "무료");
+      list = list.filter((e) => !isFree(e));
     }
     return list;
   }, [events, selectedCategory, selectedRegion, feeFilter]);
@@ -219,7 +223,6 @@ const EventList: React.FC = () => {
           {pagedEvents.map((event) => {
             const idx = events.indexOf(event);
             const favId = String(idx);
-            const isFree = event.IS_FREE === "무료";
 
             return (
               <div
@@ -245,11 +248,8 @@ const EventList: React.FC = () => {
                       </span>
                     </div>
                   )}
-                  <div
-                    className={`absolute top-3 left-3 px-3 py-1 ${isFree ? "bg-primary" : "bg-gray-500"} text-white text-[10px] font-bold rounded-full shadow-lg`}
-                  >
-                    {isFree ? "무료" : "유료"}
-                  </div>
+                  {/* Fee badge (BUG-03 option D); "확인 필요" shows no badge — the fee text is listed below. */}
+                  <FeeBadge event={event} hideCheck className="absolute top-3 left-3" />
                   {event.CODENAME && (
                     <div className="absolute bottom-3 left-3 px-2.5 py-1 bg-navy/80 backdrop-blur-sm text-white text-[10px] font-bold rounded-full">
                       {event.CODENAME}

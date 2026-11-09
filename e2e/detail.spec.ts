@@ -14,7 +14,7 @@ test.describe('EventDetail (v3)', () => {
     await expect(hero(page, t)).toContainText('주최 · [픽스처] 주최기관');
     await expect(specValue(page, t, '기간')).toHaveText('2026-12-01 ~ 2026-12-31');
     await expect(specValue(page, t, '장소')).toHaveText('[픽스처] 종로 갤러리');
-    await expect(specValue(page, t, '관람료')).toHaveText('10,000원');
+    await expect(specValue(page, t, '관람료')).toHaveText('유료10,000원'); // fee badge + fee text
     await expect(specValue(page, t, '관람시간')).toHaveText('10:00~18:00');
     await expect(specValue(page, t, '문의')).toHaveText('02-000-0000');
     await expect(hero(page, t).getByRole('link', { name: /홈페이지 가기/ })).toHaveAttribute('href', 'https://tickets.example.test/goods/0');
@@ -34,7 +34,7 @@ test.describe('EventDetail (v3)', () => {
 
   test('body renders PROGRAM text and an ETC_DESC image URL as an image', async ({ page }) => {
     await page.goto(`/#/event/${EV.futureExhibition.index}`);
-    const about = page.getByRole('region', { name: /이 행사/ });
+    const about = page.getByRole('region', { name: /행사 소개/ });
     await expect(about).toContainText('[픽스처] 미래 전시 프로그램 소개');
     await expect(about.getByRole('img', { name: /안내 이미지/ })).toBeVisible();
     // Left info column lists only API fields.

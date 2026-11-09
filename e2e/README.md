@@ -38,6 +38,7 @@ Playwright starts its own Vite dev server on `http://127.0.0.1:4310` (it does no
 | `event-list.spec.ts` | Total count; 12-per-page pagination (prev/next disabled states); region / genre / fee filters; reset chip; filter resets page; empty state; "상세보기" opens the right detail; FAB link; loading state; network-failure error state. |
 | `search-overlay.spec.ts` | Open from header / close with 취소; grouped results (events, spaces, spots); event result → detail + overlay closes; no-result message; `nolseoul-recent` save on Enter (trimmed), de-dup, max 8, remove one, clear all, reopen shows recents. |
 | `favorites.spec.ts` | `nolseoul-favorites` toggle from EventList and EventDetail; stored shape (`id` = array index, `type`, `title`, `location`, `category`, `date`, `savedAt`); persistence across reload; MyPage list, link, remove + empty state; pre-existing data from the current format still renders; corrupted JSON falls back to empty. |
+| `fee.spec.ts` | BUG-03 regression (option D): EventList shows the four fee badges (무료/유료/일부 무료/가격 상이) and none for 확인 필요; Home, EventList and EventDetail agree on the same event. |
 | `known-issues.spec.ts` | Expected-to-fail tests for open bugs (below). |
 
 Not covered yet: MapDiscovery (needs a Kakao SDK strategy), SpaceDetail, mobile viewports, visual screenshots, accessibility audit, Vercel function behavior.
@@ -49,10 +50,10 @@ These tests assert the **desired** behavior and currently fail on purpose. Playw
 | Test | DESIGN.md | Current behavior (verified failure reason) |
 |---|---|---|
 | API error response shows the error state | BUG-02 | 500 JSON response renders "총 0건" / empty state; error text not shown |
-| Free/paid label consistent between Home and EventList | BUG-03 | Home card price shows "무료", EventList badge shows "유료" for the same event. The correct rule is still an open decision. |
+| Space search result opens the space detail | BUG-06 | Click does nothing; URL stays `#/` |
 
 BUG-01 (Home card link/favorite ID) was fixed in the v3 Home on 2026-11-09. Its tests are now regular regression tests in `home.spec.ts`.
-| Space search result opens the space detail | BUG-06 | Click does nothing; URL stays `#/` |
+BUG-03 (free/paid rule) was fixed with option D on 2026-11-09 (`utils/fee.ts`). Its test is now the regular `fee.spec.ts`.
 
 Documented in DESIGN.md §7 but **not** turned into tests (no agreed expected behavior or UI copy yet): BUG-04 (Home has no error/empty state), BUG-05 (map data errors), BUG-07, BUG-09–11 and all A11Y items.
 

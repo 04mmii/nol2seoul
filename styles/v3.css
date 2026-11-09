@@ -80,7 +80,17 @@
 .v3-event-card__foot { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; white-space: nowrap; margin-top: 16px; padding-top: 12px; border-top: 1px solid rgb(var(--v3-ink) / 0.16); font-family: var(--v3-font-mono); font-size: 10px; color: rgb(var(--v3-ink-2)); text-transform: uppercase; letter-spacing: 0.06em; }
 .v3-event-card__date { flex: none; }
 .v3-event-card__price { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: right; color: rgb(var(--v3-ink)); font-weight: 600; }
-.v3-event-card__price.is-free { color: rgb(var(--v3-accent-text)); }
+
+/* ---------- Fee badge (BUG-03 option D; DESIGN.md §2.0.1) ----------
+ * 무료 / 일부 무료: accent-text (small text on bone, 5.33). 유료 / 가격 상이: ink-2 on line-strong.
+ * Solid border = definite, dashed = mixed/varies. "확인 필요" (check) is plain fee text, no badge. */
+.v3-fee { display: inline-block; font-family: var(--v3-font-mono); font-size: 10px; line-height: 1.4; letter-spacing: 0.04em; font-weight: 600; }
+.v3-fee--free, .v3-fee--paid, .v3-fee--partial, .v3-fee--varies { padding: 1px 6px; border: 1px solid; border-radius: 2px; background: rgb(var(--v3-bone)); }
+.v3-fee--free { color: rgb(var(--v3-accent-text)); border-color: currentColor; }
+.v3-fee--partial { color: rgb(var(--v3-accent-text)); border-color: currentColor; border-style: dashed; }
+.v3-fee--paid { color: rgb(var(--v3-ink-2)); border-color: rgb(var(--v3-ink) / 0.34); }
+.v3-fee--varies { color: rgb(var(--v3-ink-2)); border-color: rgb(var(--v3-ink) / 0.34); border-style: dashed; }
+.v3-fee--check { color: rgb(var(--v3-ink)); }
 @media (max-width: 1100px) {
   .v3-event-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

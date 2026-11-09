@@ -5,6 +5,7 @@
  */
 import type { Event } from '../../types';
 import { eventDateRange, eventDay, eventStatus, isFreeEvent } from '../../utils/event';
+import { FEE_BADGE_LABEL, feeKind } from '../../utils/fee';
 
 export type RelatedEvent = { event: Event; id: number };
 
@@ -29,22 +30,30 @@ export function pickRelatedEvents(events: Event[], currentIndex: number, now: Da
   return scored.sort((a, b) => b.score - a.score).slice(0, n).map(({ event, id }) => ({ event, id }));
 }
 
-/** Fee text shown on the detail page (same rule as before the redesign; BUG-03 open). */
-export const detailFee = (e: Event) => e.USE_FEE?.trim() || (isFreeEvent(e) ? '무료' : '정보 없음');
+/**
+ * Fee text next to the fee badge on the detail page (BUG-03 option D). The badge carries the
+ * classification, so the text is the raw USE_FEE — dropped when it only repeats the badge label.
+ */
+export function detailFee(e: Event): string {
+  const text = e.USE_FEE?.trim() || '';
+  const kind = feeKind(e);
+  return kind !== 'check' && text === FEE_BADGE_LABEL[kind] ? '' : text;
+}
 
-export type Spec = { label: string; value: string; highlight?: boolean };
+/** `fee: true` → render the fee badge before the value. */
+export type Spec = { label: string; value: string; highlight?: boolean; fee?: boolean };
 
 /** Hero spec grid (v3: 기간/장소/관람료/관람시간/휴관일/문의 → 휴관일 is not in the API, 대상 instead). */
 export function heroSpecs(e: Event): Spec[] {
   const specs: Spec[] = [
     { label: '기간', value: eventDateRange(e) },
     { label: '장소', value: e.PLACE || e.GUNAME || '' },
-    { label: '관람료', value: detailFee(e), highlight: isFreeEvent(e) },
+    { label: '관람료', value: detailFee(e), highlight: isFreeEvent(e), fee: true },
     { label: '관람시간', value: (e.PRO_TIME ?? '').trim() },
     { label: '대상', value: (e.USE_TRGT ?? '').trim() },
     { label: '문의', value: (e.INQUIRY ?? '').trim() },
   ];
-  return specs.filter((s) => s.value);
+  return specs.filter((s) => s.value || s.fee);
 }
 
 /** Left-column "행사 정보" rows — only fields that exist in the API. */

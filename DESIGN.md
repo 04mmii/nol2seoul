@@ -120,6 +120,7 @@ Applied on Home (2026-11-09). Other screens adopt it when they are migrated. Tok
 | **Category cell** | bone background, ink text, ↗ hidden | accent 100% fill, ink text (num, label, desc), ↗ shown | — | same as hover + focus ring |
 | **Day Pill** | transparent, 1px line border | line-hover border | `aria-pressed=true`: ink fill, bone text (no tangerine) | focus ring |
 | **Category chip (분류 칩)** | accent fill, ink text, mono 11px uppercase, padding 4px 8px, radius 2px, no text-shadow | — (not interactive on its own) | — | parent link has the focus ring |
+| **Fee badge** (무료 / 유료 / 일부 무료 / 가격 상이) | bone background, 1px border, mono 10px. 무료 = `accent-text` solid; 일부 무료 = `accent-text` dashed; 유료 = ink-2 + line-strong solid; 가격 상이 = ink-2 + line-strong dashed. 확인 필요 = plain fee text, no badge | — (not interactive) | — | — |
 | **Hero category line** | uses the category chip | — | — | — |
 
 #### Decisions (2026-11-09)
@@ -408,7 +409,7 @@ For every Figma component, document: purpose, anatomy, variants, behaviors, resp
 
 Status of every item: **Open**. Fixing any item changes behavior, so each needs its own ticket and review. Do not fix them inside visual/design-system tickets.
 
-BUG-02, BUG-03 and BUG-06 are recorded as expected-to-fail Playwright tests (BUG-01 was fixed and its tests became regular tests) in `e2e/known-issues.spec.ts` (`@known-issue`). The fix PR must remove the matching `test.fail()`. See `e2e/README.md`.
+BUG-02 and BUG-06 are recorded as expected-to-fail Playwright tests (BUG-01 and BUG-03 were fixed and their tests became regular tests) in `e2e/known-issues.spec.ts` (`@known-issue`). The fix PR must remove the matching `test.fail()`. See `e2e/README.md`.
 
 ### 7.1 Functional bugs
 
@@ -416,7 +417,7 @@ BUG-02, BUG-03 and BUG-06 are recorded as expected-to-fail Playwright tests (BUG
 |---|---|---|---|---|
 | BUG-01 — **RESOLVED 2026-11-09** (v3 Home uses `events.indexOf`; regression tests in `e2e/home.spec.ts`). Favorites saved by the old Home may still hold wrong IDs; clean them up with BUG-08. | ~~High~~ | `pages/Home.tsx` (pre-v3: lines 272-307) | Home cards use the index **within the filtered `recentEvents` list** for both the link (`/event/${idx}`) and the favorite ID. Clicking the n-th card opens `events[n]` (a different event), and the heart toggles the favorite for a different event (e.g. EventList's first card). | Resolve with the stable-ID migration (BUG-08). Existing `nolseoul-favorites` may already contain wrong IDs from Home — migration must match by stored `title`/`date`, not by ID. |
 | BUG-02 | **High** | `hooks/useEvents.ts:4-8`, `useCulturalSpaces.ts:4-8`, `useNightViewSpots.ts:4-8`; `api/seoulapi.ts` | Fetchers never check `res.ok`. When the proxy returns a JSON error (500/400), the hook resolves to `[]`, so screens show **empty** ("조건에 맞는 행사가 없습니다") instead of **error**. `isError` only fires on network/JSON-parse failure. | Throw on non-OK responses so TanStack Query reports errors; then verify each screen's error UI. Validate with both Vite proxy and Vercel function. |
-| BUG-03 — options analysed 2026-11-09 (see "BUG-03 options" below §7.1) | Medium | `EventList.tsx:222` vs `Home.tsx:93-95`, `EventDetail.tsx:33` | "Free" is computed differently: EventList checks `IS_FREE === '무료'` only; Home/EventDetail also accept `USE_FEE` containing '무료'. The same event can be labelled 유료 in the list and 무료 elsewhere; the fee filter follows the stricter rule. | Decide one rule, extract to a shared util, keep filter and badge in sync. |
+| BUG-03 — **RESOLVED 2026-11-09 (option D)**: one rule in `utils/fee.ts` (`feeKind`) used by EventList (badge + filter), Home (card, hero, 무료 tab) and EventDetail (관람료); regression test `e2e/fee.spec.ts` | Medium | `EventList.tsx:222` vs `Home.tsx:93-95`, `EventDetail.tsx:33` | "Free" is computed differently: EventList checks `IS_FREE === '무료'` only; Home/EventDetail also accept `USE_FEE` containing '무료'. The same event can be labelled 유료 in the list and 무료 elsewhere; the fee filter follows the stricter rule. | Decide one rule, extract to a shared util, keep filter and badge in sync. |
 | BUG-04 — **Partially resolved 2026-11-09** | Medium | `components/home/HomeEvents.tsx` | v3 Home events section has loading, error (network failure) and empty states. Still open: API JSON errors show as empty because of BUG-02, and hero/strip/map promo/After Dark only show "—" or loading text. | Finish with a shared `StatusView` after BUG-02. |
 | BUG-05 | Medium | `MapDiscovery.tsx:40-45` | Map ignores data-fetch errors from all three hooks; only the Kakao SDK error is shown. Failures result in a map with no markers and no message. | Surface per-dataset error (non-blocking banner). |
 | BUG-06 | Medium | `SearchOverlay.tsx:164-174, 188-198` | 문화공간 and 야경명소 result rows are styled as clickable (`cursor-pointer`, hover) but have no action. `/space/:id` exists and could be linked. | Link spaces to `/space/:id`; decide spot behavior (e.g. open on map), or remove clickable styling. |
@@ -426,7 +427,23 @@ BUG-02, BUG-03 and BUG-06 are recorded as expected-to-fail Playwright tests (BUG
 | BUG-10 | Low | `EventDetail.tsx:150` vs `EventList.tsx:279`, `Home.tsx:303` | Favorites store `date` inconsistently (`dateRange` vs raw `DATE`); map stores space `category` as '문화공간' while SpaceDetail stores `SUBJCODE`. MyPage shows whichever was saved last. | Normalize in the favorite-migration ticket. |
 | BUG-11 | Low (needs browser check) | `MapDiscovery.tsx:376`, `NightSpotCard.tsx:71` | Selection panel is fixed `w-[360px]` at `left-6` (384px total). On viewports narrower than ~384px (e.g. 375px phones) it may overflow. | Verify at 375/390px; make it responsive. |
 
-#### BUG-03 options (live data, 1,000 events, 2026-11-09) — decision pending
+#### BUG-03 decision — option D, implemented 2026-11-09
+
+`utils/fee.ts` → `feeKind(event)`. Live data (1,000 rows, 2026-11-09): **무료 681 / 유료 282 / 일부 무료 18 / 가격 상이 10 / 확인 필요 9**.
+
+| Kind | Rule (in order) | Shown as |
+|---|---|---|
+| 일부 무료 (`partial`) | text says "일부", or says 무료 *and* paid (a positive amount, "유료", or "상이") | badge, dashed `accent-text` |
+| 확인 필요 (`check`) | contradiction: `IS_FREE=무료` + a price in the text, or `IS_FREE=유료` + text only saying 무료 | **no badge**, raw fee text |
+| 무료 (`free`) | `IS_FREE=무료` otherwise | badge, solid `accent-text` |
+| 가격 상이 (`varies`) | `IS_FREE=유료`, "상이" and no amount | badge, dashed ink-2 / line-strong |
+| 유료 (`paid`) | `IS_FREE=유료` otherwise | badge, solid ink-2 / line-strong |
+
+Deposits ("예약금", "보증금", "노쇼", on either side of the amount) are ignored. Amounts: "10,000원", "1만원", "3천원"; "0원" is not a price.
+Filters: EventList **무료 = `free` only; 유료 = every other kind** (so every event stays reachable). Home **무료 tab = not ended + `free`**.
+Badge colours follow §2.0.1: no tangerine fill; free/partial use `accent-text` (5.33 on bone), paid/varies ink-2. Component: `components/v3/FeeBadge.tsx`, styles `.v3-fee*` in `styles/v3.css`.
+
+#### BUG-03 options (live data, 1,000 events, 2026-11-09) — analysis kept for reference
 
 `IS_FREE`: 무료 700 / 유료 300. `USE_FEE`: empty in 520 rows (all `IS_FREE=무료`). Prices come as "10,000원" or as Korean units ("1만원", "전석3만원"). Ambiguous texts include "티켓별 상이", "프로그램별 상이", "무료(일부 프로그램 유료)", "참가비: 30,000원 / 관람 1-2일차: 무료". There are 9 rows with `IS_FREE=무료` but a plain price ("전석 50,000원"), and deposits are mentioned in fee text ("예약금 10,000원 … 환불").
 
@@ -538,14 +555,14 @@ Target option: React Native + Expo **after** shared design semantics and domain/
 - [x] ~~BUG-01 during Home rewrite~~ → **Decided 2026-11-09: fix it** (done; see §7).
 - [ ] **Home (v3):** curator cards are **placeholder people and quotes** copied from the prototype (`constants/home.ts`, `CURATORS_ARE_PLACEHOLDERS`). Replace them with real, consented content, or hide the section, before production.
 - [ ] **Home (v3):** "03 — CURATION · 에디터가 고른 서울" implies editorial selection, but After Dark shows the **first 4 spots from the API**. Define a real selection rule (or curated IDs in constants), or change the copy.
-- [ ] **Home (v3):** tab definitions to confirm. 이번달 = starts by month end and not ended. 무료 = not ended + Home free rule (BUG-03 still open).
+- [ ] **Home (v3):** tab definitions to confirm. 이번달 = starts by month end and not ended. 무료 = not ended + fee kind `free` (BUG-03 option D).
 - [ ] **Home (v3):** dates use UTC like the pre-v3 Home, so between 00:00 and 09:00 KST "오늘" means the previous day. Kept intentionally; switch to KST?
 - [ ] **Home (v3):** two `h1`s on Home (header logo + hero title). The v3 reference doesn't treat the logo as a heading; decide together with A11Y-10.
 - [ ] **Home (v3):** the curator quote font (Instrument Serif) has no Hangul, and `Noto Serif KR` is not loaded, so Korean quotes fall back to the OS serif font (differs by OS). Load Noto Serif KR or change the token?
 - [ ] **Home (v3):** primary button hover (white on tangerine) is 3.79:1 at 14px semibold, below AA. This is v3's own hover style; keep it, or hover to `tangerine-deep` (5.95)?
 - [ ] **Home (v3):** Home now requests all three datasets (event, space, night; up to 1,000 rows each) on first load, where it previously requested only events. Acceptable, or add server-side counts later?
 - [ ] **Category colors:** 문화공간 blue vs emerald; 야경명소 indigo vs violet; selected-marker red — re-decide within the v3 palette (v3 has night/ember/electric/acid). (§2.4)
-- [ ] **Free/paid rule:** `IS_FREE` only, or also `USE_FEE` text. (BUG-03)
+- [x] **Free/paid rule:** option D (`utils/fee.ts`), decided and implemented 2026-11-09. (BUG-03)
 - [ ] Determine semantic neutral palette and whether `gray-400` may carry essential text.
 - [ ] Decide spacing, radius (`xl` vs `2xl` cards), elevation, z-index and type scales after screen audit; decide minimum text size.
 - [ ] Decide what to do with Unused tokens (`primary-light`, `navy-50`, `navy-900`, `background-dark`).
@@ -559,6 +576,7 @@ Target option: React Native + Expo **after** shared design semantics and domain/
 **Maintenance:** Update this file when a design decision is approved. Keep the `Current` / `Unused` / `Proposed` / `Implemented` labels accurate and update usage counts when code changes. Link PRs, Figma frames and visual QA evidence when available. Close backlog items (§7) only with a linked PR.
 
 **Changelog**
+- v0.8 (2026-11-09, branch `redesign-v3`): BUG-03 resolved with option D (`utils/fee.ts`, `FeeBadge`, four badges + 확인 필요 without badge) across EventList, Home and EventDetail. EventDetail about section: eyebrow "ABOUT", title "행사 소개."; its small tangerine-deep text uses `--v3-accent-text`.
 - v0.7 (2026-11-09, branch `redesign-v3`): Card thumbnails 3:4 cover (top); equal grid columns (`minmax(0,1fr)`, 2 columns ≤1100px); card date + price on one line with price ellipsis; compact card dates ("11.01 — 11.05"); category strip cells keep full padding, hover fill = cell box. Added §2.0.1 State & accent layer, **approved** with decisions C1–C5 and applied on Home: opaque state tokens (no translucent brand colour), 9 allowed tangerine uses, component state table, text on tangerine always ink. Poster rule: Hero banner exception (cover + bottom gradient + caption).
 - v0.6 (2026-11-09, branch `redesign-v3`): Added the `--v3-content-max` (1400px) token and the layout rule (one content width, full-bleed backgrounds). Home Header, Hero, category strip and Map Promo now align to it. Hero banner shows the poster uncropped with the caption beside/below it (no text over the image). Event cards use contain posters in a fixed 3:4 box with equal heights.
 - v0.5 (2026-11-09, branch `redesign-v3`): EventDetail migrated to v3 (event API only; no fake reviews/ratings/curator notes; Kakao map through the existing loader). Shared `components/v3/EventCard.tsx` and `utils/event.ts`. BUG-03 options documented with live-data counts. TECH-10 (1,000-row cap) and TECH-11 (untyped live fields) added.

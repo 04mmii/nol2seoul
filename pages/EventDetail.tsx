@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useEvents, useFavorites } from '../hooks';
+import FeeBadge from '../components/v3/FeeBadge';
 import EventCard from '../components/v3/EventCard';
 import EventLocationMap from '../components/detail/EventLocationMap';
 import {
@@ -110,7 +111,10 @@ const EventDetail: React.FC = () => {
                 {heroSpecs(event).map((s) => (
                   <div key={s.label}>
                     <dt>{s.label}</dt>
-                    <dd className={s.highlight ? 'is-hl' : undefined}>{s.value}</dd>
+                    <dd className={s.highlight ? 'is-hl' : undefined}>
+                      {s.fee && <FeeBadge event={event} hideCheck className="v3-detail-specs__fee" />}
+                      {s.value}
+                    </dd>
                   </div>
                 ))}
               </dl>
@@ -147,9 +151,9 @@ const EventDetail: React.FC = () => {
           </aside>
 
           <div className="v3-detail-body">
-            <div className="v3-eyebrow"><span className="v3-eyebrow__dash" />행사 소개</div>
+            <div className="v3-eyebrow"><span className="v3-eyebrow__dash" />ABOUT</div>
             <h2 id="event-about" className="v3-detail-body__title">
-              <em>About</em> <span className="v3-ko">이 행사.</span>
+              <span className="v3-ko">행사 소개.</span>
             </h2>
             {blocks.length === 0 ? (
               <p className="v3-detail-empty">

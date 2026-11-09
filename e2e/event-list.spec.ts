@@ -49,7 +49,7 @@ test.describe('EventList', () => {
     await expect(eventListCard(page, EV.thisWeekPlay.title)).toBeVisible();
   });
 
-  test('fee filter uses IS_FREE (current EventList rule)', async ({ page }) => {
+  test('fee filter: 무료 = fee kind "free", 유료 = everything else (BUG-03 option D)', async ({ page }) => {
     await pickFilter(page, /^유료\/무료/, '무료');
     await expect(page.getByRole('heading', countHeading(EXPECT.freeByIsFree))).toBeVisible();
     await expect(eventListCard(page, EV.todayFreeClassic.title)).toBeVisible();

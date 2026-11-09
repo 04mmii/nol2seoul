@@ -2,6 +2,7 @@
  * Shared helpers for Seoul culturalEventInfo rows (used by v3 Home and EventDetail).
  */
 import type { Event } from '../types';
+import { feeLabel, isFree } from './fee';
 
 export const eventDay = (s?: string) => (s || '').slice(0, 10);
 
@@ -16,14 +17,11 @@ export function dateKeys(now: Date = new Date()) {
   return { today, weekLater, monthEnd };
 }
 
-/**
- * Free rule used by Home and EventDetail (IS_FREE or USE_FEE text).
- * EventList uses IS_FREE only — DESIGN.md BUG-03 (open, options documented).
- */
-export const isFreeEvent = (e: Event) => e.IS_FREE === '무료' || !!e.USE_FEE?.includes('무료');
+/** Free = fee kind "free" (utils/fee.ts, BUG-03 option D). Shared by EventList, Home and EventDetail. */
+export const isFreeEvent = (e: Event) => isFree(e);
 
 /** Short price label for cards. */
-export const eventPrice = (e: Event) => (isFreeEvent(e) ? '무료' : e.USE_FEE?.trim() || '유료');
+export const eventPrice = (e: Event) => feeLabel(e);
 
 export const eventVenue = (e: Event) => e.PLACE || e.GUNAME || '';
 
