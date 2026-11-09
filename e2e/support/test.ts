@@ -132,6 +132,7 @@ export async function openSearch(page: Page) {
   return input;
 }
 
+/** Event detail title — an h1 since the v3 detail page (was h2 before). */
 export function detailHeading(page: Page, title: string): Locator {
-  return page.getByRole('heading', { level: 2, name: title, exact: true });
+  return page.getByRole('heading', { level: 1, name: title, exact: true });
 }

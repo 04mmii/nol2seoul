@@ -86,8 +86,10 @@ const Header: React.FC<{ onSearchClick: () => void }> = ({ onSearchClick }) => {
 
   return (
     <header
-      className={`${isMapPage ? 'fixed' : 'sticky'} top-0 z-[60] w-full h-[60px] lg:h-[68px] px-gutter flex items-center gap-4 md:gap-6 xl:gap-9 bg-bone border-b border-line font-body text-ink`}
+      className={`${isMapPage ? 'fixed' : 'sticky'} top-0 z-[60] w-full bg-bone border-b border-line font-body text-ink`}
     >
+      {/* Background is full-width; content sits on the shared content width (--v3-content-max). */}
+      <div className="max-w-shell mx-auto h-[60px] lg:h-[68px] px-gutter flex items-center gap-4 md:gap-6 xl:gap-9">
       <Link to="/" className={`flex items-center gap-[9px] shrink-0 text-ink ${FOCUS_RING}`}>
         <span aria-hidden="true" className="size-[22px] grid place-items-center bg-ink text-bone font-display text-[14px] font-bold">
           N
@@ -148,6 +150,7 @@ const Header: React.FC<{ onSearchClick: () => void }> = ({ onSearchClick }) => {
         aria-label="마이페이지"
         className={`size-[34px] shrink-0 rounded-full bg-sand border border-line ${FOCUS_RING}`}
       />
+      </div>
     </header>
   );
 };

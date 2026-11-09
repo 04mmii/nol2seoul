@@ -63,6 +63,12 @@ test.describe('Home (v3)', () => {
     await expect(hero.getByText('01 / 03')).toBeVisible();
   });
 
+  test('cards show the compact design-ref date (MM.DD — MM.DD) and the full price', async ({ page }) => {
+    const card = homeCard(page, EV.todayFreeClassic.title); // 2026-11-01 ~ 2026-11-05, free
+    await expect(card.getByText('11.01 — 11.05', { exact: true })).toBeVisible();
+    await expect(card.getByText('무료', { exact: true })).toBeVisible();
+  });
+
   test('오늘 tab shows only events running today', async ({ page }) => {
     await expect(eventsRegion(page).getByRole('button', { name: '오늘', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await expect(homeCard(page, EV.todayFreeClassic.title)).toBeVisible();
@@ -144,10 +150,10 @@ test.describe('Home (v3)', () => {
   // ---- Mapping: space → category strip + map promo ------------------------------------
   test('category strip and map promo use space data', async ({ page }) => {
     const strip = page.getByRole('navigation', { name: '카테고리' });
-    await expect(strip.getByRole('link', { name: /문화행사/ })).toContainText('2건 진행 중');
-    await expect(strip.getByRole('link', { name: /문화공간/ }).first()).toContainText('1곳');
     await expect(strip.getByRole('link', { name: /문화공간/ }).first()).toContainText(SPACES[0].SUBJCODE);
-    await expect(strip.getByRole('link', { name: /지도탐색/ })).toContainText('문화공간 1 · 야경명소 1');
+    // Count lines were removed from the strip (they duplicated the hero stats).
+    await expect(strip).not.toContainText('건 진행 중');
+    await expect(strip).not.toContainText('야경명소 1');
 
     const types = page.getByRole('list', { name: '공간 종류별 개수' });
     await expect(types.getByRole('listitem')).toHaveCount(1);

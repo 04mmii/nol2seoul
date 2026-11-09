@@ -53,16 +53,82 @@ The owner approved **Redesign v3** (`design-ref/`: `NOLSEOUL Redesign v3.html`, 
 | `--v3-night` / `--v3-night-2` | `#111d38` / `#1b2a4c` | `night`, `night-2` | Defined |
 | `--v3-ember` | `#e8b781` | `ember` | **Implemented** (footer link hover) |
 | `--v3-electric`, `--v3-acid` | `#24356e`, `#e8c98b` | — | Defined (legacy in v3 itself) |
+| **`--v3-content-max`** | **1400px** | via `.v3-shell` / `max-w-shell px-gutter` | **Implemented — the shared content width** (see "Layout rule" below) |
 | `--v3-gutter` | 40px (≤1280px: 28px) | `px-gutter` | **Implemented** |
-| `--v3-maxw` | 1480px | `max-w-shell` | **Implemented** (Footer) |
+| `--v3-maxw` | `calc(--v3-content-max + 2 × --v3-gutter)` (derived) | `max-w-shell` | **Implemented**. Outer box of the shell; don't set it directly. |
 | `--v3-font-sans` | Pretendard Variable | `font-body` | **Implemented** (Header/Footer) |
 | `--v3-font-display` | Space Grotesk | `font-display` | **Implemented** (logo) |
 | `--v3-font-mono` | JetBrains Mono | `font-mono` | **Implemented** (Footer labels) |
 | `--v3-font-serif` | Instrument Serif | `font-serif` | Defined; font **not loaded** yet |
 
+**Layout rule (approved 2026-11-09): one content width for every section.**
+- All text and images sit inside `--v3-content-max` (1400px), centred, with `--v3-gutter` on both sides. Reference = the Home event list.
+- In CSS use `.v3-shell`. In Tailwind use `max-w-shell mx-auto px-gutter`. Don't add other `max-w-*` containers to pages.
+- Backgrounds may run full-bleed (edge to edge). Whole-width sections (After Dark, Footer) paint their own box with a `.v3-shell` inside. Split sections (Hero banner, Map Promo) extend a column's colour to the viewport edge with `box-shadow: 0 0 0 100vmax <color>; clip-path: inset(…)`. This doesn't create horizontal scroll.
+- Category strip cells keep their full padding (34px 32px 36px) on every side; the strip's box lines sit on the content edges and the hover fill matches the cell box (decision 2026-11-09, replaces "outer cells drop their outer padding").
+- Verified on Home at 1440 / 1100 / 390px: every section's content edge equals the event list edge (left 40/28/28px, right 1400/1072/362px), and page overflow is 0.
+
+**Poster rule:** event card thumbnails (Home grid, EventDetail "다음으로 가볼 곳") are a fixed **3:4 box with `object-fit: cover`, `object-position: top center`** (decision 2026-11-09, replaces contain + bone-2 letterbox). Never put text over a poster. **Hero 배너는 예외: cover + 하단 그라디언트 + 캡션** (poster fills the banner with `object-fit: cover`; a bottom gradient over 45% of the banner height, transparent → `night` 70% at 40% of the band → 92%; category/title/meta caption and controls overlaid inside it with `text-shadow: 0 1px 2px rgba(0,0,0,.4)`; the top half of the poster stays uncovered). Card titles clamp at 3 lines; event grids use `repeat(4, minmax(0, 1fr))` (≤1100px: 2 columns) so columns are always equal, and `grid-auto-rows: 1fr` so all cards share one height. Card dates use the design-ref compact format **"11.01 — 11.05"** (`utils/event.ts` `eventCardDate`): one date when start = end ("11.01"); only when the years differ does the end date carry a 2-digit year ("12.20 — 26.01.10"). Applies to every card at every width. Detail pages keep the full dates. Card date and price stay on one line; the price shrinks first and ends in "…" (full price in the `title` attribute).
+
 Source files: `index.css` (CSS variables, RGB channels) → `index.html` `tailwind.config` (classes with opacity support). Legacy tokens stay in the config until every screen is migrated, then get removed.
 
 **v3 contrast (computed, WCAG formula):** ink on bone 16.65, ink-2 on bone 10.29, mute on bone 5.18, tangerine-deep on bone 5.33, white on tangerine-deep 5.95 ✅ · tangerine on bone **3.39**, white on tangerine **3.79** → large/bold type only (v3's own rule) · footer legal text raised from bone 45% (4.17 ❌) to **55% (5.67 ✅)** by decision (§12).
+
+### 2.0.1 State & accent layer — **Approved (2026-11-09)**
+
+Applied on Home (2026-11-09). Other screens adopt it when they are migrated. Tokens live in `index.css`.
+
+**Rule: no translucent brand colour.** Don't fade tangerine with alpha (e.g. `tangerine / 0.7`) to make a lighter or "hover" shade. Every state colour is its own **opaque** token. `accent-tint` is a solid hex mixed in advance (tangerine 8% on bone), not `tangerine / 0.08`.
+
+#### State tokens
+
+| Token | Value | Use | Contrast (computed) |
+|---|---|---|---|
+| `--v3-accent` | tangerine `#e2542f` | Accent fill/colour — only the uses listed below | ink on it 4.91 ✅ |
+| `--v3-accent-hover` | tangerine 100% `#e2542f` | Hover of accent-bearing controls (primary CTA, category cell) | ink on it 4.91 ✅ |
+| `--v3-accent-press` | tangerine-deep `#b13c1b` | Hover/press step on something that is already an accent fill (C5) | — |
+| `--v3-accent-tint` | `#f4e5db` (= bone + 8% tangerine, opaque) | Event card hover background; ring around the map highlight pin | ink 15.12 · ink-2 9.34 · mute 4.70 · accent-text 4.84 · tangerine text 3.08 ❌ (don't) |
+| `--v3-accent-ink` | **ink** `#14130f` | Text and icons on accent fills, **any size** (C1) | 4.91 ✅ |
+| `--v3-accent-text` | tangerine-deep `#b13c1b` | **Small text on bone only** (free price, breadcrumb, detail category) (C3) | on bone 5.33 ✅ |
+| focus ring | 2px solid `currentColor`, offset 2px (`.v3-focus`, `.v3-btn`) → ink on light surfaces, bone on dark (hero banner, After Dark, footer) | Keyboard focus on every interactive element | ink on bone 16.65 |
+| line-hover | line-strong (ink 34%) | Hover border of neutral controls (Day Pill) | (existing token) |
+
+#### Where tangerine may be used (exhaustive)
+
+| # | Use | Form |
+|---|---|---|
+| 1 | CTA buttons | primary: ink fill → hover `accent-hover` fill + ink text |
+| 2 | Active nav underline | `inset 0 -2px 0 tangerine` |
+| 3 | Category cell hover | accent 100% fill + ink text, ↗ shown |
+| 4 | Category chip (분류 칩) | accent fill + ink text (Hero category line) |
+| 5 | Section title emphasis | `em` in `.v3-section-title` / `.v3-sub-title`, and the Hero serif "*in*" |
+| 6 | Favourite active (찜 활성) | heart button / 찜됨 button: accent fill + ink icon/text |
+| 7 | Signature block (대표 블록) | Map Promo left panel (ink text) |
+| 8 | Brand mark | footer wordmark dot "놀 서울**.**" |
+| 9 | Map highlight pin (지도 강조 핀) | accent dot + opaque `accent-tint` ring (replaces the 18% translucent halo) |
+
+**Nothing else uses tangerine.** `accent-text` (tangerine-deep) is a separate token for small text on bone and isn't counted in this list.
+
+#### Component states
+
+| Component | Default | Hover | Active / selected | Focus (keyboard) |
+|---|---|---|---|---|
+| **Button — primary** | ink fill, bone text | `accent-hover` fill, **ink** text | — | focus ring |
+| **Button — secondary** | transparent, 1px ink border, ink text | ink fill, bone text | — | focus ring |
+| **Button — toggle (찜)** | secondary look, "찜하기" | as secondary | `aria-pressed=true`: accent fill, ink text, "찜됨" | focus ring |
+| **Event card** | bone background, line borders | `accent-tint` background | heart active: accent fill, ink icon | 2px ink outline inset (`:focus-within`) |
+| **Category cell** | bone background, ink text, ↗ hidden | accent 100% fill, ink text (num, label, desc), ↗ shown | — | same as hover + focus ring |
+| **Day Pill** | transparent, 1px line border | line-hover border | `aria-pressed=true`: ink fill, bone text (no tangerine) | focus ring |
+| **Category chip (분류 칩)** | accent fill, ink text, mono 11px uppercase, padding 4px 8px, radius 2px, no text-shadow | — (not interactive on its own) | — | parent link has the focus ring |
+| **Hero category line** | uses the category chip | — | — | — |
+
+#### Decisions (2026-11-09)
+
+- **C1:** text on tangerine is always ink (`accent-ink`, 4.91), whatever the size. Applies to primary button hover, category cell hover, category chip, favourite active.
+- **C2:** keep the Hero "*in*", Map Promo panel, footer dot and map highlight pin, and add them to the use list (5, 7, 8, 9). The pin's translucent halo becomes an opaque `accent-tint` ring.
+- **C3:** tangerine-deep becomes the separate token `accent-text`, for small text on bone only.
+- **C4:** `accent-tint` is a pre-mixed opaque hex (`#f4e5db`); no tangerine text on it.
+- **C5:** `accent-hover` equals `accent`. On something that is already an accent fill, use `accent-press` for a hover step.
 
 ### 2.1 Where styles come from today
 
@@ -183,7 +249,7 @@ All routes are hash routes (`HashRouter`).
 | **Site shell** (**v3 applied** on `redesign-v3`) | `App.tsx` | Header: N-glyph logo, nav ×4 (active = tangerine underline + `aria-current`), search pill (`button`, ≥1024px) / search icon (<1024px), bell, heart, avatar link. Footer: giant "놀 서울." wordmark, newsletter, 서비스, 지원, legal row | — | — | — | Bell & heart have no handler; 9 footer links are `href="#"`; newsletter input/button do nothing. (Avatar is now a sand circle, no external image.) |
 | **Home** — **v3 applied 2026-11-09** (below is the pre-v3 inventory). v3 sections: Hero (event) → CategoryStrip (event counts + space) → Events grid with 오늘/이번주/이번달/무료 (event) → MapPromo (space types + real space positions) → Curation intro → After Dark (night) → Curators (constants). Has loading/error/empty states. Code: `pages/Home.tsx`, `components/home/*`, `constants/home.ts`. | `/` · `pages/Home.tsx` | Custom fade hero slider (3 slides, 5s autoplay, hover pause, arrows, dots, counter); quick-nav cards ×3 (문화행사, 문화공간, 야경명소); "지금 서울에서 열리는 행사" with 오늘/이번주 segmented control + Swiper event cards; navy promo map card | Spinner (`w-10`) | **None** | **None** (empty Swiper) | Promo map image is `picsum.photos`. (Note: the hero is hand-built, not Swiper; Swiper is used only for the event row.) |
 | **EventList** | `/events` · `pages/EventList.tsx` | Title; `DropdownFilter` ×3 (자치구, 장르, 유료/무료) + reset; result count; 1→2 col card grid; pagination (12/page, ellipsis); fixed "지도 보기" FAB | Spinner (`w-12`) + text | Icon + text | `search_off` + text | — |
-| **EventDetail** | `/event/:id` · `pages/EventDetail.tsx` | Breadcrumbs; hero image with scrim, badges, title; single "상세정보" tab; 행사 소개; 오시는 길 info box; sticky sidebar (InfoRow list: 일정, 비용, 대상, 장소, 출연진) + "홈페이지 가기" + favorite CTA; 비슷한 테마의 행사 (4) | Spinner + text | Combined error/not-found + back link | — | Single-tab bar (no other tabs). |
+| **EventDetail** — **v3 applied 2026-11-09** (below is the pre-v3 inventory). v3: breadcrumb + status (D-day/진행 중/종료); hero poster + spec grid (기간/장소/관람료/관람시간/대상/문의); actions (홈페이지 = ORG_LINK, 찜, 서울문화포털 = HMPG_ADDR); 행사 정보 (API fields only); 행사 소개 (PROGRAM/ETC_DESC; an image URL renders as an image; empty state otherwise); Kakao map via the existing `useKakaoLoader` (placeholder when no coords or SDK error); 다음으로 가볼 곳 (same CODENAME/GUNAME, live first, 4). Prototype items with no API source are **not rendered**: EDITOR'S PICK, curator note, like count, share, nearby walk times, reviews, rating. | `/event/:id` · `pages/EventDetail.tsx` | Breadcrumbs; hero image with scrim, badges, title; single "상세정보" tab; 행사 소개; 오시는 길 info box; sticky sidebar (InfoRow list: 일정, 비용, 대상, 장소, 출연진) + "홈페이지 가기" + favorite CTA; 비슷한 테마의 행사 (4) | Spinner + text | Combined error/not-found + back link | — | Single-tab bar (no other tabs). |
 | **SpaceDetail** | `/space/:id` · `pages/SpaceDetail.tsx` | Same layout as EventDetail: breadcrumbs, hero (or icon fallback), single tab, 공간 소개, 교통 안내, 오시는 길, sidebar (주소, 전화, 팩스, 휴관일, 입장료, 분류) + CTAs, 비슷한 문화공간 (4) | Spinner + text | Combined error/not-found + back link | — | Single-tab bar. Reachable only from map panel and similar-space links. |
 | **MapDiscovery** | `/map` · `pages/MapDiscovery.tsx` | Kakao map; category chips ×4; zoom/location controls; selection panel (generic or `NightSpotDetailCard`); bottom sheet: collapsed Swiper cards ↔ expanded grid list with sub-category chips; night mode (CSS `invert` filter + indigo overlay) when 야경명소 is selected | Full overlay spinner | **Map SDK error only** (with setup instructions + reload) | — | — |
 | **MyPage** | `/mypage` · `pages/MyPage.tsx` | Profile card (avatar, name, level badge, email, 2 buttons) + 3 stat cards that act as tabs; side menu (공지사항, 1:1 문의, 환경설정, 로그아웃) + VIP promo; underline tab bar (same 3 tabs); favorites grid + dashed "add" card | — | — | Per-tab icon + text + CTA | Profile name/email/level hardcoded; avatar is `picsum.photos`; 프로필 수정, 공유하기, camera, menu items, 로그아웃, 멤버십 가입 have no handlers. |
@@ -350,7 +416,7 @@ BUG-02, BUG-03 and BUG-06 are recorded as expected-to-fail Playwright tests (BUG
 |---|---|---|---|---|
 | BUG-01 — **RESOLVED 2026-11-09** (v3 Home uses `events.indexOf`; regression tests in `e2e/home.spec.ts`). Favorites saved by the old Home may still hold wrong IDs; clean them up with BUG-08. | ~~High~~ | `pages/Home.tsx` (pre-v3: lines 272-307) | Home cards use the index **within the filtered `recentEvents` list** for both the link (`/event/${idx}`) and the favorite ID. Clicking the n-th card opens `events[n]` (a different event), and the heart toggles the favorite for a different event (e.g. EventList's first card). | Resolve with the stable-ID migration (BUG-08). Existing `nolseoul-favorites` may already contain wrong IDs from Home — migration must match by stored `title`/`date`, not by ID. |
 | BUG-02 | **High** | `hooks/useEvents.ts:4-8`, `useCulturalSpaces.ts:4-8`, `useNightViewSpots.ts:4-8`; `api/seoulapi.ts` | Fetchers never check `res.ok`. When the proxy returns a JSON error (500/400), the hook resolves to `[]`, so screens show **empty** ("조건에 맞는 행사가 없습니다") instead of **error**. `isError` only fires on network/JSON-parse failure. | Throw on non-OK responses so TanStack Query reports errors; then verify each screen's error UI. Validate with both Vite proxy and Vercel function. |
-| BUG-03 | Medium | `EventList.tsx:222` vs `Home.tsx:93-95`, `EventDetail.tsx:33` | "Free" is computed differently: EventList checks `IS_FREE === '무료'` only; Home/EventDetail also accept `USE_FEE` containing '무료'. The same event can be labelled 유료 in the list and 무료 elsewhere; the fee filter follows the stricter rule. | Decide one rule, extract to a shared util, keep filter and badge in sync. |
+| BUG-03 — options analysed 2026-11-09 (see "BUG-03 options" below §7.1) | Medium | `EventList.tsx:222` vs `Home.tsx:93-95`, `EventDetail.tsx:33` | "Free" is computed differently: EventList checks `IS_FREE === '무료'` only; Home/EventDetail also accept `USE_FEE` containing '무료'. The same event can be labelled 유료 in the list and 무료 elsewhere; the fee filter follows the stricter rule. | Decide one rule, extract to a shared util, keep filter and badge in sync. |
 | BUG-04 — **Partially resolved 2026-11-09** | Medium | `components/home/HomeEvents.tsx` | v3 Home events section has loading, error (network failure) and empty states. Still open: API JSON errors show as empty because of BUG-02, and hero/strip/map promo/After Dark only show "—" or loading text. | Finish with a shared `StatusView` after BUG-02. |
 | BUG-05 | Medium | `MapDiscovery.tsx:40-45` | Map ignores data-fetch errors from all three hooks; only the Kakao SDK error is shown. Failures result in a map with no markers and no message. | Surface per-dataset error (non-blocking banner). |
 | BUG-06 | Medium | `SearchOverlay.tsx:164-174, 188-198` | 문화공간 and 야경명소 result rows are styled as clickable (`cursor-pointer`, hover) but have no action. `/space/:id` exists and could be linked. | Link spaces to `/space/:id`; decide spot behavior (e.g. open on map), or remove clickable styling. |
@@ -359,6 +425,17 @@ BUG-02, BUG-03 and BUG-06 are recorded as expected-to-fail Playwright tests (BUG
 | BUG-09 | Low | `MapDiscovery.tsx:483-487` | Expanded bottom-sheet count shows the total dataset size, not the sub-filtered count. | Use `filteredItems.length`. |
 | BUG-10 | Low | `EventDetail.tsx:150` vs `EventList.tsx:279`, `Home.tsx:303` | Favorites store `date` inconsistently (`dateRange` vs raw `DATE`); map stores space `category` as '문화공간' while SpaceDetail stores `SUBJCODE`. MyPage shows whichever was saved last. | Normalize in the favorite-migration ticket. |
 | BUG-11 | Low (needs browser check) | `MapDiscovery.tsx:376`, `NightSpotCard.tsx:71` | Selection panel is fixed `w-[360px]` at `left-6` (384px total). On viewports narrower than ~384px (e.g. 375px phones) it may overflow. | Verify at 375/390px; make it responsive. |
+
+#### BUG-03 options (live data, 1,000 events, 2026-11-09) — decision pending
+
+`IS_FREE`: 무료 700 / 유료 300. `USE_FEE`: empty in 520 rows (all `IS_FREE=무료`). Prices come as "10,000원" or as Korean units ("1만원", "전석3만원"). Ambiguous texts include "티켓별 상이", "프로그램별 상이", "무료(일부 프로그램 유료)", "참가비: 30,000원 / 관람 1-2일차: 무료". There are 9 rows with `IS_FREE=무료` but a plain price ("전석 50,000원"), and deposits are mentioned in fee text ("예약금 10,000원 … 환불").
+
+| Rule | 무료 / 유료 / 기타 | Notes |
+|---|---|---|
+| A. `IS_FREE` only (EventList today) | 700 / 300 | Simple, matches the source flag; trusts 9 contradictory rows as free. |
+| B. `IS_FREE` or "무료" in `USE_FEE` (Home/Detail today) | 706 / 294 | Turns 6 mixed paid events into "free" — misleading. |
+| C. Owner default, literal: mixed → "일부 무료"; positive amount → 유료; else `IS_FREE` | 677 / 291 / 일부 무료 32 | Fixes contradictions, but misreads deposits as paid/mixed and treats "티켓별 상이" (all paid) as partly free. |
+| D. Owner default, refined: `IS_FREE` first; "일부 무료" only when the text says free *and* paid (or "일부"); deposits ignored; `IS_FREE=무료` + plain price → "확인 필요" (show the fee text, no badge) | 678 / 282 / 일부 무료 31 / 확인 필요 9 | Most accurate. Needs a tested parser and a 3–4-state badge/filter design. "상이" alone should read "가격 상이", not "일부 무료". |
 
 ### 7.2 Accessibility issues
 
@@ -390,6 +467,8 @@ Baseline: **0** `aria-*`/`role` attributes in UI code; designed focus style exis
 | TECH-06 | `hooks/useFavorites.ts:31` | Each `useFavorites()` call holds its own `useState`; instances don't sync with each other or across tabs (`storage` event). No visible bug today because screens use one instance. | Shared store/context when components are extracted. |
 | TECH-07 | `SpaceDetail.tsx:95` | `dangerouslySetInnerHTML` with regex tag-stripping of API HTML. | Prefer plain-text rendering or a sanitizer. |
 | TECH-08 | 15 places | `picsum.photos` random images used as fallbacks and for the avatar/promo image — random unrelated photos can appear as event images. | Design a proper missing-image state. |
+| TECH-10 | `api/seoulapi.ts`, `vite.config.ts` | **Only rows 1–1000 are fetched.** Live data on 2026-11-09: `list_total_count` = 19,735, and **770 of the 1,000 fetched events had already ended**. Many current events are never seen; lists and Home tabs show stale data. | Paging/date filtering on the proxy. API-contract change, needs its own ticket. |
+| TECH-11 | `types.ts` | Live rows include fields not in the `Event` type: `INQUIRY` (문의), `PRO_TIME` (운영시간), `TICKET`, `RGSTDATE` (typed loosely through the index signature). LAT = latitude (37.x), LOT = longitude (126–127.x), not swapped. | Add them to `Event` when types are next touched. |
 | TECH-09 | `dist/` | Local `dist/` is stale vs `index.html` (gitignored; no deploy impact). | Informational. |
 
 ---
@@ -480,6 +559,9 @@ Target option: React Native + Expo **after** shared design semantics and domain/
 **Maintenance:** Update this file when a design decision is approved. Keep the `Current` / `Unused` / `Proposed` / `Implemented` labels accurate and update usage counts when code changes. Link PRs, Figma frames and visual QA evidence when available. Close backlog items (§7) only with a linked PR.
 
 **Changelog**
+- v0.7 (2026-11-09, branch `redesign-v3`): Card thumbnails 3:4 cover (top); equal grid columns (`minmax(0,1fr)`, 2 columns ≤1100px); card date + price on one line with price ellipsis; compact card dates ("11.01 — 11.05"); category strip cells keep full padding, hover fill = cell box. Added §2.0.1 State & accent layer, **approved** with decisions C1–C5 and applied on Home: opaque state tokens (no translucent brand colour), 9 allowed tangerine uses, component state table, text on tangerine always ink. Poster rule: Hero banner exception (cover + bottom gradient + caption).
+- v0.6 (2026-11-09, branch `redesign-v3`): Added the `--v3-content-max` (1400px) token and the layout rule (one content width, full-bleed backgrounds). Home Header, Hero, category strip and Map Promo now align to it. Hero banner shows the poster uncropped with the caption beside/below it (no text over the image). Event cards use contain posters in a fixed 3:4 box with equal heights.
+- v0.5 (2026-11-09, branch `redesign-v3`): EventDetail migrated to v3 (event API only; no fake reviews/ratings/curator notes; Kakao map through the existing loader). Shared `components/v3/EventCard.tsx` and `utils/event.ts`. BUG-03 options documented with live-data counts. TECH-10 (1,000-row cap) and TECH-11 (untyped live fields) added.
 - v0.4 (2026-11-09, branch `redesign-v3`): Home migrated to v3 with the approved data mapping (event / space / night; curators from constants). BUG-01 fixed by decision; BUG-04 partially resolved. Footer legal contrast raised to 55%. Shared v3 primitives in `styles/v3.css`, Home styles in `components/home/home-v3.css`. Instrument Serif now loaded. New Home open questions in §12.
 - v0.3 (2026-11-09, branch `redesign-v3`): Redesign v3 approved as the visual source of truth (§2.0). v3 tokens added (`index.css` + Tailwind config); Header/Footer migrated to v3. In the header, icon buttons now have Korean accessible names, the search trigger is a real `button`, and controls have a `focus-visible` outline (partially addresses A11Y-02/03/08 for the header only). TECH-01 resolved. Brand-color decision closed; new v3 open questions added (§12).
 - v0.2 (2026-11-03): Corrected against code at `6279fb6`. Split tokens into Current/Unused; added non-theme color inventory, category color conflict, contrast table, typography weights/sizes, radius/shadow/z-index, layout; added screen inventory incl. EventDetail, SpaceDetail, Search and shell; added component variant inventory; fixed `surface.inverse` mapping; added improvement backlog (bugs, accessibility, technical risks).

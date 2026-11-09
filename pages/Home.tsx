@@ -47,14 +47,7 @@ const Home: React.FC = () => {
         stats={statsLoading ? null : { ongoing: ongoingCount, spaces: spaces.length, weekStarts }}
         now={now}
       />
-      <CategoryStrip
-        loading={eventsLoading || spacesLoading || spotsLoading}
-        ongoingEvents={ongoingCount}
-        topEventGenres={topGenres}
-        spaces={spaces.length}
-        topSpaceTypes={topSpaceTypes}
-        nightSpots={spots.length}
-      />
+      <CategoryStrip topEventGenres={topGenres} topSpaceTypes={topSpaceTypes} />
       <HomeEvents
         events={events}
         loading={eventsLoading}

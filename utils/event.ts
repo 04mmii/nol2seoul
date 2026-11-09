@@ -1,0 +1,92 @@
+/**
+ * Shared helpers for Seoul culturalEventInfo rows (used by v3 Home and EventDetail).
+ */
+import type { Event } from '../types';
+
+export const eventDay = (s?: string) => (s || '').slice(0, 10);
+
+/**
+ * Date keys as UTC ISO dates (YYYY-MM-DD) — same semantics as the pre-v3 pages, so results don't
+ * change. Note: between 00:00 and 09:00 KST, "today" is still the previous UTC day (DESIGN.md §12).
+ */
+export function dateKeys(now: Date = new Date()) {
+  const today = now.toISOString().slice(0, 10);
+  const weekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).toISOString().slice(0, 10);
+  return { today, weekLater, monthEnd };
+}
+
+/**
+ * Free rule used by Home and EventDetail (IS_FREE or USE_FEE text).
+ * EventList uses IS_FREE only — DESIGN.md BUG-03 (open, options documented).
+ */
+export const isFreeEvent = (e: Event) => e.IS_FREE === '무료' || !!e.USE_FEE?.includes('무료');
+
+/** Short price label for cards. */
+export const eventPrice = (e: Event) => (isFreeEvent(e) ? '무료' : e.USE_FEE?.trim() || '유료');
+
+export const eventVenue = (e: Event) => e.PLACE || e.GUNAME || '';
+
+/**
+ * Compact card date (design-ref format): "11.01 — 11.05"; a single day → "11.01";
+ * different years → the end date carries a 2-digit year: "12.20 — 26.01.10".
+ * Falls back to the raw DATE field when the dates can't be parsed. Detail pages keep full dates.
+ */
+export function eventCardDate(e: Event): string {
+  const [rawStart, rawEnd] = (e.DATE || '').split('~').map((s) => s.trim());
+  const parse = (s?: string) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || '');
+    return m ? { y: m[1], md: `${m[2]}.${m[3]}` } : null;
+  };
+  const start = parse(e.STRTDATE) ?? parse(rawStart);
+  const end = parse(e.END_DATE) ?? parse(rawEnd) ?? start;
+  if (!start || !end) return e.DATE || '';
+  if (start.y === end.y && start.md === end.md) return start.md;
+  return start.y === end.y ? `${start.md} — ${end.md}` : `${start.md} — ${end.y.slice(2)}.${end.md}`;
+}
+
+/** "2026-11-01 ~ 2026-11-05", or the raw DATE field. */
+export const eventDateRange = (e: Event) =>
+  e.STRTDATE && e.END_DATE ? `${eventDay(e.STRTDATE)} ~ ${eventDay(e.END_DATE)}` : e.DATE || '';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const daysBetween = (fromIso: string, toIso: string) =>
+  Math.round((Date.parse(`${toIso}T00:00:00Z`) - Date.parse(`${fromIso}T00:00:00Z`)) / DAY_MS);
+
+export type EventStatus =
+  | { kind: 'upcoming'; daysToStart: number }
+  | { kind: 'ongoing'; daysToEnd: number }
+  | { kind: 'ended' }
+  | { kind: 'unknown' };
+
+export function eventStatus(e: Event, now: Date = new Date()): EventStatus {
+  const start = eventDay(e.STRTDATE);
+  const end = eventDay(e.END_DATE);
+  if (!start || !end) return { kind: 'unknown' };
+  const { today } = dateKeys(now);
+  if (end < today) return { kind: 'ended' };
+  if (start > today) return { kind: 'upcoming', daysToStart: daysBetween(today, start) };
+  return { kind: 'ongoing', daysToEnd: daysBetween(today, end) };
+}
+
+export function eventStatusLabel(s: EventStatus): string {
+  switch (s.kind) {
+    case 'upcoming':
+      return `D-${s.daysToStart} · 개막 예정`;
+    case 'ongoing':
+      return s.daysToEnd === 0 ? '진행 중 · 오늘 종료' : `진행 중 · 종료 D-${s.daysToEnd}`;
+    case 'ended':
+      return '종료된 행사';
+    default:
+      return '';
+  }
+}
+
+/** Event coordinates. In live data LAT is latitude (37.x) and LOT is longitude (126–127.x). */
+export function eventLatLng(e: Event): { lat: number; lng: number } | null {
+  const lat = parseFloat(e.LAT ?? '');
+  const lng = parseFloat(e.LOT ?? '');
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat === 0 || lng === 0) return null;
+  // Defensive: swap if a row ever arrives as lng/lat.
+  return lat > 90 ? { lat: lng, lng: lat } : { lat, lng };
+}

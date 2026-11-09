@@ -79,6 +79,17 @@ const namedEvents: EventRow[] = [
     IS_FREE: '유료',
     MAIN_IMG: img(0),
     PROGRAM: '[픽스처] 미래 전시 프로그램 소개',
+    // Fields seen in live data (2026-11-09) that the v3 detail page uses:
+    ETC_DESC: `https://${FIXTURE_IMAGE_HOST}/etc-desc-0.jpg`, // live ETC_DESC is sometimes just an image URL
+    ORG_LINK: 'https://tickets.example.test/goods/0',
+    HMPG_ADDR: 'https://culture.example.test/cultureEvent/view.do?cultcode=0',
+    PRO_TIME: '10:00~18:00',
+    INQUIRY: '02-000-0000',
+    PLAYER: '[픽스처] 작가 미상',
+    THEMECODE: '기타',
+    RGSTDATE: '2026-10-01',
+    LAT: '37.5759',
+    LOT: '126.9768',
   }),
   baseEvent({
     TITLE: EV.todayFreeClassic.title,

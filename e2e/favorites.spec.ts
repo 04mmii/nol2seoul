@@ -48,10 +48,14 @@ test.describe('Favorites (nolseoul-favorites)', () => {
   test('EventDetail favorite button toggles its label', async ({ page }) => {
     await page.goto(`/#/event/${EV.thisWeekPlay.index}`);
     await expect(detailHeading(page, EV.thisWeekPlay.title)).toBeVisible();
-    await page.getByRole('button', { name: /관심행사 등록$/ }).click();
-    await expect(page.getByRole('button', { name: /관심행사 등록됨$/ })).toBeVisible();
+    // v3 detail: "찜하기" ↔ "찜됨" with aria-pressed (was "관심행사 등록" / "관심행사 등록됨").
+    const hero = page.getByRole('region', { name: EV.thisWeekPlay.title });
+    await hero.getByRole('button', { name: '찜하기' }).click();
+    await expect(hero.getByRole('button', { name: '찜됨' })).toHaveAttribute('aria-pressed', 'true');
     const stored = await readStorage<StoredFavorite[]>(page, STORAGE.favorites);
     expect(stored?.map((f) => [f.id, f.type])).toEqual([[String(EV.thisWeekPlay.index), 'event']]);
+    // Stored date keeps the pre-v3 shape: "YYYY-MM-DD ~ YYYY-MM-DD" (BUG-10).
+    expect(stored?.[0].date).toBe('2026-11-06 ~ 2026-11-08');
   });
 
   test('MyPage lists saved events, links to detail, and removes them', async ({ page }) => {

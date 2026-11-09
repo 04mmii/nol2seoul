@@ -6,28 +6,12 @@
  *   After Dark                   → night  (viewNightSpot)
  */
 import type { Event, CulturalSpace, NightViewSpot } from '../../types';
+import { dateKeys, eventDay as day, isFreeEvent } from '../../utils/event';
+
+// Shared event helpers now live in utils/event.ts; re-exported for existing imports.
+export { dateKeys, isFreeEvent, eventPrice, eventVenue } from '../../utils/event';
 
 export type EventTab = 'today' | 'week' | 'month' | 'free';
-
-const day = (s?: string) => (s || '').slice(0, 10);
-
-/**
- * Date keys as UTC ISO dates (YYYY-MM-DD) — same semantics as the pre-v3 Home, so 오늘/이번주
- * results don't change. Note: between 00:00 and 09:00 KST, "today" is still the previous UTC day.
- */
-export function dateKeys(now: Date = new Date()) {
-  const today = now.toISOString().slice(0, 10);
-  const weekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).toISOString().slice(0, 10);
-  return { today, weekLater, monthEnd };
-}
-
-/** Home's free rule (IS_FREE or USE_FEE text). Differs from EventList — DESIGN.md BUG-03 (open). */
-export const isFreeEvent = (e: Event) => e.IS_FREE === '무료' || !!e.USE_FEE?.includes('무료');
-
-export const eventPrice = (e: Event) => (isFreeEvent(e) ? '무료' : e.USE_FEE?.trim() || '유료');
-
-export const eventVenue = (e: Event) => e.PLACE || e.GUNAME || '';
 
 export function filterEventsByTab(events: Event[], tab: EventTab, now: Date = new Date()): Event[] {
   const { today, weekLater, monthEnd } = dateKeys(now);

@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import type { Event } from '../../types';
 import type { FavoriteItem, FavoriteType } from '../../hooks';
 import { EVENT_TABS, HOME_EVENT_LIMIT } from '../../constants/home';
-import { eventPrice, eventVenue, filterEventsByTab, formatCount, isFreeEvent, type EventTab } from './selectors';
+import EventCard from '../v3/EventCard';
+import { eventVenue, filterEventsByTab, formatCount, type EventTab } from './selectors';
 
 interface Props {
   events: Event[];
@@ -91,52 +92,6 @@ const HomeEvents: React.FC<Props> = ({ events, loading, isError, now, isFavorite
         </div>
       </div>
     </section>
-  );
-};
-
-const EventCard: React.FC<{
-  event: Event;
-  id: number;
-  saved: boolean;
-  onToggleFavorite: () => void;
-}> = ({ event, id, saved, onToggleFavorite }) => {
-  const [broken, setBroken] = useState(false);
-  const showImage = !!event.MAIN_IMG && !broken;
-  const free = isFreeEvent(event);
-  const price = eventPrice(event);
-
-  return (
-    <article className="v3-event-card">
-      <div className="v3-event-card__thumb">
-        {showImage ? (
-          <img src={event.MAIN_IMG} alt="" loading="lazy" onError={() => setBroken(true)} />
-        ) : (
-          <span className="v3-event-card__ph" aria-hidden="true">
-            <span className="v3-event-card__ph-cap">NO IMAGE</span>
-          </span>
-        )}
-        <button
-          type="button"
-          className="v3-event-card__heart v3-focus"
-          aria-pressed={saved}
-          aria-label={`${event.TITLE} ${saved ? '찜 해제' : '찜하기'}`}
-          onClick={onToggleFavorite}
-        >
-          <span aria-hidden="true">{saved ? '♥' : '♡'}</span>
-        </button>
-      </div>
-      <div className="v3-event-card__body">
-        <div className="v3-event-card__cat">{event.CODENAME}</div>
-        <h3 className="v3-event-card__title">
-          <Link to={`/event/${id}`} className="v3-event-card__link">{event.TITLE}</Link>
-        </h3>
-        <div className="v3-event-card__venue">{eventVenue(event)}</div>
-        <div className="v3-event-card__foot">
-          <span>{event.DATE}</span>
-          <span className={`v3-event-card__price ${free ? 'is-free' : ''}`} title={price}>{price}</span>
-        </div>
-      </div>
-    </article>
   );
 };
 

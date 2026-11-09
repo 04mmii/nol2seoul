@@ -27,13 +27,28 @@
   --v3-night-2: 27 42 76;      /* #1b2a4c */
   --v3-ember: 232 183 129;     /* #e8b781  warm highlight on night/ink */
 
+  /* State & accent layer (DESIGN.md §2.0.1, approved 2026-11-09).
+   * Every state colour is opaque — never fade the brand colour with alpha. */
+  --v3-accent: var(--v3-tangerine);             /* the 9 approved tangerine uses only */
+  --v3-accent-hover: var(--v3-tangerine);       /* hover of accent-bearing controls */
+  --v3-accent-press: var(--v3-tangerine-deep);  /* hover/press step on an existing accent fill */
+  --v3-accent-tint: 244 229 219;                /* #f4e5db = bone + 8% tangerine, pre-mixed (opaque) */
+  --v3-accent-ink: var(--v3-ink);               /* text/icons on accent fills, any size (4.91) */
+  --v3-accent-text: var(--v3-tangerine-deep);   /* small text on bone only (5.33) */
+
   /* Legacy tokens kept by the v3 reference (not used in app code yet) */
   --v3-electric: 36 53 110;    /* #24356e */
   --v3-acid: 232 201 139;      /* #e8c98b */
 
-  /* Layout */
+  /* Layout
+   * --v3-content-max: the shared content width. Every section's text and images stay inside
+   *   this width (centred), while section backgrounds may run full-bleed. Reference = the Home
+   *   event list. Use it via `.v3-shell` (CSS) or `max-w-shell px-gutter` (Tailwind).
+   * --v3-maxw: content width + side gutters (the outer box of .v3-shell). Derived — don't edit.
+   */
+  --v3-content-max: 1400px;
   --v3-gutter: 40px;
-  --v3-maxw: 1480px;
+  --v3-maxw: calc(var(--v3-content-max) + 2 * var(--v3-gutter));
   --v3-sec-y: 104px;
 
   /* Type */

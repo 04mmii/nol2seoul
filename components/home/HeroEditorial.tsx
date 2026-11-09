@@ -36,6 +36,7 @@ const HeroEditorial: React.FC<Props> = ({ banners, stats, now }) => {
 
   return (
     <section className="v3-hero" aria-label="이번 주 문화행사">
+      <div className="v3-shell v3-hero__grid">
       <div className="v3-hero__left">
         <div>
           <div className="v3-hero__masthead">
@@ -70,6 +71,7 @@ const HeroEditorial: React.FC<Props> = ({ banners, stats, now }) => {
         onFocus={() => setPaused(true)}
         onBlur={() => setPaused(false)}
       >
+        {/* Poster fills the whole banner (object-fit: cover), as in the design-ref. */}
         {count === 0 ? (
           <div className="v3-hero__slide is-active" />
         ) : (
@@ -86,6 +88,7 @@ const HeroEditorial: React.FC<Props> = ({ banners, stats, now }) => {
           ))
         )}
 
+        {/* Caption overlaid at the bottom, on top of the readability gradient. */}
         {current && (
           <Link to={`/event/${current.id}`} className="v3-hero__cap v3-focus" aria-live="polite">
             <span className="v3-hero__cover-cat">FEATURED · {current.event.CODENAME}</span>
@@ -117,6 +120,7 @@ const HeroEditorial: React.FC<Props> = ({ banners, stats, now }) => {
             <button type="button" className="v3-hero__ctrl v3-focus" onClick={() => go(1)} aria-label="다음 배너">→</button>
           </div>
         )}
+      </div>
       </div>
     </section>
   );

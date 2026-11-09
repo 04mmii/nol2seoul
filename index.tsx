@@ -2,8 +2,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import App from './App';
+// Shared v3 CSS must load before App so screen-level CSS (imported by pages) overrides it.
 import './styles/v3.css';
+import App from './App';
 
 const queryClient = new QueryClient({
   defaultOptions: {

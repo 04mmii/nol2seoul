@@ -27,6 +27,7 @@ const MapPromo: React.FC<Props> = ({ spaces, loading }) => {
 
   return (
     <section className="v3-map-promo" aria-labelledby="home-map-title">
+      <div className="v3-shell v3-map-promo__grid">
       <div className="v3-map-promo__left">
         <div>
           <div className="v3-eyebrow"><span className="v3-eyebrow__dash" />02 — SPACES &amp; MAP</div>
@@ -57,6 +58,7 @@ const MapPromo: React.FC<Props> = ({ spaces, loading }) => {
           </div>
         ))}
         <span className="v3-map-promo__caption">SEOUL · {formatCount(spaces.length)} SPACES</span>
+      </div>
       </div>
     </section>
   );
