@@ -91,9 +91,17 @@ test.describe('EventDetail (v3)', () => {
     expect(stored?.map((f) => [f.id, f.title])).toEqual([[EV.todayFreeClassic.id, EV.todayFreeClassic.title]]);
   });
 
-  test('unknown id shows not-found with a link back to the list', async ({ page }) => {
-    await page.goto('/#/event/999999');
+  test('unknown (non-cultcode) id shows not-found with a link back to the list', async ({ page }) => {
+    await page.goto('/#/event/hdoesnotexist');
     await expect(page.getByText('행사 정보를 찾을 수 없습니다.')).toBeVisible();
+    await page.getByRole('link', { name: '목록으로 돌아가기' }).click();
+    await expect(page).toHaveURL(/#\/events$/);
+  });
+
+  test('a cultcode that is no longer in the data (ended, TECH-10) shows "종료된 행사" + list link', async ({ page }) => {
+    await page.goto('/#/event/900099');
+    await expect(page.getByText('종료된 행사입니다.')).toBeVisible();
+    await expect(page.getByText('진행 중이거나 예정된 행사만 볼 수 있어요.')).toBeVisible();
     await page.getByRole('link', { name: '목록으로 돌아가기' }).click();
     await expect(page).toHaveURL(/#\/events$/);
   });

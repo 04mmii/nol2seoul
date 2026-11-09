@@ -12,7 +12,7 @@ import {
   pickRelatedEvents,
 } from '../components/detail/selectors';
 import { eventDateRange, eventLatLng, eventStatus, eventStatusLabel, eventVenue } from '../utils/event';
-import { cultcodeOf, eventId, findEventById, isLegacyIndexId } from '../utils/eventId';
+import { cultcodeOf, eventId, findEventById, isCultcodeId, isLegacyIndexId } from '../utils/eventId';
 import '../components/detail/detail-v3.css';
 
 /**
@@ -43,10 +43,20 @@ const EventDetail: React.FC = () => {
   }
 
   if (isError || !event) {
+    // TECH-10: the proxy only returns events that haven't ended, so a well-formed cultcode that isn't
+    // in the data is almost always an ended event (or, rarely, one beyond the first 4,000 rows).
+    const message = isError
+      ? '행사 정보를 찾을 수 없습니다.'
+      : legacyLink
+        ? '오래된 링크라 행사를 찾을 수 없습니다.'
+        : id && isCultcodeId(id)
+          ? '종료된 행사입니다.'
+          : '행사 정보를 찾을 수 없습니다.';
     return (
       <div className="v3-detail">
         <div className="v3-shell v3-detail-status" role="alert">
-          <p>{legacyLink ? '오래된 링크라 행사를 찾을 수 없습니다.' : '행사 정보를 찾을 수 없습니다.'}</p>
+          <p>{message}</p>
+          {message === '종료된 행사입니다.' && <p className="v3-detail-status__sub">진행 중이거나 예정된 행사만 볼 수 있어요.</p>}
           <Link to="/events" className="v3-btn">목록으로 돌아가기</Link>
         </div>
       </div>

@@ -40,6 +40,7 @@ Playwright starts its own Vite dev server on `http://127.0.0.1:4310` (it does no
 | `favorites.spec.ts` | `nolseoul-favorites` toggle from EventList and EventDetail; stored shape (`id` = array index, `type`, `title`, `location`, `category`, `date`, `savedAt`); persistence across reload; MyPage list, link, remove + empty state; pre-existing data from the current format still renders; corrupted JSON falls back to empty. |
 | `fee.spec.ts` | BUG-03 regression (option D): EventList shows the four fee badges (무료/유료/일부 무료/가격 상이) and none for 확인 필요; Home, EventList and EventDetail agree on the same event. |
 | `favorites-migration.spec.ts` | BUG-08: old index-ID favorites (seeded before boot) are re-matched by image → title+start date → title+location; backup kept; duplicates dropped; unmatched kept as orphans (MyPage note, no link, removable); runs once; no migration while the event API fails; old `/event/12` links show the outdated-link message. |
+| `api-proxy.spec.ts` | TECH-10: shared proxy logic (`api/_lib/seoulApi.ts`) with a fake `fetch` — 4 page ranges, merge, dedupe, KST "today" cut-off, INFO-200 pages, partial/first-page failures and cache headers, key scrubbing, space passthrough, input checks; plus one request to the dev server to prove the middleware is wired. No browser, no real API. |
 | `known-issues.spec.ts` | Expected-to-fail tests for open bugs (below). |
 
 Not covered yet: MapDiscovery (needs a Kakao SDK strategy), SpaceDetail, mobile viewports, visual screenshots, accessibility audit, Vercel function behavior.

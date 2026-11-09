@@ -33,6 +33,9 @@ export function eventId(e: Pick<Event, 'HMPG_ADDR' | 'TITLE' | 'STRTDATE' | 'PLA
   return `h${fnv1a(`${(e.TITLE || '').trim()}|${(e.STRTDATE || '').slice(0, 10)}|${(e.PLACE || '').trim()}`)}`;
 }
 
+/** Cultcode-style ID (6+ digits). */
+export const isCultcodeId = (id: string) => /^\d{6,}$/.test(id);
+
 /** Old index-style IDs ("0"…"99999"): links/favorites from before BUG-08. */
 export const isLegacyIndexId = (id: string) => /^\d{1,5}$/.test(id);
 

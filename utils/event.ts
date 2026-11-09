@@ -6,7 +6,7 @@ import { feeLabel, isFree } from './fee';
 
 export const eventDay = (s?: string) => (s || '').slice(0, 10);
 
-/** Today's date in Korea (UTC+9, no DST) as YYYY-MM-DD. */
+/** Today's date in Korea (UTC+9, no DST) as YYYY-MM-DD. (Same formula as api/_lib/seoulApi.ts `kstToday`.) */
 export const kstToday = (now: Date = new Date()) => new Date(now.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 /**

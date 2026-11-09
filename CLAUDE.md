@@ -33,10 +33,10 @@ Evolve the existing NOLSEOUL React website into a documented, reusable design sy
 - `pages/`: `Home.tsx`, `EventList.tsx` (contains local `DropdownFilter`), `EventDetail.tsx`, `SpaceDetail.tsx`, `MapDiscovery.tsx`, `MyPage.tsx`.
 - `components/`: `SearchOverlay.tsx`; `NightSpotCard.tsx` exports **two** components, `NightSpotSlideCard` and `NightSpotDetailCard`. No other shared UI components exist.
 - `hooks/`: `useEvents`, `useCulturalSpaces`, `useNightViewSpots` (all via `useReactQuery`), `useFavorites`, `useKakaoLoader`, re-exported from `hooks/index.ts`. Data fetchers do **not** check `res.ok` (see BUG-02). `useFavorites` keeps per-instance `useState` (no cross-instance/tab sync).
-- `api/seoulapi.ts`: Vercel serverless proxy for Seoul data: `event`, `space`, `night` (fetches rows 1–1000; returns JSON `{ error }` with 4xx/5xx on failure).
+- `api/seoulapi.ts`: Vercel serverless proxy for Seoul data: `event`, `space`, `night`. Logic lives in `api/_lib/seoulApi.ts` (shared with the Vite dev server): `event` = rows 1–4,000 in 4 parallel calls, deduped, events ended before today (KST) dropped, 1h CDN cache (TECH-10); `space`/`night` = rows 1–1,000 as before. Returns JSON `{ error }` with 4xx/5xx on failure. Tests: `e2e/api-proxy.spec.ts`.
 - `types.ts`: domain models (`Event`, `CulturalSpace`, `NightViewSpot`, unused `EventItem`/`UserProfile`) and browser Kakao map interfaces. `Event` has no unique ID field.
 - `index.tsx`: TanStack Query defaults: stale 5 minutes, GC 30 minutes, retry once, no refetch on window focus.
-- `vite.config.ts`: dev server port 3000, local `/api/seoulapi` proxy to Seoul Open API, `@` alias, and a leftover `define` for `GEMINI_API_KEY` (TECH-03).
+- `vite.config.ts`: dev server port 3000, `/api/seoulapi` served by a dev/preview middleware that calls the same `api/_lib/seoulApi.ts`, `@` alias, and a leftover `define` for `GEMINI_API_KEY` (TECH-03).
 - `package.json`: scripts `dev`, `build`, `preview`, plus (Stage 0.5) `typecheck` (`tsc --noEmit`), `test:e2e`, `test:e2e:smoke` (excludes `@known-issue`), `test:e2e:report`. No lint script, no unit tests.
 - `e2e/` + `playwright.config.ts`: Playwright smoke tests (Chromium desktop only) with synthetic Seoul API fixtures and a fixed clock; see `e2e/README.md`. `@known-issue` tests are `test.fail()` records of open bugs. Tests still need internet for Tailwind CDN and Google Fonts.
 - Checks at `6279fb6`: `npx tsc --noEmit` passes with 0 errors; `vite build` succeeds with the `/index.css` warning. No automated tests exist. Browser behavior was not verified.
@@ -141,7 +141,7 @@ npm run build
 npx tsc --noEmit
 ```
 
-The Vite dev-server proxy and deployed Vercel function differ; validate both when API behavior is in scope. Never commit `.env.local` or credentials.
+The Vite dev server and the Vercel function now share `api/_lib/seoulApi.ts`, but the Vercel runtime (ESM import with `.js` extension, env vars, CDN cache) still needs checking on a deploy when API behavior is in scope. Never commit `.env.local` or credentials.
 
 ## Change-request template
 
