@@ -27,10 +27,56 @@ test.describe('Map (v3) — Kakao SDK unavailable', () => {
   });
 });
 
-test.describe('Map (v3) — with the Kakao SDK stub', () => {
+const clusters = (page: import('@playwright/test').Page) => page.locator('[data-kakao-stub="cluster"]');
+const level = (page: import('@playwright/test').Page) => page.locator('[data-level]');
+const pinWidth = async (page: import('@playwright/test').Page, title: string) => Number(await pin(page, title).getAttribute('width'));
+
+test.describe('Map (v3) — clustering and pin size by zoom (Kakao SDK stub)', () => {
   test.beforeEach(async ({ page }) => {
     await useKakaoStub(page);
     await page.goto('/#/map');
+    await expect(level(page)).toHaveAttribute('data-level', '8');
+  });
+
+  test('zoomed out (level 8): nearby pins are grouped into an ink cluster with a Mono count', async ({ page }) => {
+    await expect(clusters(page).first()).toBeVisible();
+    const c = clusters(page).first();
+    await expect(c).toHaveText(/^\d+$/);
+    await expect(c).toHaveCSS('background-color', 'rgb(20, 19, 15)'); // ink
+    await expect(c).toHaveCSS('color', 'rgb(246, 242, 234)'); // bone
+    await expect(c).toHaveCSS('width', '24px'); // < 10 pins → 24px
+    expect(await c.evaluate((el) => getComputedStyle(el).fontFamily)).toContain('JetBrains Mono');
+  });
+
+  test('zooming in splits clusters (level < 6) and pins grow 6px → 9px', async ({ page }) => {
+    const before = await pins(page).evaluateAll((els) => els.map((e) => (e as HTMLImageElement).width));
+    for (const w of before) expect(w).toBe(8); // 6px circle + 2px canvas margin
+    for (let i = 0; i < 3; i++) await page.getByRole('button', { name: '확대' }).click();
+    await expect(level(page)).toHaveAttribute('data-level', '5');
+    await expect(clusters(page)).toHaveCount(0);
+    await expect(pins(page)).toHaveCount(3);
+    expect(await pinWidth(page, SPOTS[0].TITLE)).toBe(11); // 9px circle
+  });
+
+  test('clicking a cluster zooms in', async ({ page }) => {
+    await clusters(page).first().click();
+    await expect(level(page)).toHaveAttribute('data-level', '7');
+  });
+
+  test('the selected pin is never inside a cluster and is always 13px', async ({ page }) => {
+    await listItem(page, SPOTS[0].TITLE).click();
+    await expect(pin(page, SPOTS[0].TITLE)).toBeVisible();
+    expect(await pinWidth(page, SPOTS[0].TITLE)).toBe(15); // 13px circle
+    expect(decodeURIComponent((await pin(page, SPOTS[0].TITLE).getAttribute('src')) ?? '')).toContain('fill="#e2542f"');
+  });
+});
+
+test.describe('Map (v3) — with the Kakao SDK stub (zoomed in, no clusters)', () => {
+  test.beforeEach(async ({ page }) => {
+    await useKakaoStub(page);
+    await page.goto('/#/map');
+    await expect(level(page)).toHaveAttribute('data-level', '8');
+    for (let i = 0; i < 3; i++) await page.getByRole('button', { name: '확대' }).click();
     await expect(pins(page)).toHaveCount(3);
   });
 
@@ -55,7 +101,7 @@ test.describe('Map (v3) — with the Kakao SDK stub', () => {
     await expect(card(page)).toContainText('[픽스처] 야경 설명 입니다'); // CONTENTS HTML → plain text
     await expect(card(page)).not.toContainText('<p');
     await expect(card(page).getByRole('link', { name: '상세 보기 →' })).toHaveCount(0); // night spots have no detail page
-    await expect(page.locator('[data-level]')).toHaveAttribute('data-center', `${Number(SPOTS[0].LA).toFixed(4)},${Number(SPOTS[0].LO).toFixed(4)}`);
+    await expect(level(page)).toHaveAttribute('data-center', `${Number(SPOTS[0].LA).toFixed(4)},${Number(SPOTS[0].LO).toFixed(4)}`);
     // Selecting another place restores the previous pin style.
     await listItem(page, SPACES[0].FAC_NAME).click();
     expect(decodeURIComponent((await pin(page, SPOTS[0].TITLE).getAttribute('src')) ?? '')).toContain('fill="#111d38"');
@@ -96,13 +142,12 @@ test.describe('Map (v3) — with the Kakao SDK stub', () => {
   });
 
   test('zoom buttons change the map level', async ({ page }) => {
-    const level = page.locator('[data-level]');
-    await expect(level).toHaveAttribute('data-level', '8');
+    await expect(level(page)).toHaveAttribute('data-level', '5');
     await page.getByRole('button', { name: '확대' }).click();
-    await expect(level).toHaveAttribute('data-level', '7');
+    await expect(level(page)).toHaveAttribute('data-level', '4');
     await page.getByRole('button', { name: '축소' }).click();
     await page.getByRole('button', { name: '축소' }).click();
-    await expect(level).toHaveAttribute('data-level', '9');
+    await expect(level(page)).toHaveAttribute('data-level', '6');
   });
 });
 
@@ -123,6 +168,12 @@ test.describe('Map (v3) — mobile bottom sheet (390px)', () => {
     await expect(card(page)).toBeVisible();
     // The map shifts so the selected pin sits above the card (pan by a quarter of the map height).
     await expect(page.locator('[data-level]')).toHaveAttribute('data-panby', /^0,\d+$/);
+    // Zooming keeps the selected pin in place (zoom anchored on it), so it doesn't drift off screen.
+    const before = await pin(page, SPOTS[0].TITLE).boundingBox();
+    await page.getByRole('button', { name: '확대' }).click();
+    await expect(page.locator('[data-level]')).toHaveAttribute('data-zoom-anchor', `${Number(SPOTS[0].LA).toFixed(4)},${Number(SPOTS[0].LO).toFixed(4)}`);
+    const after = await pin(page, SPOTS[0].TITLE).boundingBox();
+    expect(Math.abs(after!.y - before!.y)).toBeLessThan(2);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
   });
 });

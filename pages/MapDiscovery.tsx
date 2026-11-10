@@ -52,6 +52,7 @@ const MapDiscovery: React.FC = () => {
   const pick = (key: string) => { setSelectedKey(key); setSheetOpen(false); };
   const changeCategory = (c: MapCategory) => { setCategory(c); setSub(ALL); setLimit(LIST_PAGE); setSelectedKey(null); };
   const isNight = category === '야경명소';
+  const selectedAnchor = selected && selected.lat !== null && selected.lng !== null ? { lat: selected.lat, lng: selected.lng } : null;
   const counts = { event: built.byKind.event.filter((i) => i.lat !== null).length, space: built.byKind.space.filter((i) => i.lat !== null).length, night: built.byKind.night.filter((i) => i.lat !== null).length };
   const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '.');
 
@@ -147,8 +148,8 @@ const MapDiscovery: React.FC = () => {
         </p>
 
         <div className="v3-map__controls">
-          <button type="button" className="v3-map__ctrl v3-focus" onClick={zoomIn} aria-label="확대" disabled={!map}>+</button>
-          <button type="button" className="v3-map__ctrl v3-focus" onClick={zoomOut} aria-label="축소" disabled={!map}>−</button>
+          <button type="button" className="v3-map__ctrl v3-focus" onClick={() => zoomIn(selectedAnchor)} aria-label="확대" disabled={!map}>+</button>
+          <button type="button" className="v3-map__ctrl v3-focus" onClick={() => zoomOut(selectedAnchor)} aria-label="축소" disabled={!map}>−</button>
           <button type="button" className="v3-map__ctrl v3-map__ctrl--ink v3-focus" onClick={() => { setLocateError(false); locate(() => setLocateError(true)); }} aria-label="현재 위치" disabled={!map}>⌖</button>
         </div>
         {locateError && <p className="v3-map__toast" role="status">현재 위치를 가져올 수 없습니다.</p>}

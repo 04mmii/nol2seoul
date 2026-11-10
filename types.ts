@@ -106,6 +106,7 @@ declare global {
         MarkerClusterer: new (options: KakaoMarkerClustererOptions) => KakaoMarkerClusterer;
         event: {
           addListener: (target: unknown, type: string, handler: () => void) => void;
+          removeListener: (target: unknown, type: string, handler: () => void) => void;
         };
         services: {
           Geocoder: new () => KakaoGeocoder;
@@ -128,7 +129,8 @@ export interface KakaoMapOptions {
 
 export interface KakaoMap {
   setCenter: (latlng: KakaoLatLng) => void;
-  setLevel: (level: number) => void;
+  /** `anchor`: the point that stays fixed on screen while zooming (Kakao Maps v2 option). */
+  setLevel: (level: number, options?: { anchor?: KakaoLatLng; animate?: boolean }) => void;
   getLevel: () => number;
   getCenter: () => KakaoLatLng;
   panTo: (latlng: KakaoLatLng) => void;
@@ -194,15 +196,23 @@ export interface KakaoCustomOverlay {
 
 export interface KakaoMarkerClustererOptions {
   map: KakaoMap;
-  markers: KakaoMarker[];
+  markers?: KakaoMarker[];
   gridSize?: number;
   averageCenter?: boolean;
   minLevel?: number;
+  minClusterSize?: number;
+  disableClickZoom?: boolean;
+  /** Count thresholds choosing `styles[i]`. */
+  calculator?: number[];
+  styles?: Array<Record<string, string>>;
 }
 
 export interface KakaoMarkerClusterer {
+  addMarker: (marker: KakaoMarker) => void;
   addMarkers: (markers: KakaoMarker[]) => void;
+  removeMarker: (marker: KakaoMarker) => void;
   clear: () => void;
+  redraw: () => void;
 }
 
 export interface KakaoGeocoder {
