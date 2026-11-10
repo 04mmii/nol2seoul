@@ -116,3 +116,25 @@ test.describe('SearchOverlay', () => {
     await expect(overlay(page).getByRole('heading', { name: '최근 검색어' })).toHaveCount(0);
   });
 });
+
+test.describe('SearchOverlay focus (A11Y-04)', () => {
+  test('Tab stays inside the panel; Esc returns focus to the header search button', async ({ page }) => {
+    await page.goto('/#/');
+    const trigger = page.locator('header').getByRole('button', { name: /검색/ }).filter({ visible: true }).first();
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    const dialog = page.getByRole('dialog', { name: '검색' });
+    await expect(page.getByPlaceholder('행사, 장소, 키워드를 검색해보세요')).toBeFocused();
+    for (let i = 0; i < 15; i++) {
+      await page.keyboard.press('Tab');
+      expect(await dialog.evaluate((d) => d.contains(document.activeElement))).toBe(true);
+    }
+    for (let i = 0; i < 5; i++) {
+      await page.keyboard.press('Shift+Tab');
+      expect(await dialog.evaluate((d) => d.contains(document.activeElement))).toBe(true);
+    }
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+  });
+});

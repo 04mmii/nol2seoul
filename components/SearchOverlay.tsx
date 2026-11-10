@@ -18,6 +18,7 @@ import './search/search-v3.css';
  * New: Esc closes, shortcut chips (names; the night chip shows the night page's lit count), up to 4 per
  * group + total + "전체 보기" (just opens the page), matched text highlighted (accent-text), no-result
  * screen; space results open /space/<index>, night results /night?spot=<index> (BUG-06 fixed).
+ * Focus (A11Y-04, 2026-11-11): Tab stays inside the panel; closing returns focus to the opener.
  * Not included (scope): arrow-key navigation, mobile type tabs, passing the query to other pages.
  */
 const RECENT_KEY = 'nolseoul-recent';
@@ -46,8 +47,24 @@ const SearchOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     setTop(header ? Math.max(0, header.getBoundingClientRect().bottom) : 0);
     inputRef.current?.focus();
   }, []);
+  // A11Y-04: Esc closes; Tab / Shift+Tab stay inside the panel; on close, focus returns to what opened it
+  // (the header search button).
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Read during the first render, before the input takes focus.
+  const [opener] = useState(() => document.activeElement as HTMLElement | null);
+  useEffect(() => () => { if (opener && opener !== document.body && document.contains(opener)) opener.focus(); }, [opener]);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key !== 'Tab' || !panelRef.current) return;
+      const items = Array.from(panelRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])'))
+        .filter((el) => el.offsetParent !== null);
+      if (items.length === 0) return;
+      const first = items[0], last = items[items.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || !panelRef.current.contains(active))) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (active === last || !panelRef.current.contains(active))) { e.preventDefault(); first.focus(); }
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
@@ -81,7 +98,7 @@ const SearchOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   return (
     <div className="v3-search" role="dialog" aria-modal="true" aria-label="검색">
       <div className="v3-search__scrim" style={{ top }} onClick={onClose} aria-hidden="true" />
-      <div className="v3-search__panel" style={{ ['--search-top' as string]: `${top}px` }}>
+      <div ref={panelRef} className="v3-search__panel" style={{ ['--search-top' as string]: `${top}px` }}>
         <div className="v3-search__field">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3-3" /></svg>
           <input
