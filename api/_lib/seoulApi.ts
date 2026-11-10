@@ -38,7 +38,7 @@ export const FIELDS: Record<string, readonly string[]> = {
   ], // dropped: GNGU, OPENHOUR, ENTR_FEE, OPEN_DAY, SEAT_CNT, ETC_DESC, YELLOW, GREEN, BLUE, RED, AIRPORT
   viewNightSpot: [
     'NUM', 'SUBJECT_CD', 'TITLE', 'ADDR', 'LA', 'LO', 'URL', 'OPERATING_TIME', 'ENTR_FEE', 'SUBWAY', 'BUS',
-    'CONTENTS', // NightSpotCard description (BUG-12 fixed)
+    'CONTENTS', // map selected-card description (BUG-12 fixed)
   ], // dropped: TEL_NO, FREE_YN, PARKING_INFO, REG_DATE, MOD_DATE
 };
 

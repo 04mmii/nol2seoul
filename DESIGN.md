@@ -144,7 +144,7 @@ Applied on Home (2026-11-09). Other screens adopt it when they are migrated. Tok
 | Global CSS | Inline `<style>`: Material Symbols settings, `.fill` variant, `.no-scrollbar`, global `* { word-break: keep-all; overflow-wrap: break-word; }`. | `index.html:39-51` |
 | `/index.css` | ~~Referenced but missing~~ → **created on `redesign-v3`** as the v3 token file; build warning gone (TECH-01 resolved there). | `index.css` |
 | Import map | Leftover `esm.sh` import map for `react`, `react-dom`, `react-router-dom`. Vite bundles these packages, so the import map appears unused at runtime (not browser-verified). | `index.html:52-61` |
-| Bundled CSS | Only Swiper CSS (`swiper/css`, `swiper/css/free-mode`) is bundled by Vite. | `pages/Home.tsx`, `pages/MapDiscovery.tsx` |
+| Bundled CSS | v3 CSS files (`index.css`, `styles/v3.css`, `components/*/…-v3.css`) bundled by Vite. Swiper and its CSS were removed 2026-11-10 (TECH-13). | `index.tsx`, page components |
 | Map marker colors | Hardcoded hex constants in TS (Tailwind classes cannot be used inside SVG data URLs). | `pages/MapDiscovery.tsx:13-18` |
 
 ### 2.2 Theme color tokens (`tailwind.config`)
@@ -501,7 +501,7 @@ Baseline: **0** `aria-*`/`role` attributes in UI code; designed focus style exis
 | TECH-11 | `types.ts` | Live rows include fields not in the `Event` type: `INQUIRY` (문의), `PRO_TIME` (운영시간), `TICKET`, `RGSTDATE` (typed loosely through the index signature). LAT = latitude (37.x), LOT = longitude (126–127.x), not swapped. | Add them to `Event` when types are next touched. |
 | TECH-09 | `dist/` | Local `dist/` is stale vs `index.html` (gitignored; no deploy impact). | Informational. |
 | TECH-12 — **RESOLVED 2026-11-10** | `components/map/useKakaoMap.ts`, `components/map/pins.ts` | Pins are clustered while zoomed out: Kakao `MarkerClusterer` at level ≥ 6 (`minLevel`), grid 60px, ink circle + bone JetBrains Mono count, 24 / 32 / 40px for <10 / 10–49 / ≥50 pins; clicking a cluster zooms in; below level 6 every pin shows. The selected pin is taken out of the clusterer. Real map 2026-11-10 (1440): level 8 → 69 clusters (24px 22 / 32px 43 / 40px 4), level 6 → 57 clusters + 17 pins, level 4 → no clusters. | — |
-| TECH-13 (next, recorded 2026-11-10) | `components/NightSpotCard.tsx`, `package.json` (`swiper`), `index.html`/bundle (`swiper/css`) | Unused since the v3 map: `NightSpotCard.tsx` is imported nowhere, and Swiper (+ its CSS) has no remaining user. | Remove the file and the dependency in a cleanup ticket; check the bundle size before/after. |
+| TECH-13 — **RESOLVED 2026-11-10** | `components/NightSpotCard.tsx`, `package.json` | Removed the unused `NightSpotCard.tsx` and the `swiper` dependency (+ lockfile). Bundle unchanged by the removal itself (JS 357.14 kB / gzip 110.12 kB, CSS 44.25 kB) because nothing imported them since the v3 map; vs. the last build that still used Swiper (`1599caa`): JS 457.13 → 357.14 kB (gzip 138.73 → 110.12 kB) together with the map rewrite. `node_modules/swiper` (3.8 MB) gone. | — |
 | TECH-14 — **RESOLVED 2026-11-10** | Kakao Developers console (app "놀2서울") | The Kakao Maps SDK answered `403 NotAuthorizedError — App(놀2서울) disabled OPEN_MAP_AND_LOCAL service`. The owner enabled 카카오맵 for the app; the SDK now loads on `http://localhost:3000` (registered). Real-map check 2026-11-10: 1,477 pins (ink 327 / bone 1,099 / night 51), tiles from `mts.kakaocdn.net`; pin anchor within 0.5 px of the target; 야경명소 darkens tiles only. Deployed domain not re-checked here. | — |
 
 ---
@@ -592,6 +592,7 @@ Target option: React Native + Expo **after** shared design semantics and domain/
 **Maintenance:** Update this file when a design decision is approved. Keep the `Current` / `Unused` / `Proposed` / `Implemented` labels accurate and update usage counts when code changes. Link PRs, Figma frames and visual QA evidence when available. Close backlog items (§7) only with a linked PR.
 
 **Changelog**
+- v1.8 (2026-11-10, branch `redesign-v3`): TECH-13 — removed unused NightSpotCard.tsx and Swiper.
 - v1.7 (2026-11-10, branch `redesign-v3`): Map pins resized (6–9px by zoom, selected 13px, 1px border) and clustered while zoomed out (TECH-12); zoom buttons keep the selected pin in place.
 - v1.6 (2026-11-10, branch `redesign-v3`): Map page migrated to v3 (decisions: full width, pin palette + legend, sidebar search, Kakao directions link, mobile bottom sheet). Kakao SDK test double for e2e (`e2e/fixtures/kakao-stub.js`). Verified on the real Kakao map at localhost:3000 after the map service was enabled (TECH-14).
 - v1.5 (2026-11-09, branch `redesign-v3`): BUG-12 and BUG-13 fixed (night `CONTENTS`; space fields mapped to the live API: MAIN_IMG, FAC_DESC as text, ENTRFREE, SUBWAY/BUSSTOP, NUM).

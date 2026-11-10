@@ -23,7 +23,7 @@ Evolve the existing NOLSEOUL React website into a documented, reusable design sy
 
 ## Repository facts (verified at `6279fb6`)
 
-- React 19, TypeScript, Vite 6, React Router DOM 7 (`HashRouter` in `App.tsx`), TanStack Query 5, Swiper (Home event row, map bottom sheet). `gsap` is listed in `package.json` but **imported nowhere**.
+- React 19, TypeScript, Vite 6, React Router DOM 7 (`HashRouter` in `App.tsx`), TanStack Query 5. (Swiper was removed 2026-11-10, TECH-13.) `gsap` is listed in `package.json` but **imported nowhere**.
 - `index.html`:
   - loads Tailwind via **runtime CDN** with `forms`, `typography`, `container-queries` plugins, and an inline `tailwind.config` (colors, `fontFamily.sans`, `darkMode: 'class'`). There is no compiled Tailwind, `tailwind.config.js` or tokens package.
   - loads Google Fonts (Plus Jakarta Sans 400–800, Noto Sans KR 300–900) and Material Symbols Outlined; inline global CSS (`.material-symbols-outlined`, `.fill`, `.no-scrollbar`, global `word-break: keep-all`).
@@ -131,7 +131,7 @@ Token inventory and component states (formerly step 2 of the first ticket) are n
 3. **`Figma EventCard + DropdownFilter`** — build Figma versions with Auto Layout and variants based on DESIGN.md §4.1/§4.3.
 4. After design approval, extract React components one at a time *without changing current API or route logic*; capture mobile + desktop screenshots and check filter, pagination, detail links and favorites.
 5. Separately, bug tickets from DESIGN.md §7 (recommended first: BUG-02 error handling; BUG-01/BUG-08 stable IDs + favorites migration).
-6. **Next (recorded 2026-11-10):** ~~map pin clustering (TECH-12, done 2026-11-10)~~; remove the unused `NightSpotCard.tsx` and Swiper (TECH-13). (TECH-14, the disabled Kakao map service, was fixed by the owner on 2026-11-10.)
+6. **Next (recorded 2026-11-10):** ~~map pin clustering (TECH-12, done 2026-11-10)~~; ~~remove the unused `NightSpotCard.tsx` and Swiper (TECH-13, done 2026-11-10)~~. (TECH-14, the disabled Kakao map service, was fixed by the owner on 2026-11-10.)
 
 ## Useful commands (only after checkout in a local project)
 
