@@ -8,6 +8,10 @@ import { kstDateParts, seoulSunsetMinutes } from '../../utils/sun';
 import { nightState, parseOperatingTime, type NightRule, type NightState } from '../../utils/night';
 import { htmlToParagraphs } from '../../utils/text';
 import { districtFromAddress, projectToSeoulBox } from '../home/selectors';
+import nightPhotos from '../../data/night-photos.json';
+
+export type NightPhoto = { url: string; title: string; location: string; photographer: string };
+const PHOTOS = (nightPhotos as { photos: Record<string, NightPhoto> }).photos;
 
 export type Phase = 'before' | 'lit' | 'late';
 
@@ -22,6 +26,8 @@ export type NightSpotView = {
   pos: { top: number; left: number } | null;
   free: boolean;
   desc: string;
+  /** Night photo from 한국관광공사 (data/night-photos.json, matched by spot title), if any. */
+  photo: NightPhoto | null;
   fav: Omit<FavoriteItem, 'savedAt'>;
 };
 
@@ -50,6 +56,7 @@ export function buildNight(spots: NightViewSpot[], now: Date) {
       pos: Number.isFinite(lat) && Number.isFinite(lng) ? projectToSeoulBox(lat, lng) : null,
       free: spot.FREE_YN === '무료',
       desc: htmlToParagraphs(spot.CONTENTS).join(' '),
+      photo: PHOTOS[spot.TITLE] ?? null,
       fav: { id: String(index), type: 'spot', title: spot.TITLE, location: spot.ADDR, category: '야경명소', date: spot.OPERATING_TIME },
     };
   });

@@ -56,6 +56,37 @@ test.describe('Night page — time states', () => {
   });
 });
 
+test.describe('Night page — photos (data/night-photos.json)', () => {
+  // "청계천" has a matched 한국관광공사 night photo in the static mapping; the fixture spots don't.
+  const WITH_PHOTO = { ...SPOTS[1], NUM: '9', TITLE: '청계천', ADDR: '서울특별시 종로구 청계천로 1' };
+  const open = async (page: import('@playwright/test').Page, image: 'ok' | 'fail') => {
+    await page.route('https://tong.visitkorea.or.kr/**', (r) => (image === 'ok' ? r.fulfill({ contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64') }) : r.abort()));
+    await page.clock.setFixedTime(new Date('2026-11-10T19:30:00+09:00'));
+    await page.route('**/api/seoulapi?type=night', (r) => r.fulfill({ json: { viewNightSpot: { row: [...SPOTS, WITH_PHOTO] } } }));
+    await page.goto('/#/night');
+  };
+
+  test('a matched spot shows its photo with the 한국관광공사 credit; others show the graphic with the same caption slot', async ({ page }) => {
+    await open(page, 'ok');
+    const photoCard = card(page, '청계천');
+    await expect(photoCard.locator('img')).toHaveAttribute('src', /^https:\/\/tong\.visitkorea\.or\.kr\//);
+    await expect(photoCard.locator('figcaption')).toHaveText('사진: 한국관광공사 · 촬영 IR 스튜디오');
+    const graphicCard = card(page, '[픽스처] 저녁 전시');
+    await expect(graphicCard.locator('figure img')).toHaveCount(0);
+    await expect(graphicCard.locator('figcaption')).toHaveText('실제 위치 그래픽');
+    // Same frame for both: 4:3 and the same caption position.
+    const a = await photoCard.locator('.v3-night__card-art').boundingBox();
+    const b = await graphicCard.locator('.v3-night__card-art').boundingBox();
+    expect(Math.round((a!.width / a!.height) * 100)).toBe(133);
+    expect(Math.abs(a!.height - b!.height)).toBeLessThan(1.5); // sub-pixel grid rounding
+  });
+
+  test('a photo that fails to load falls back to the graphic', async ({ page }) => {
+    await open(page, 'fail');
+    await expect(card(page, '청계천').locator('figcaption')).toHaveText('실제 위치 그래픽');
+  });
+});
+
 test.describe('Night page — content and navigation', () => {
   test('collections and filters are derived from data', async ({ page }) => {
     await at(page, '19:30');

@@ -1,0 +1,128 @@
+{
+  "criteria": "relaxed",
+  "source": "한국관광공사 관광사진 정보 (PhotoGalleryService1)",
+  "license": "공공누리 — 이용허락범위 제한 없음 (owner-checked 2026-11-10)",
+  "generatedAt": "2026-11-10T12:42:02.591Z",
+  "photos": {
+    "남산서울타워": {
+      "url": "https://tong.visitkorea.or.kr/cms2/website/76/2519476.jpg",
+      "title": "서울야경",
+      "location": "서울특별시 남산서울타워",
+      "photographer": "이범수",
+      "month": "201711",
+      "contentId": "2519476"
+    },
+    "용양봉저정 공원": {
+      "url": "https://tong.visitkorea.or.kr/cms2/website/72/3589572.jpg",
+      "title": "용양봉저정공원",
+      "location": "서울특별시 동작구 본동",
+      "photographer": "한건우",
+      "month": "202509",
+      "contentId": "3589572"
+    },
+    "창경궁": {
+      "url": "https://tong.visitkorea.or.kr/cms2/website/05/2570305.jpg",
+      "title": "창경궁",
+      "location": "서울특별시 종로구 와룡동",
+      "photographer": "라이브스튜디오",
+      "month": "201806",
+      "contentId": "2570305"
+    },
+    "창덕궁": {
+      "url": "https://tong.visitkorea.or.kr/cms2/website/91/1316291.jpg",
+      "title": "창덕궁 달빛기행",
+      "location": "서울",
+      "photographer": "이범수",
+      "month": "201106",
+      "contentId": "1316291"
+    },
+    "청계천": {
+      "url": "https://tong.visitkorea.or.kr/cms2/website/48/2506048.jpg",
+      "title": "청계천 야경",
+      "location": "서울특별시 종로구",
+      "photographer": "IR 스튜디오",
+      "month": "201707",
+      "contentId": "2506048"
+    },
+    "월드컵대교": {
+      "url": "https://tong.visitkorea.or.kr/cms2/website/48/3552048.jpg",
+      "title": "월드컵대교",
+      "location": "서울특별시 마포구 상암동",
+      "photographer": "서문교",
+      "month": "202507",
+      "contentId": "3552048"
+    },
+    "숭례문(남대문)": {
+      "url": "https://tong.visitkorea.or.kr/cms2/website/15/3344215.jpg",
+      "title": "숭례문(남대문)",
+      "location": "서울특별시 중구",
+      "photographer": "안영관",
+      "month": "202406",
+      "contentId": "3344215"
+    },
+    "광화문광장(광화문)": {
+      "url": "https://tong.visitkorea.or.kr/cms2/website/31/1415931.jpg",
+      "title": "광화문",
+      "location": "서울 광화문",
+      "photographer": "조우진",
+      "month": "201100",
+      "contentId": "1415931"
+    },
+    "하늘공원(월드컵공원내)": {
+      "url": "https://tong.visitkorea.or.kr/cms2/website/95/1527495.jpg",
+      "title": "하늘공원",
+      "location": "서울",
+      "photographer": "박성근",
+      "month": "201110",
+      "contentId": "1527495"
+    },
+    "경복궁": {
+      "url": "https://tong.visitkorea.or.kr/cms2/website/94/2708194.jpg",
+      "title": "경복궁",
+      "location": "서울특별시 종로구",
+      "photographer": "라이브스튜디오",
+      "month": "202011",
+      "contentId": "2708194"
+    },
+    "덕수궁": {
+      "url": "https://tong.visitkorea.or.kr/cms2/website/52/3011352.jpg",
+      "title": "덕수궁",
+      "location": "서울특별시 중구 정동",
+      "photographer": "김효서",
+      "month": "202307",
+      "contentId": "3011352"
+    },
+    "반포대교 달빛무지개 분수": {
+      "url": "https://tong.visitkorea.or.kr/cms2/website/91/3537891.jpg",
+      "title": "반포대교",
+      "location": "서울특별시 서초구",
+      "photographer": "서문교",
+      "month": "202506",
+      "contentId": "3537891"
+    },
+    "세빛섬": {
+      "url": "https://tong.visitkorea.or.kr/cms2/website/38/2029238.jpg",
+      "title": "세빛섬의 밤",
+      "location": "서울특별시 서초구",
+      "photographer": "임찬경",
+      "month": "201500",
+      "contentId": "2029238"
+    },
+    "낙산공원 - 한양도성 성곽길": {
+      "url": "https://tong.visitkorea.or.kr/cms2/website/74/1518574.jpg",
+      "title": "낙산공원",
+      "location": "서울 ",
+      "photographer": "박성근",
+      "month": "201110",
+      "contentId": "1518574"
+    },
+    "서울식물원": {
+      "url": "https://tong.visitkorea.or.kr/cms2/website/46/3020446.jpg",
+      "title": "서울식물원",
+      "location": "서울특별시 강서구 마곡동",
+      "photographer": "김경빈",
+      "month": "202308",
+      "contentId": "3020446"
+    }
+  }
+}

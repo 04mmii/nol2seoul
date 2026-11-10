@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useFavorites, useNightViewSpots } from '../hooks';
 import NightLights from '../components/night/NightLights';
+import NightArt from '../components/night/NightArt';
 import { COLLECTIONS, buildNight, pickFeature, type CollectionId, type NightSpotView } from '../components/night/selectors';
 import { formatHm } from '../utils/sun';
 import '../components/night/night-v3.css';
@@ -88,7 +89,7 @@ const NightPage: React.FC = () => {
         <section className="v3-night__section" aria-labelledby="night-feature">
           <div className="v3-shell v3-night__feature">
             <div className="v3-night__feature-art">
-              <NightLights views={night.views} focus={feature.index} variant="card" label={`${feature.spot.TITLE} 위치`} />
+              <NightArt view={feature} views={night.views} label={`${feature.spot.TITLE} ${feature.photo ? '야경' : '위치'}`} />
               <span className="v3-night__tag">TONIGHT</span>
             </div>
             <div>
@@ -159,7 +160,7 @@ const NightPage: React.FC = () => {
                       <span className="v3-night__kicker">SPOT № {String(v.index + 1).padStart(2, '0')}</span>
                       <StateBadge view={v} />
                     </div>
-                    <div className="v3-night__card-art"><NightLights views={night.views} focus={v.index} variant="card" /></div>
+                    <div className="v3-night__card-art"><NightArt view={v} views={night.views} /></div>
                     <h3 className="v3-night__card-title">{v.spot.TITLE}</h3>
                     <p className="v3-night__card-meta">{[v.district, v.spot.SUBJECT_CD].filter(Boolean).join(' · ')}</p>
                     <p className="v3-night__card-time">{v.spot.OPERATING_TIME}</p>
