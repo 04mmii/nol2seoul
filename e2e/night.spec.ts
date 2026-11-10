@@ -110,7 +110,7 @@ test.describe('Night page — content and navigation', () => {
   test('feature spot = first lit spot; card actions (map deep link, favorite, homepage)', async ({ page }) => {
     await at(page, '19:30');
     await expect(page.getByRole('heading', { level: 2, name: '[픽스처] 야경 다리' })).toBeVisible();
-    await expect(card(page, '[픽스처] 야경 다리').getByRole('link', { name: '지도에서 보기 →' })).toHaveAttribute('href', /#\/map\?cat=%EC%95%BC%EA%B2%BD%EB%AA%85%EC%86%8C&spot=0$/);
+    await expect(card(page, '[픽스처] 야경 다리').getByRole('link', { name: '지도에서 보기 →' })).toHaveAttribute('href', /#\/map\?cat=%EC%95%BC%EA%B2%BD%EB%AA%85%EC%86%8C&spot=n1$/);
     await expect(card(page, '[픽스처] 24시간 공원').getByRole('link', { name: '홈페이지 ↗' })).toHaveAttribute('href', 'https://example.test/park');
     await card(page, '[픽스처] 24시간 공원').getByRole('button', { name: /찜하기$/ }).click();
     await expect(card(page, '[픽스처] 24시간 공원').getByRole('button', { name: /찜 해제$/ })).toHaveAttribute('aria-pressed', 'true');

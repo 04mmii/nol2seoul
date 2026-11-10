@@ -6,6 +6,7 @@ import type { Event, CulturalSpace, NightViewSpot } from '../../types';
 import type { FavoriteItem } from '../../hooks/useFavorites';
 import { eventCardDate, eventVenue } from '../../utils/event';
 import { eventId } from '../../utils/eventId';
+import { spaceId, spotId } from '../../utils/placeId';
 import { matchesNightFilter, type NightFilter, type NightSpotView } from '../night/selectors';
 
 export type MapKind = 'event' | 'space' | 'night';
@@ -62,9 +63,9 @@ export function eventItem(e: Event): MapItem {
   };
 }
 
-/** Space/night IDs are still array indexes (BUG-08 is resolved for events only). */
-export function spaceItem(s: CulturalSpace, index: number): MapItem {
-  const id = String(index);
+/** Space/night IDs: stable "s<NUM>" / "n<NUM>" (utils/placeId.ts, 2026-11-11). */
+export function spaceItem(s: CulturalSpace, _index?: number): MapItem {
+  const id = spaceId(s);
   return {
     key: `space:${id}`,
     kind: 'space',
@@ -82,8 +83,8 @@ export function spaceItem(s: CulturalSpace, index: number): MapItem {
   };
 }
 
-export function nightItem(n: NightViewSpot, index: number, view?: NightSpotView): MapItem {
-  const id = String(index);
+export function nightItem(n: NightViewSpot, _index: number, view?: NightSpotView): MapItem {
+  const id = spotId(n);
   return {
     key: `night:${id}`,
     kind: 'night',

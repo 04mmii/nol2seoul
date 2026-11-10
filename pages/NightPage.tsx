@@ -36,7 +36,7 @@ const NightPage: React.FC = () => {
   const [collection, setCollection] = useState<CollectionId | null>(null);
   const [nowFilter, setNowFilter] = useState<NightFilter>(null);
 
-  // Deep link from the map ("야경명소에서 보기"): /night?spot=<index> scrolls to that card and highlights it.
+  // Deep link from the map ("야경명소에서 보기"): /night?spot=<id> ("n<NUM>") scrolls to that card and highlights it.
   const [params] = useSearchParams();
   const target = params.get('spot');
   useEffect(() => {
@@ -169,7 +169,7 @@ const NightPage: React.FC = () => {
             ) : (
               <div className="v3-night__grid">
                 {shown.map((v) => (
-                  <article key={v.index} id={`night-spot-${v.index}`} tabIndex={-1} className={`v3-night__card ${target === String(v.index) ? 'is-target' : ''}`}>
+                  <article key={v.index} id={`night-spot-${v.id}`} tabIndex={-1} className={`v3-night__card ${target === v.id ? 'is-target' : ''}`}>
                     <div className="v3-night__card-top">
                       <span className="v3-night__kicker">SPOT № {String(v.index + 1).padStart(2, '0')}</span>
                       <StateBadge view={v} />
@@ -201,7 +201,7 @@ const StateBadge: React.FC<{ view: NightSpotView }> = ({ view }) =>
 
 const SpotActions: React.FC<{ view: NightSpotView; saved: boolean; onToggle: () => void; compact?: boolean }> = ({ view, saved, onToggle, compact }) => (
   <div className={`v3-night__actions ${compact ? 'is-compact' : ''}`}>
-    <Link to={`/map?cat=${encodeURIComponent('야경명소')}&spot=${view.index}`} className="v3-btn v3-night__btn-accent">지도에서 보기 →</Link>
+    <Link to={`/map?cat=${encodeURIComponent('야경명소')}&spot=${view.id}`} className="v3-btn v3-night__btn-accent">지도에서 보기 →</Link>
     <button type="button" className="v3-btn v3-btn--ghost-light" aria-pressed={saved} onClick={onToggle} aria-label={`${view.spot.TITLE} ${saved ? '찜 해제' : '찜하기'}`}>{saved ? '♥ 찜됨' : '♡ 찜'}</button>
     {view.spot.URL && <a href={view.spot.URL} target="_blank" rel="noopener noreferrer" className="v3-btn v3-btn--ghost-light">홈페이지 ↗</a>}
   </div>

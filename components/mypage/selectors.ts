@@ -52,11 +52,11 @@ export function resolveFavorites(
     }
     if (fav.type === 'space') {
       if (data.spaces.length === 0) return { kind: 'pending', fav };
-      const hit = findSpace(data.spaces, fav.id, fav.title);
+      const hit = findSpace(data.spaces, fav.id);
       return hit ? { kind: 'space', fav, space: hit.space, id: hit.id } : { kind: 'gone', fav, reason: 'lost' };
     }
     if (data.spots.length === 0 || data.nightViews.length === 0) return { kind: 'pending', fav };
-    const hit = findSpot(data.spots, fav.id, fav.title);
+    const hit = findSpot(data.spots, fav.id);
     const view = hit ? data.nightViews[hit.index] : undefined;
     return view ? { kind: 'spot', fav, view } : { kind: 'gone', fav, reason: 'lost' };
   });

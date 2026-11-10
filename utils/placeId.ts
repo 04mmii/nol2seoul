@@ -1,21 +1,28 @@
 /**
- * Lookup for cultural-space and night-spot favorites/routes.
- * Space/spot IDs are still array indexes (BUG-08 open for them). The saved title is checked so an
- * index that now points at another place is treated as "not found" instead of showing the wrong place.
+ * Stable IDs for cultural spaces and night spots (BUG-08 remainder, 2026-11-11).
+ *
+ * The Seoul API has no FAC_CODE; `NUM` is the only key. Checked against live data on 2026-11-11:
+ * culturalSpaceInfo 1,100 rows / 1,100 distinct NUM, viewNightSpot 51 rows / 51 distinct NUM, none empty,
+ * and NUM is NOT the array position (so it isn't just a row counter of our response).
+ * IDs carry a prefix ("s<NUM>", "n<NUM>") so they can never be mistaken for the old array-index IDs
+ * (plain digits), which is how the favorites migration and old links are detected.
  */
 import type { CulturalSpace, NightViewSpot } from '../types';
 
-const same = (a?: string, b?: string) => (a || '').trim() === (b || '').trim();
+export const spaceId = (s: Pick<CulturalSpace, 'NUM'>) => `s${String(s.NUM ?? '').trim()}`;
+export const spotId = (n: Pick<NightViewSpot, 'NUM'>) => `n${String(n.NUM ?? '').trim()}`;
 
-export function findSpace(spaces: CulturalSpace[], id: string, title?: string): { space: CulturalSpace; id: string } | undefined {
-  const s = /^\d+$/.test(id) ? spaces[Number(id)] : undefined;
-  if (!s || (title !== undefined && !same(s.FAC_NAME, title))) return undefined;
-  return { space: s, id };
+/** Old array-index ID (before 2026-11-11). */
+export const isLegacyPlaceId = (id: string | null | undefined) => !!id && /^\d+$/.test(id);
+
+export function findSpace(spaces: CulturalSpace[], id: string | null | undefined): { space: CulturalSpace; id: string } | undefined {
+  if (!id || isLegacyPlaceId(id)) return undefined;
+  const space = spaces.find((s) => spaceId(s) === id);
+  return space ? { space, id } : undefined;
 }
 
-export function findSpot(spots: NightViewSpot[], id: string, title?: string): { spot: NightViewSpot; index: number } | undefined {
-  const index = /^\d+$/.test(id) ? Number(id) : -1;
-  const s = spots[index];
-  if (!s || (title !== undefined && !same(s.TITLE, title))) return undefined;
-  return { spot: s, index };
+export function findSpot(spots: NightViewSpot[], id: string | null | undefined): { spot: NightViewSpot; index: number } | undefined {
+  if (!id || isLegacyPlaceId(id)) return undefined;
+  const index = spots.findIndex((n) => spotId(n) === id);
+  return index >= 0 ? { spot: spots[index], index } : undefined;
 }

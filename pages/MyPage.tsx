@@ -71,7 +71,7 @@ const SpotCard: React.FC<{ view: NightSpotView; views: NightSpotView[]; onRemove
       </div>
       <div className="v3-event-card__body">
         <div className="v3-event-card__cat">야경명소{view.spot.SUBJECT_CD ? ` · ${view.spot.SUBJECT_CD}` : ''}</div>
-        <h3 className="v3-event-card__title"><Link to={`/night?spot=${view.index}`} className="v3-event-card__link">{view.spot.TITLE}</Link></h3>
+        <h3 className="v3-event-card__title"><Link to={`/night?spot=${view.id}`} className="v3-event-card__link">{view.spot.TITLE}</Link></h3>
         <div className="v3-event-card__foot">
           <span className="v3-my__foot-text">{view.district}</span>
           {st.label && <span className={`v3-my__state is-${st.badge}`}>{st.label}</span>}

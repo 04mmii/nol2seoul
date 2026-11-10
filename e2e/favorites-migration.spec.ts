@@ -5,7 +5,8 @@
  * Old favorites are seeded before the app boots, exactly as an older version stored them.
  */
 import { test, expect, eventListHeading, eventListCard, heartIn, expectSaved, readStorage, seedStorageOnce, STORAGE, type StoredFavorite } from './support/test';
-import { EV, FIXTURE_IMAGE_HOST } from './fixtures/seoul-api';
+import { EV, FIXTURE_IMAGE_HOST, SPACES, SPOTS } from './fixtures/seoul-api';
+import { migratePlaceFavorites } from '../utils/placeFavoritesMigration';
 
 const OLD: StoredFavorite[] = [
   // 1. Wrong old index (BUG-01 era) but the poster URL matches todayFreeClassic → matched by image.
@@ -30,6 +31,7 @@ test.describe('Favorites migration (BUG-08)', () => {
     await page.goto('/#/mypage');
 
     await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), STORAGE.favoritesVersion)).toBe('2');
+    await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), STORAGE.placesVersion)).toBe('1');
     const stored = await readStorage<StoredFavorite[]>(page, STORAGE.favorites);
     expect(stored?.map((f) => [f.type, f.id, f.title, !!f.orphan])).toEqual([
       ['event', EV.todayFreeClassic.id, EV.todayFreeClassic.title, false],
@@ -37,7 +39,8 @@ test.describe('Favorites migration (BUG-08)', () => {
       ['event', 'legacy-12', '[레거시] 사라진 행사', true],
       ['event', 'legacy-13', '[레거시] 아직 안 끝난 행사', true],
       ['event', 'legacy-14', '[레거시] 날짜 없는 행사', true],
-      ['space', '0', '[레거시] 저장된 공간', false],
+      // The space/spot migration (2026-11-11) runs too: this name isn't in the data → orphan.
+      ['space', 'legacy-0', '[레거시] 저장된 공간', true],
     ]);
     // Untouched copy of the original data.
     expect(await readStorage<StoredFavorite[]>(page, STORAGE.favoritesBackup)).toEqual(OLD);
@@ -105,12 +108,77 @@ test.describe('Favorites migration (BUG-08)', () => {
     await expect(page.getByRole('heading', { level: 3, name: '[레거시] 사라진 행사' })).toBeVisible();
     await page.waitForTimeout(1500);
     expect(await page.evaluate((k) => localStorage.getItem(k), STORAGE.favoritesVersion)).toBeNull();
-    expect(await readStorage<StoredFavorite[]>(page, STORAGE.favorites)).toEqual(OLD);
+    // Event favorites untouched (the space/spot migration has its own data and may have run).
+    const events = (list: StoredFavorite[] | null) => (list || []).filter((f) => f.type === 'event');
+    expect(events(await readStorage<StoredFavorite[]>(page, STORAGE.favorites))).toEqual(events(OLD));
   });
 
   test('old index links show an "outdated link" message', async ({ page }) => {
     await page.goto('/#/event/12');
     await expect(page.getByText('오래된 링크라 행사를 찾을 수 없습니다.')).toBeVisible();
     await expect(page.getByRole('link', { name: '목록으로 돌아가기' })).toBeVisible();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Space / night-spot favorites: array index → stable "s<NUM>" / "n<NUM>" (utils/placeFavoritesMigration.ts).
+// ---------------------------------------------------------------------------
+const OLD_PLACES: StoredFavorite[] = [
+  // Wrong old index, but name + address match SPACES[0] (NUM 1) → s1.
+  { id: '7', type: 'space', title: SPACES[0].FAC_NAME, location: SPACES[0].ADDR, category: '미술관', savedAt: 5 },
+  // Name matches SPOTS[0] (NUM 1), address changed → unique name → n1.
+  { id: '3', type: 'spot', title: SPOTS[0].TITLE, location: '예전 주소', category: '야경명소', savedAt: 4 },
+  // Same space saved twice under another index → dropped as a duplicate.
+  { id: '0', type: 'space', title: SPACES[0].FAC_NAME, location: SPACES[0].ADDR, savedAt: 3 },
+  // Not in the data → orphan, kept.
+  { id: '9', type: 'spot', title: '[레거시] 사라진 야경', location: '어딘가', category: '야경명소', savedAt: 2 },
+  // Event favorites are not touched by this migration.
+  { id: EV.todayFreeClassic.id, type: 'event', title: EV.todayFreeClassic.title, location: '', savedAt: 1 },
+];
+
+test.describe('Favorites migration — spaces and night spots (stable IDs)', () => {
+  test('re-matches by name + address, keeps a backup and orphans, drops duplicates; runs once', async ({ page }) => {
+    await seedStorageOnce(page, { [STORAGE.favorites]: OLD_PLACES, [STORAGE.favoritesVersion]: '2' });
+    await page.goto('/#/');
+    await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), STORAGE.placesVersion)).toBe('1');
+    const stored = await readStorage<StoredFavorite[]>(page, STORAGE.favorites);
+    expect(stored?.map((f) => [f.type, f.id, !!f.orphan])).toEqual([
+      ['space', 's1', false],
+      ['spot', 'n1', false],
+      ['spot', 'legacy-9', true],
+      ['event', EV.todayFreeClassic.id, false],
+    ]);
+    expect(await readStorage<StoredFavorite[]>(page, STORAGE.placesBackup)).toEqual(OLD_PLACES);
+
+    // Second run (reload) changes nothing.
+    await page.reload();
+    await page.waitForTimeout(1000);
+    expect(await readStorage<StoredFavorite[]>(page, STORAGE.favorites)).toEqual(stored);
+
+    // MyPage: migrated favorites open the right pages; the orphan is labelled and removable.
+    await page.goto('/#/mypage');
+    await expect(page.getByRole('link', { name: SPACES[0].FAC_NAME })).toHaveAttribute('href', '#/space/s1');
+    await expect(page.getByRole('link', { name: SPOTS[0].TITLE })).toHaveAttribute('href', '#/night?spot=n1');
+    const orphan = page.locator('article').filter({ has: page.getByRole('heading', { name: '[레거시] 사라진 야경' }) });
+    await expect(orphan.getByRole('note')).toHaveText('정보를 불러올 수 없는 야경명소');
+  });
+
+  test('migration result is the same when run twice (pure function)', () => {
+    const once = migratePlaceFavorites(OLD_PLACES as never, SPACES as never, SPOTS as never).items;
+    expect(migratePlaceFavorites(once, SPACES as never, SPOTS as never).items).toEqual(once);
+  });
+
+  test('waits while space or night data is unavailable', async ({ page }) => {
+    await page.route('**/api/seoulapi?type=space', (route) => route.fulfill({ status: 500, json: { error: 'down' } }));
+    await seedStorageOnce(page, { [STORAGE.favorites]: OLD_PLACES, [STORAGE.favoritesVersion]: '2' });
+    await page.goto('/#/mypage');
+    await page.waitForTimeout(1500);
+    expect(await page.evaluate((k) => localStorage.getItem(k), STORAGE.placesVersion)).toBeNull();
+    expect(await readStorage<StoredFavorite[]>(page, STORAGE.favorites)).toEqual(OLD_PLACES);
+  });
+
+  test('old space index links show an "outdated link" message', async ({ page }) => {
+    await page.goto('/#/space/0');
+    await expect(page.getByText('오래된 링크라 문화공간을 찾을 수 없습니다.')).toBeVisible();
   });
 });

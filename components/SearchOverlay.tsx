@@ -8,6 +8,7 @@ import { searchAll, highlightParts } from './search/selectors';
 import { QUICK_LINKS, nightChipText, type QuickLink } from './search/quickLinks';
 import { buildNight } from './night/selectors';
 import { districtFromAddress } from './home/selectors';
+import { spaceId, spotId } from '../utils/placeId';
 import './search/search-v3.css';
 
 /**
@@ -17,7 +18,7 @@ import './search/search-v3.css';
  * de-duplicated, max 8, remove one, clear all), result click saves the query and closes, 취소 closes.
  * New: Esc closes, shortcut chips (names; the night chip shows the night page's lit count), up to 4 per
  * group + total + "전체 보기" (just opens the page), matched text highlighted (accent-text), no-result
- * screen; space results open /space/<index>, night results /night?spot=<index> (BUG-06 fixed).
+ * screen; space results open /space/<id>, night results /night?spot=<id> (BUG-06 fixed; stable IDs, utils/placeId.ts).
  * Focus (A11Y-04, 2026-11-11): Tab stays inside the panel; closing returns focus to the opener.
  * Not included (scope): arrow-key navigation, mobile type tabs, passing the query to other pages.
  */
@@ -186,7 +187,7 @@ const SearchOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   <ul className="v3-search__list">
                     {groups.spaces.items.map(({ space, index }) => (
                       <li key={index}>
-                        <Link to={`/space/${index}`} className="v3-search__res v3-focus" onClick={() => open()}>
+                        <Link to={`/space/${spaceId(space)}`} className="v3-search__res v3-focus" onClick={() => open()}>
                           <span className="v3-search__icon">{(space.SUBJCODE || '공간').split('/')[0]}</span>
                           <span className="v3-search__main">
                             <span className="v3-search__name"><Mark text={space.FAC_NAME} query={q} /></span>
@@ -210,7 +211,7 @@ const SearchOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                       const st = night?.views[index]?.state;
                       return (
                         <li key={index}>
-                          <Link to={`/night?spot=${index}`} className="v3-search__res v3-focus" onClick={() => open()}>
+                          <Link to={`/night?spot=${spotId(spot)}`} className="v3-search__res v3-focus" onClick={() => open()}>
                             <span className={`v3-search__icon is-night ${st?.badge === 'lit' ? 'is-on' : ''}`}><span className="v3-search__glow" aria-hidden="true" /></span>
                             <span className="v3-search__main">
                               <span className="v3-search__name"><Mark text={spot.TITLE} query={q} /></span>

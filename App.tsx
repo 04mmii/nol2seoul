@@ -9,9 +9,10 @@ import MapDiscovery from './pages/MapDiscovery';
 import MyPage from './pages/MyPage';
 import NightPage from './pages/NightPage';
 import SearchOverlay from './components/SearchOverlay';
-import { useEvents } from './hooks';
+import { useEvents, useCulturalSpaces, useNightViewSpots } from './hooks';
 import LiveBar from './components/live/LiveBar';
 import { useFavoritesMigration } from './hooks/useFavoritesMigration';
+import { usePlaceFavoritesMigration, placeMigrationPending } from './hooks/usePlaceFavoritesMigration';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -28,6 +29,21 @@ const FavoritesMigration = () => {
   return null;
 };
 
+/**
+ * One-time migration of space/spot favorites to stable IDs (2026-11-11). Mounted only while old IDs are
+ * saved, so the 1,100-row space list isn't loaded on every page just for this.
+ */
+const PlaceMigrationRunner = () => {
+  const { spaces } = useCulturalSpaces();
+  const { spots } = useNightViewSpots();
+  usePlaceFavoritesMigration(spaces, spots);
+  return null;
+};
+const PlaceFavoritesMigration = () => {
+  const [pending] = useState(placeMigrationPending);
+  return pending ? <PlaceMigrationRunner /> : null;
+};
+
 /** Live Bar on every route. On the map it is fixed above the fixed header (the map shrinks by its height). */
 const LiveBarRoute = () => <LiveBar fixed={useLocation().pathname === '/map'} />;
 
@@ -38,6 +54,7 @@ const App: React.FC = () => {
     <Router>
       <ScrollToTop />
       <FavoritesMigration />
+      <PlaceFavoritesMigration />
       <div className="flex flex-col min-h-screen relative">
         <LiveBarRoute />
         <Header onSearchClick={() => setIsSearchOpen(true)} />

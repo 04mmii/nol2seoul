@@ -23,7 +23,7 @@ test.describe('Map (v3) — Kakao SDK unavailable', () => {
     await expect(list(page).getByText('18곳')).toBeVisible();
     await listItem(page, SPACES[0].FAC_NAME).click();
     await expect(card(page)).toContainText(SPACES[0].FAC_NAME);
-    await expect(card(page).getByRole('link', { name: '상세 보기 →' })).toHaveAttribute('href', '#/space/0');
+    await expect(card(page).getByRole('link', { name: '상세 보기 →' })).toHaveAttribute('href', '#/space/s1'); // stable ID s<NUM> (2026-11-11)
   });
 });
 
@@ -31,8 +31,8 @@ const clusters = (page: import('@playwright/test').Page) => page.locator('[data-
 const level = (page: import('@playwright/test').Page) => page.locator('[data-level]');
 const pinWidth = async (page: import('@playwright/test').Page, title: string) => Number(await pin(page, title).getAttribute('width'));
 
-test('deep link from the night page: /map?cat=야경명소&spot=0 opens filtered with the spot selected', async ({ page }) => {
-  await page.goto(`/#/map?cat=${encodeURIComponent('야경명소')}&spot=0`);
+test('deep link from the night page: /map?cat=야경명소&spot=n1 opens filtered with the spot selected', async ({ page }) => {
+  await page.goto(`/#/map?cat=${encodeURIComponent('야경명소')}&spot=n1`);
   await expect(page.getByRole('group', { name: '종류' }).getByRole('button', { name: '야경명소' })).toHaveAttribute('aria-pressed', 'true');
   await expect(card(page)).toContainText(SPOTS[0].TITLE);
 });
@@ -201,7 +201,7 @@ test.describe('Map (v3) — night spots use the night page language (Kakao SDK s
     await expect(card(page).locator('.v3-map-card__state')).toHaveText('● 점등 중');
     await expect(card(page)).toContainText('일몰 30분후 점등 ~ 23:00 소등');
     await expect(card(page).locator('figcaption')).toHaveText('실제 위치 그래픽'); // no photo → mini map
-    await expect(card(page).getByRole('link', { name: '야경명소에서 보기 →' })).toHaveAttribute('href', '#/night?spot=0');
+    await expect(card(page).getByRole('link', { name: '야경명소에서 보기 →' })).toHaveAttribute('href', '#/night?spot=n1');
 
     await listItem(page, '청계천').click();
     await expect(card(page).locator('figcaption')).toHaveText('사진: 한국관광공사 · 촬영 IR 스튜디오'); // matched photo
@@ -225,8 +225,8 @@ test.describe('Map (v3) — night spots use the night page language (Kakao SDK s
     await openAt(page, '19:30');
     await pin(page, '청계천').click();
     await card(page).getByRole('link', { name: '야경명소에서 보기 →' }).click();
-    await expect(page).toHaveURL(/#\/night\?spot=1$/);
-    const target = page.locator('#night-spot-1');
+    await expect(page).toHaveURL(/#\/night\?spot=n2$/);
+    const target = page.locator('#night-spot-n2');
     await expect(target).toHaveClass(/is-target/);
     await expect(target).toBeInViewport();
   });

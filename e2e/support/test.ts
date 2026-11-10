@@ -70,6 +70,9 @@ export const STORAGE = {
   /** BUG-08 migration flag ("2" = stable event IDs) and the untouched pre-migration copy. */
   favoritesVersion: 'nolseoul-favorites-version',
   favoritesBackup: 'nolseoul-favorites-v1-backup',
+  /** Space/spot stable-ID migration (2026-11-11): flag ("1") and the untouched pre-migration copy. */
+  placesVersion: 'nolseoul-favorites-places-version',
+  placesBackup: 'nolseoul-favorites-v2-backup',
 } as const;
 
 /**

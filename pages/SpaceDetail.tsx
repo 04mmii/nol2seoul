@@ -2,14 +2,16 @@ import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { spaceDescription, spaceTransit } from '../utils/space';
 import { useCulturalSpaces, useFavorites } from '../hooks';
+import { findSpace, isLegacyPlaceId, spaceId } from '../utils/placeId';
 
 const SpaceDetail: React.FC = () => {
   const { id } = useParams();
   const { spaces, loading, isError } = useCulturalSpaces();
   const { toggleFavorite, isFavorite } = useFavorites();
 
-  const spaceIndex = Number(id);
-  const space = spaces[spaceIndex];
+  // Stable ID "s<NUM>" (utils/placeId.ts). Old index links (plain digits) get an "outdated link" message.
+  const space = findSpace(spaces, id)?.space;
+  const legacyLink = isLegacyPlaceId(id);
 
   if (loading) {
     return (
@@ -24,7 +26,7 @@ const SpaceDetail: React.FC = () => {
     return (
       <div className="max-w-[1200px] mx-auto px-6 py-20 text-center">
         <span className="material-symbols-outlined text-5xl text-gray-300 mb-4 block">error</span>
-        <p className="text-gray-500 font-bold mb-4">문화공간 정보를 찾을 수 없습니다.</p>
+        <p className="text-gray-500 font-bold mb-4">{legacyLink && !isError ? '오래된 링크라 문화공간을 찾을 수 없습니다.' : '문화공간 정보를 찾을 수 없습니다.'}</p>
         <Link to="/map" className="text-primary font-bold hover:underline">지도로 돌아가기</Link>
       </div>
     );
@@ -37,11 +39,11 @@ const SpaceDetail: React.FC = () => {
   const hasTicket = entryFee === '유료';
   const description = spaceDescription(space.FAC_DESC);
   const transit = spaceTransit(space);
-  const favId = String(spaceIndex);
+  const favId = spaceId(space);
 
   // 비슷한 분류의 공간
   const similarSpaces = spaces
-    .filter((s, i) => i !== spaceIndex && s.SUBJCODE === space.SUBJCODE)
+    .filter((s) => s !== space && s.SUBJCODE === space.SUBJCODE)
     .slice(0, 4);
 
   return (
@@ -197,10 +199,9 @@ const SpaceDetail: React.FC = () => {
           <h3 className="text-2xl font-black mb-8">비슷한 문화공간</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {similarSpaces.map((s, i) => {
-              const idx = spaces.indexOf(s);
               const sImg = s.MAIN_IMG;
               return (
-                <Link to={`/space/${idx}`} key={i} className="group cursor-pointer">
+                <Link to={`/space/${spaceId(s)}`} key={i} className="group cursor-pointer">
                   <div className="relative aspect-[4/3] rounded-xl overflow-hidden mb-4">
                     {sImg ? (
                       <img

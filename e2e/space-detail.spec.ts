@@ -8,7 +8,7 @@ import { SPACES } from './fixtures/seoul-api';
 
 test.describe('SpaceDetail (BUG-13 field mapping)', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/#/space/0');
+    await page.goto('/#/space/s1');
     await expect(page.getByRole('heading', { name: SPACES[0].FAC_NAME })).toBeVisible();
   });
 

@@ -42,19 +42,19 @@ test.describe('SearchOverlay', () => {
     await expect(row.locator('mark')).toHaveText('클래식');
   });
 
-  test('space result opens /space/<index> (BUG-06 fixed)', async ({ page }) => {
+  test('space result opens /space/<id> (BUG-06 fixed; stable ID s<NUM>)', async ({ page }) => {
     const input = await openSearch(page);
     await input.fill(SPACES[0].FAC_NAME);
     await resultSection(page, '문화공간').getByRole('link').filter({ hasText: SPACES[0].FAC_NAME }).click();
-    await expect(page).toHaveURL(/#\/space\/0$/);
+    await expect(page).toHaveURL(/#\/space\/s1$/);
     await expect(page.getByPlaceholder('행사, 장소, 키워드를 검색해보세요')).toHaveCount(0);
   });
 
-  test('night-spot result opens /night?spot=<index> (BUG-06 fixed)', async ({ page }) => {
+  test('night-spot result opens /night?spot=<id> (BUG-06 fixed; stable ID n<NUM>)', async ({ page }) => {
     const input = await openSearch(page);
     await input.fill(SPOTS[0].TITLE);
     await resultSection(page, '야경명소').getByRole('link').filter({ hasText: SPOTS[0].TITLE }).click();
-    await expect(page).toHaveURL(/#\/night\?spot=0$/);
+    await expect(page).toHaveURL(/#\/night\?spot=n1$/);
   });
 
   test('event result opens the detail page and closes the overlay', async ({ page }) => {

@@ -11,9 +11,9 @@ const fav = (f: Partial<StoredFavorite> & Pick<StoredFavorite, 'id' | 'type' | '
 
 // Stored newest first, deliberately not in the display order.
 const SAVED: StoredFavorite[] = [
-  fav({ id: '0', type: 'space', title: SPACES[0].FAC_NAME, location: SPACES[0].ADDR, category: '미술관' }, 0),
+  fav({ id: 's1', type: 'space', title: SPACES[0].FAC_NAME, location: SPACES[0].ADDR, category: '미술관' }, 0),
   fav({ id: 'legacy-9', type: 'event', title: '[레거시] 끝난 행사', location: '어딘가', category: '전시', date: '2025-01-01~2025-01-31', orphan: true }, 1),
-  fav({ id: '0', type: 'spot', title: SPOTS[0].TITLE, location: SPOTS[0].ADDR, category: '야경명소' }, 2),
+  fav({ id: 'n1', type: 'spot', title: SPOTS[0].TITLE, location: SPOTS[0].ADDR, category: '야경명소' }, 2),
   fav({ id: EV.futureExhibition.id, type: 'event', title: EV.futureExhibition.title }, 3),
   fav({ id: EV.thisWeekPlay.id, type: 'event', title: EV.thisWeekPlay.title }, 4),
   fav({ id: EV.todayFreeClassic.id, type: 'event', title: EV.todayFreeClassic.title }, 5),
@@ -52,8 +52,8 @@ test.describe('MyPage v3', () => {
   });
 
   test('cards link to their pages; ended favorite is labelled and removable, never auto-deleted', async ({ page }) => {
-    await expect(page.getByRole('link', { name: SPACES[0].FAC_NAME })).toHaveAttribute('href', '#/space/0');
-    await expect(page.getByRole('link', { name: SPOTS[0].TITLE })).toHaveAttribute('href', '#/night?spot=0');
+    await expect(page.getByRole('link', { name: SPACES[0].FAC_NAME })).toHaveAttribute('href', '#/space/s1');
+    await expect(page.getByRole('link', { name: SPOTS[0].TITLE })).toHaveAttribute('href', '#/night?spot=n1');
     const ended = page.locator('article').filter({ has: page.getByRole('heading', { name: '[레거시] 끝난 행사' }) });
     await expect(ended.getByRole('note')).toHaveText('종료된 행사');
     await expect(ended.locator('a')).toHaveCount(0);

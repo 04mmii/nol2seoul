@@ -8,6 +8,7 @@ import { kstDateParts, seoulSunsetMinutes } from '../../utils/sun';
 import { nightState, parseOperatingTime, type NightRule, type NightState } from '../../utils/night';
 import { htmlToParagraphs } from '../../utils/text';
 import { districtFromAddress, projectToSeoulBox } from '../home/selectors';
+import { spotId } from '../../utils/placeId';
 import nightPhotos from '../../data/night-photos.json' with { type: 'json' };
 import manualRules from '../../data/night-manual-rules.json' with { type: 'json' };
 
@@ -21,7 +22,9 @@ const MANUAL = (manualRules as { rules: Record<string, ManualRule> }).rules;
 export type Phase = 'before' | 'lit' | 'late';
 
 export type NightSpotView = {
-  index: number; // array index — night-spot IDs are still indexes (BUG-08 open for spots)
+  index: number; // array position (graphics, lookups) — not an ID
+  /** Stable ID "n<NUM>" (utils/placeId.ts) for links, deep links and favorites. */
+  id: string;
   spot: NightViewSpot;
   district: string;
   rule: NightRule;
@@ -55,8 +58,10 @@ export function buildNight(spots: NightViewSpot[], now: Date, manual: Record<str
     const rule = parseOperatingTime(useManual ? m!.operatingTime : spot.OPERATING_TIME, p.m);
     const state = nightState(rule, p.minutes, p.weekday, sunset);
     const lat = parseFloat(spot.LA), lng = parseFloat(spot.LO);
+    const id = spotId(spot);
     return {
       index,
+      id,
       spot,
       district: districtFromAddress(spot.ADDR) || '',
       rule,
@@ -67,7 +72,7 @@ export function buildNight(spots: NightViewSpot[], now: Date, manual: Record<str
       free: spot.FREE_YN === '무료',
       desc: htmlToParagraphs(spot.CONTENTS).join(' '),
       photo: PHOTOS[spot.TITLE] ?? null,
-      fav: { id: String(index), type: 'spot', title: spot.TITLE, location: spot.ADDR, category: '야경명소', date: spot.OPERATING_TIME },
+      fav: { id, type: 'spot', title: spot.TITLE, location: spot.ADDR, category: '야경명소', date: spot.OPERATING_TIME },
     };
   });
   const lit = views.filter((v) => v.state.badge === 'lit').length;

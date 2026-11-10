@@ -67,7 +67,7 @@ const MapSelectedCard: React.FC<{
       {nightDesc && <p className="v3-map-card__desc">{nightDesc}</p>}
       <div className="v3-map-card__actions">
         {item.detailTo && <Link to={item.detailTo} className="v3-btn v3-btn--primary">상세 보기 →</Link>}
-        {item.nightView && <Link to={`/night?spot=${item.nightView.index}`} className="v3-btn v3-btn--primary">야경명소에서 보기 →</Link>}
+        {item.nightView && <Link to={`/night?spot=${item.nightView.id}`} className="v3-btn v3-btn--primary">야경명소에서 보기 →</Link>}
         <button type="button" className="v3-btn" aria-pressed={saved} onClick={onToggleFavorite}>{saved ? '♥ 찜됨' : '♡ 찜'}</button>
         {route && <a href={route} target="_blank" rel="noopener noreferrer" className="v3-btn">↗ 길찾기</a>}
       </div>
