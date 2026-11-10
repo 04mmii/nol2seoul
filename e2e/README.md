@@ -36,7 +36,7 @@ Playwright starts its own Vite dev server on `http://127.0.0.1:4310` (it does no
 | `detail.spec.ts` | v3 EventDetail: hero spec values, status label, external links; breadcrumb; PROGRAM text + ETC_DESC image URL; empty description state; **no reviews/ratings/curator notes rendered**; map placeholder (SDK blocked / no coordinates); related events ranking (genre+district → genre → district) and navigation; related heart ID; not-found; 390px overflow. |
 | `chrome.spec.ts` | v3 Header/Footer: tokens loaded, `aria-current`, keyboard search, icon names, fixed header on `/map`, footer links, mobile search icon, no overflow. |
 | `event-list.spec.ts` | Total count; 12-per-page pagination (prev/next disabled states); region / genre / fee filters; reset chip; filter resets page; empty state; "상세보기" opens the right detail; FAB link; loading state; network-failure error state. |
-| `search-overlay.spec.ts` | Open from header / close with 취소; grouped results (events, spaces, spots); event result → detail + overlay closes; no-result message; `nolseoul-recent` save on Enter (trimmed), de-dup, max 8, remove one, clear all, reopen shows recents. |
+| `search-overlay.spec.ts` | v3 panel: open from header / close with 취소 or Esc; shortcut chips (names only, night chip count); grouped results (events, spaces, spots); match highlight; event → detail, space → `/space/0`, spot → `/night?spot=0` (BUG-06) + overlay closes; no-result screen + chips; `nolseoul-recent` save on Enter (trimmed), de-dup, max 8, remove one, clear all, reopen shows recents. |
 | `favorites.spec.ts` | `nolseoul-favorites` toggle from EventList and EventDetail; stored shape (`id` = array index, `type`, `title`, `location`, `category`, `date`, `savedAt`); persistence across reload; MyPage list, link, remove + empty state; pre-existing data from the current format still renders; corrupted JSON falls back to empty. |
 | `fee.spec.ts` | BUG-03 regression (option D): EventList shows the four fee badges (무료/유료/일부 무료/가격 상이) and none for 확인 필요; Home, EventList and EventDetail agree on the same event. |
 | `favorites-migration.spec.ts` | BUG-08: old index-ID favorites (seeded before boot) are re-matched by image → title+start date → title+location; backup kept; duplicates dropped; unmatched kept as orphans (MyPage note, no link, removable); runs once; no migration while the event API fails; old `/event/12` links show the outdated-link message. |
@@ -59,10 +59,10 @@ These tests assert the **desired** behavior and currently fail on purpose. Playw
 | Test | DESIGN.md | Current behavior (verified failure reason) |
 |---|---|---|
 | API error response shows the error state | BUG-02 | 500 JSON response renders "총 0건" / empty state; error text not shown |
-| Space search result opens the space detail | BUG-06 | Click does nothing; URL stays `#/` |
 
 BUG-01 (Home card link/favorite ID) was fixed in the v3 Home on 2026-11-09. Its tests are now regular regression tests in `home.spec.ts`.
 BUG-03 (free/paid rule) was fixed with option D on 2026-11-09 (`utils/fee.ts`). Its test is now the regular `fee.spec.ts`.
+BUG-06 (space/spot search results did nothing) was fixed in the v3 search panel on 2026-11-11. Its tests are now regular tests in `search-overlay.spec.ts`.
 
 Documented in DESIGN.md §7 but **not** turned into tests (no agreed expected behavior or UI copy yet): BUG-04 (Home has no error/empty state), BUG-05 (map data errors), BUG-07, BUG-09–11 and all A11Y items.
 

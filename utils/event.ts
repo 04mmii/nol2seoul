@@ -93,6 +93,13 @@ export function eventStatus(e: Event, now: Date = new Date()): EventStatus {
   return { kind: 'ongoing', daysToEnd: daysBetween(today, end) };
 }
 
+/** Deadline badge for cards and search: "D-n" when the event ends within 7 days (today = "D-DAY"), else null. */
+export function eventDday(e: Event, now: Date = new Date()): string | null {
+  const st = eventStatus(e, now);
+  if (st.kind !== 'ongoing' || st.daysToEnd > 7) return null;
+  return st.daysToEnd === 0 ? 'D-DAY' : `D-${st.daysToEnd}`;
+}
+
 export function eventStatusLabel(s: EventStatus): string {
   switch (s.kind) {
     case 'upcoming':

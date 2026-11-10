@@ -7,12 +7,12 @@
  *
  * History: BUG-01 was fixed in the v3 Home rewrite (2026-11-09); its tests moved to home.spec.ts.
  * BUG-03 was fixed with option D (2026-11-09); its test moved to fee.spec.ts.
+ * BUG-06 was fixed in the v3 search panel (2026-11-11); its tests moved to search-overlay.spec.ts.
  *
  * Run only these: `npx playwright test --grep @known-issue`
  * Exclude them:   `npm run test:e2e:smoke`
  */
-import { test, expect, openSearch } from './support/test';
-import { EV, SPACES } from './fixtures/seoul-api';
+import { test, expect } from './support/test';
 
 test.describe('Known issues @known-issue', () => {
   test('BUG-02: API error response shows the error state, not the empty state', async ({ page }) => {
@@ -23,14 +23,5 @@ test.describe('Known issues @known-issue', () => {
     await page.goto('/#/events');
     // Actual today: "총 0건" + "조건에 맞는 행사가 없습니다."
     await expect(page.getByText('문화행사를 불러올 수 없습니다.')).toBeVisible({ timeout: 5_000 });
-  });
-
-  test('BUG-06: cultural-space search result opens the space detail', async ({ page }) => {
-    test.fail(true, 'BUG-06: space/spot result rows are styled as clickable but have no action');
-    await page.goto('/#/');
-    const input = await openSearch(page);
-    await input.fill(SPACES[0].FAC_NAME);
-    await page.getByText(SPACES[0].FAC_NAME, { exact: true }).last().click();
-    await expect(page).toHaveURL(/#\/space\/\d+$/, { timeout: 3_000 });
   });
 });

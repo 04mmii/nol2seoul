@@ -1,9 +1,7 @@
 import { test, expect, openSearch, readStorage, writeStorage, detailHeading, STORAGE } from './support/test';
 import { EV, SPACES, SPOTS } from './fixtures/seoul-api';
 
-const overlay = (page: import('@playwright/test').Page) => page.locator('div.fixed.inset-0').filter({
-  has: page.getByPlaceholder('행사, 장소, 키워드를 검색해보세요'),
-});
+const overlay = (page: import('@playwright/test').Page) => page.getByRole('dialog', { name: '검색' });
 const resultSection = (page: import('@playwright/test').Page, heading: string) =>
   overlay(page).locator('section').filter({ has: page.getByRole('heading', { name: new RegExp(heading) }) });
 
@@ -12,11 +10,18 @@ test.describe('SearchOverlay', () => {
     await page.goto('/#/');
   });
 
-  test('opens from the header and closes with 취소', async ({ page }) => {
+  test('opens from the header and closes with 취소 or Esc', async ({ page }) => {
     await openSearch(page);
-    await expect(overlay(page).getByRole('heading', { name: /추천 행사/ })).toBeVisible();
-    await expect(overlay(page).getByRole('heading', { name: '인기 장르' })).toBeVisible();
+    // v3: shortcut chips are names only, except the night chip (lit count / "곧 켜져요" before sunset).
+    const quick = resultSection(page, '바로 가기');
+    await expect(quick.getByRole('link', { name: '이번 주 무료 행사', exact: true })).toBeVisible();
+    await expect(quick.getByRole('link', { name: /^지금 켜진 야경( \d+| · 곧 켜져요)$/ })).toBeVisible();
+    await expect(overlay(page).getByRole('heading', { name: '인기 장르' })).toHaveCount(0);
     await page.getByRole('button', { name: '취소' }).click();
+    await expect(page.getByPlaceholder('행사, 장소, 키워드를 검색해보세요')).toHaveCount(0);
+
+    await openSearch(page);
+    await page.keyboard.press('Escape');
     await expect(page.getByPlaceholder('행사, 장소, 키워드를 검색해보세요')).toHaveCount(0);
   });
 
@@ -27,7 +32,29 @@ test.describe('SearchOverlay', () => {
     await expect(resultSection(page, '문화공간').getByText(SPACES[0].FAC_NAME)).toBeVisible();
 
     await input.fill('야경');
-    await expect(resultSection(page, '야경명소').getByText(SPOTS[0].TITLE)).toBeVisible();
+    await expect(resultSection(page, '야경명소').getByRole('link').filter({ hasText: SPOTS[0].TITLE })).toBeVisible();
+  });
+
+  test('matched text is highlighted in the result name', async ({ page }) => {
+    const input = await openSearch(page);
+    await input.fill('클래식');
+    const row = resultSection(page, '문화행사').getByRole('link').filter({ hasText: EV.todayFreeClassic.title });
+    await expect(row.locator('mark')).toHaveText('클래식');
+  });
+
+  test('space result opens /space/<index> (BUG-06 fixed)', async ({ page }) => {
+    const input = await openSearch(page);
+    await input.fill(SPACES[0].FAC_NAME);
+    await resultSection(page, '문화공간').getByRole('link').filter({ hasText: SPACES[0].FAC_NAME }).click();
+    await expect(page).toHaveURL(/#\/space\/0$/);
+    await expect(page.getByPlaceholder('행사, 장소, 키워드를 검색해보세요')).toHaveCount(0);
+  });
+
+  test('night-spot result opens /night?spot=<index> (BUG-06 fixed)', async ({ page }) => {
+    const input = await openSearch(page);
+    await input.fill(SPOTS[0].TITLE);
+    await resultSection(page, '야경명소').getByRole('link').filter({ hasText: SPOTS[0].TITLE }).click();
+    await expect(page).toHaveURL(/#\/night\?spot=0$/);
   });
 
   test('event result opens the detail page and closes the overlay', async ({ page }) => {
@@ -39,10 +66,15 @@ test.describe('SearchOverlay', () => {
     await expect(page.getByPlaceholder('행사, 장소, 키워드를 검색해보세요')).toHaveCount(0);
   });
 
-  test('no-result message', async ({ page }) => {
+  test('no-result screen with shortcut chips', async ({ page }) => {
     const input = await openSearch(page);
     await input.fill('존재하지않는검색어');
-    await expect(page.getByText("'존재하지않는검색어'에 대한 검색 결과가 없습니다")).toBeVisible();
+    const empty = overlay(page).getByRole('status');
+    await expect(empty).toContainText('‘존재하지않는검색어’와 맞는 곳이');
+    await expect(empty).toContainText('없어요.');
+    await expect(empty.getByRole('link', { name: '박물관·미술관', exact: true })).toBeVisible();
+    await expect(empty.getByRole('link', { name: '이번 주 전시', exact: true })).toBeVisible();
+    await expect(empty.getByRole('link', { name: '이번 주 무료 행사', exact: true })).toBeVisible();
   });
 
   test('Enter saves a recent search to localStorage and shows it on reopen', async ({ page }) => {
@@ -54,10 +86,10 @@ test.describe('SearchOverlay', () => {
     await page.getByRole('button', { name: '취소' }).click();
     await openSearch(page);
     const recent = resultSection(page, '최근 검색어');
-    await expect(recent.getByText('클래식', { exact: true })).toBeVisible();
+    await expect(recent.getByRole('button', { name: '클래식', exact: true })).toBeVisible();
 
     // Clicking a recent tag runs that search.
-    await recent.getByText('클래식', { exact: true }).click();
+    await recent.getByRole('button', { name: '클래식', exact: true }).click();
     await expect(page.getByPlaceholder('행사, 장소, 키워드를 검색해보세요')).toHaveValue('클래식');
     await expect(resultSection(page, '문화행사').getByText(EV.todayFreeClassic.title)).toBeVisible();
   });
@@ -75,8 +107,8 @@ test.describe('SearchOverlay', () => {
 
     await input.fill('');
     const recent = resultSection(page, '최근 검색어');
-    // Remove "a" via its close icon (a <span>, not a button — A11Y-03).
-    await recent.locator('div', { hasText: /^aclose$/ }).getByText('close', { exact: true }).click();
+    // Remove "a" via its own button (v3: a real, labelled button — was an unlabelled <span>, A11Y-03).
+    await recent.getByRole('button', { name: '최근 검색어 a 삭제' }).click();
     expect(await readStorage<string[]>(page, STORAGE.recent)).toEqual(['new', 'c', 'b', 'd', 'e', 'f', 'g']);
 
     await recent.getByRole('button', { name: '전체 삭제' }).click();
