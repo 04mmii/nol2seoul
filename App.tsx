@@ -10,6 +10,7 @@ import MyPage from './pages/MyPage';
 import NightPage from './pages/NightPage';
 import SearchOverlay from './components/SearchOverlay';
 import { useEvents } from './hooks';
+import LiveBar from './components/live/LiveBar';
 import { useFavoritesMigration } from './hooks/useFavoritesMigration';
 
 const ScrollToTop = () => {
@@ -27,6 +28,9 @@ const FavoritesMigration = () => {
   return null;
 };
 
+/** Live Bar on every route except the map (full-screen map with a fixed header). */
+const LiveBarOutsideMap = () => (useLocation().pathname === '/map' ? null : <LiveBar />);
+
 const App: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -35,6 +39,7 @@ const App: React.FC = () => {
       <ScrollToTop />
       <FavoritesMigration />
       <div className="flex flex-col min-h-screen relative">
+        <LiveBarOutsideMap />
         <Header onSearchClick={() => setIsSearchOpen(true)} />
 
         <main className="flex-grow">
@@ -59,7 +64,7 @@ const App: React.FC = () => {
 
 // ---------------------------------------------------------------------------
 // Site chrome — Redesign v3 (design-ref/src/chrome-v2.jsx, styles-v3.css).
-// v3 nav. 야경명소 approved 2026-11-10; 스토리 and LiveBar remain out of scope.
+// v3 nav. 야경명소 and the Live Bar approved 2026-11-10; 스토리 remains out of scope.
 // ---------------------------------------------------------------------------
 
 const NAV_ITEMS = [
