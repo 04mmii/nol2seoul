@@ -32,20 +32,26 @@ export function buildTickerItems(opts: {
       { id: 'starts-today', text: `오늘 시작하는 행사 ${startsToday.toLocaleString('ko-KR')}건` },
       { id: 'ends-week', text: `이번 주 마감 ${endsThisWeek.toLocaleString('ko-KR')}건` },
     );
-    if (spots) items.push(nightItem(spots, now));
+    if (spots) items.push(...nightItems(spots, now));
     items.push({ id: 'free', text: `무료 행사 ${free.toLocaleString('ko-KR')}건` });
   } else if (spots) {
-    items.push(nightItem(spots, now));
+    items.push(...nightItems(spots, now));
   }
   return items;
 }
 
-/** "지금 켜진 야경명소 N곳" (점등 판별). Before sunset, when none is lit yet: the first switch-on time instead. */
-function nightItem(spots: NightViewSpot[], now: Date): TickerItem {
+/**
+ * Night items, same definitions as the night page: "켜진" = 점등 중 only (before sunset with none lit:
+ * "곧 켜져요" + first switch-on time), "갈 수 있는" = 운영 중, as its own item.
+ */
+function nightItems(spots: NightViewSpot[], now: Date): TickerItem[] {
   const night = buildNight(spots, now);
+  let lit: TickerItem;
   if (night.lit === 0 && night.phase === 'before') {
     const soon = night.views.map((v) => v.state).filter((s) => s.badge === 'soon').map((s) => s.label).sort()[0];
-    if (soon) return { id: 'night', text: `야경명소 ${soon} 예정`, hot: true };
+    lit = { id: 'night', text: soon ? `야경명소 곧 켜져요 · ${soon}` : '야경명소 곧 켜져요', hot: true };
+  } else {
+    lit = { id: 'night', text: `지금 켜진 야경명소 ${night.lit}곳`, hot: true };
   }
-  return { id: 'night', text: `지금 켜진 야경명소 ${night.lit}곳`, hot: true };
+  return [lit, { id: 'night-open', text: `지금 갈 수 있는 야경명소 ${night.open}곳` }];
 }

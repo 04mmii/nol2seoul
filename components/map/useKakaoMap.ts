@@ -46,6 +46,9 @@ export function useKakaoMap(containerRef: RefObject<HTMLDivElement | null>, isLo
 
 type Entry = { marker: KakaoMarker; item: MapItem };
 
+/** Lit night spots get the ember pin; everything else keeps its kind's pin. */
+const pinKind = (item: MapItem): PinKind => (item.lit ? 'nightLit' : item.kind);
+
 /**
  * Pins for the filtered items: sized by zoom level, clustered while zoomed out (TECH-12), selected pin
  * kept out of clusters (always 13px, on top, with its name label).
@@ -109,13 +112,14 @@ export function useMapMarkers(
       const selected = item.key === selectedRef.current;
       const marker = new kakao.maps.Marker({
         position: new kakao.maps.LatLng(item.lat, item.lng),
-        image: image(selected ? 'selected' : item.kind, level),
+        image: image(selected ? 'selected' : pinKind(item), level),
         title: item.title,
-        zIndex: selected ? 10 : 1,
+        zIndex: selected ? 10 : item.lit ? 2 : 1,
       });
       kakao.maps.event.addListener(marker, 'click', () => onSelectRef.current(item.key));
       entries.current.set(item.key, { marker, item });
-      if (selected) marker.setMap(map); // never inside a cluster
+      // Selected and lit night pins are never clustered: the selection and the "lights" stay visible at every zoom.
+      if (selected || item.lit) marker.setMap(map);
       else clustered.push(marker);
     }
     cl.addMarkers(clustered);
@@ -134,7 +138,7 @@ export function useMapMarkers(
     const onZoom = () => {
       const level = map.getLevel();
       entries.current.forEach(({ marker, item }) => {
-        if (item.key !== selectedRef.current) marker.setImage(image(item.kind, level));
+        if (item.key !== selectedRef.current) marker.setImage(image(pinKind(item), level));
       });
     };
     kakao.maps.event.addListener(map, 'zoom_changed', onZoom);
@@ -152,10 +156,9 @@ export function useMapMarkers(
     const level = map.getLevel();
     const prev = prevSelected.current && prevSelected.current !== selectedKey ? entries.current.get(prevSelected.current) : undefined;
     if (prev) {
-      prev.marker.setImage(image(prev.item.kind, level));
-      prev.marker.setZIndex(1);
-      prev.marker.setMap(null);
-      cl.addMarker(prev.marker);
+      prev.marker.setImage(image(pinKind(prev.item), level));
+      prev.marker.setZIndex(prev.item.lit ? 2 : 1);
+      if (!prev.item.lit) { prev.marker.setMap(null); cl.addMarker(prev.marker); }
     }
     label.current?.setMap(null);
     label.current = null;

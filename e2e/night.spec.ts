@@ -25,8 +25,8 @@ test.describe('Night page — time states', () => {
     await at(page, '15:00');
     await expect(page.getByRole('status').filter({ hasText: '곧 켜져요' })).toHaveText(/곧 켜져요 · 일몰까지 2시간 25분/);
     await expect(stat(page, '오늘 일몰')).toHaveText('17:25');
-    await expect(stat(page, '점등 중')).toHaveText('0곳');
-    await expect(stat(page, '운영 중')).toHaveText('1곳');
+    await expect(stat(page, '켜진 곳')).toHaveText('곧 켜져요'); // nothing is lit before sunset
+    await expect(stat(page, '갈 수 있는 곳')).toHaveText('1곳'); // 24h park (counted separately)
     await expect(card(page, '[픽스처] 야경 다리')).toContainText('17:55 점등');
     await expect(card(page, '[픽스처] 저녁 전시')).toContainText('운영 종료');
     await expect(page.locator('.v3-night')).toHaveClass(/is-before/);
@@ -35,24 +35,24 @@ test.describe('Night page — time states', () => {
   test('after sunset (19:30): "지금 켜져 있어요", lights on', async ({ page }) => {
     await at(page, '19:30');
     await expect(page.getByRole('status').filter({ hasText: '켜져 있어요' })).toBeVisible();
-    await expect(stat(page, '점등 중')).toHaveText('1곳');
-    await expect(stat(page, '운영 중')).toHaveText('2곳');
+    await expect(stat(page, '켜진 곳')).toHaveText('1곳'); // the sunset-lit bridge only
+    await expect(stat(page, '갈 수 있는 곳')).toHaveText('2곳'); // 24h park + evening exhibition
     await expect(card(page, '[픽스처] 야경 다리')).toContainText('● 점등 중');
     await expect(card(page, '[픽스처] 저녁 전시')).toContainText('운영 중');
     // Seasonal times: no badge, raw text only.
     await expect(card(page, '[픽스처] 계절 궁궐').locator('.v3-night__badge')).toHaveCount(0);
     await expect(card(page, '[픽스처] 계절 궁궐')).toContainText('하절기(3월~10월)');
-    // Hero lights: glowing spots = lit bridge + open spots
-    await expect(page.locator('.v3-night__hero .v3-night-lights__spot.is-on')).toHaveCount(3);
+    // Hero lights: only "켜진 곳" (점등 중) glow
+    await expect(page.locator('.v3-night__hero .v3-night-lights__spot.is-on')).toHaveCount(1);
   });
 
-  test('after 23:00 (23:30): "대부분 꺼졌어요"; only places still open glow', async ({ page }) => {
+  test('after 23:00 (23:30): "대부분 꺼졌어요"; nothing glows, open places counted', async ({ page }) => {
     await at(page, '23:30');
-    await expect(page.getByRole('status').filter({ hasText: '대부분 꺼졌어요' })).toBeVisible();
+    await expect(page.getByRole('status').filter({ hasText: '대부분 꺼졌어요' })).toHaveText(/대부분 꺼졌어요 · 갈 수 있는 곳 1곳/);
     await expect(card(page, '[픽스처] 야경 다리')).toContainText('소등');
     await expect(card(page, '[픽스처] 저녁 전시')).toContainText('운영 종료');
     await expect(card(page, '[픽스처] 24시간 공원')).toContainText('운영 중');
-    await expect(page.locator('.v3-night__hero .v3-night-lights__spot.is-on')).toHaveCount(1);
+    await expect(page.locator('.v3-night__hero .v3-night-lights__spot.is-on')).toHaveCount(0); // nothing lit after 23:00
   });
 });
 
@@ -98,8 +98,13 @@ test.describe('Night page — content and navigation', () => {
     await page.getByRole('button', { name: /무료로 가는 곳/ }).click();
     await page.getByRole('group', { name: '분류' }).getByRole('button', { name: '문화/체육' }).click();
     await expect(page.locator('.v3-night__count')).toHaveText(/^2곳/);
-    await page.getByRole('button', { name: '● 지금 켜진 곳만' }).click();
-    await expect(page.locator('.v3-night__count')).toHaveText(/^1곳/); // 저녁 전시 (open); 궁궐 has no status
+    await page.getByRole('button', { name: '지금 갈 수 있는 곳만' }).click();
+    await expect(page.locator('.v3-night__count')).toHaveText(/^1곳/); // 저녁 전시 (운영 중); 궁궐 has no status
+    await page.getByRole('button', { name: '● 지금 켜진 곳만' }).click(); // switches (the two are exclusive)
+    await expect(page.getByRole('button', { name: '지금 갈 수 있는 곳만' })).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.locator('.v3-night__count')).toHaveText(/^0곳/); // no lit spot among 문화/체육
+    await page.getByRole('group', { name: '분류' }).getByRole('button', { name: '전체' }).click();
+    await expect(page.locator('.v3-night__count')).toHaveText(/^1곳/); // the bridge
   });
 
   test('feature spot = first lit spot; card actions (map deep link, favorite, homepage)', async ({ page }) => {

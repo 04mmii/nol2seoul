@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Search & My — v3 proposal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet" />
+<link rel="stylesheet" href="styles-v3.css" />
+<style>
+:root{
+  --accent: var(--tangerine); --accent-text: var(--tangerine-deep); --accent-tint:#f4e5db; --accent-ink: var(--ink);
+}
+body{background:#e9e4da}
+.canvas{padding:72px 64px 120px;display:flex;flex-direction:column;gap:96px}
+.doc-head{max-width:1280px}
+.doc-head .k{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.doc-head h1{font-family:var(--sans);font-weight:800;font-size:56px;letter-spacing:-.04em;line-height:1.02;margin:14px 0 16px}
+.doc-head h1 em{font-style:normal;color:var(--accent)}
+.doc-head p{font-size:15px;color:var(--ink-2);max-width:720px;margin:0;line-height:1.65}
+.rules{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+.rules span{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--line-strong);padding:5px 9px;border-radius:2px;color:var(--ink-2)}
+
+.board{display:flex;flex-direction:column;gap:14px}
+.board-label{display:flex;align-items:baseline;gap:14px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.board-label b{color:var(--ink);font-weight:600}
+.board-label .note{color:var(--mute);text-transform:none;letter-spacing:0;font-family:var(--sans);font-size:13px}
+.row{display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap}
+.frame{background:var(--bone);border:1px solid var(--ink);box-shadow:0 6px 0 rgba(20,19,15,.08);position:relative;overflow:hidden}
+.frame.desk{width:1280px}
+.frame.mob{width:390px}
+
+/* mini chrome */
+.lb{height:30px;background:var(--ink);color:rgba(246,242,234,.78);display:flex;align-items:center;gap:28px;padding:0 28px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;overflow:hidden}
+.lb .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;margin-right:8px}
+.lb .hot{color:var(--ember)}
+.hd{height:64px;display:flex;align-items:center;gap:32px;padding:0 40px;border-bottom:1px solid var(--line);background:var(--bone)}
+.hd .brand{display:flex;align-items:center;gap:9px;font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:-.045em}
+.hd .brand i{width:21px;height:21px;background:var(--ink);color:var(--bone);display:grid;place-items:center;font-style:normal;font-size:13px}
+.hd nav{display:flex;gap:2px;flex:1}
+.hd nav a{padding:8px 11px;font-size:13.5px;font-weight:500;color:var(--ink-2)}
+.hd nav a.on{color:var(--ink);font-weight:700;box-shadow:inset 0 -2px 0 var(--accent)}
+.hd .ib{width:32px;height:32px;border:1px solid var(--line);border-radius:3px;display:grid;place-items:center;color:var(--ink-2)}
+.hd .av{width:32px;height:32px;border-radius:50%;background:var(--sand);border:1px solid var(--line)}
+.ghostpage{padding:40px;opacity:.35;filter:grayscale(.3)}
+.ghostpage .gh1{font-family:var(--display);font-weight:700;font-size:96px;letter-spacing:-.05em;line-height:.9}
+.ghostpage .ggrid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:40px;border-top:1px solid var(--line);border-left:1px solid var(--line)}
+.ghostpage .ggrid div{aspect-ratio:3/4;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--bone-2)}
+.scrim{position:absolute;inset:94px 0 0 0;background:rgba(20,19,15,.28)}
+
+/* search field (header, active) */
+.sfield{display:flex;align-items:center;gap:10px;width:420px;height:40px;padding:0 12px;border:1px solid var(--ink);background:var(--bone);border-radius:3px;box-shadow:0 0 0 3px var(--accent-tint)}
+.sfield input{border:none;background:transparent;outline:none;font-family:var(--sans);font-size:14px;flex:1;color:var(--ink)}
+.sfield .q{font-size:14px;color:var(--ink);flex:1}
+.sfield .q .caret{display:inline-block;width:1px;height:16px;background:var(--ink);vertical-align:-3px;margin-left:1px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.sfield .ph{color:var(--mute);font-size:14px;flex:1}
+.kbd{font-family:var(--mono);font-size:10px;border:1px solid var(--line-strong);border-radius:2px;padding:2px 5px;color:var(--mute)}
+
+/* search panel */
+.panel{position:absolute;top:94px;right:136px;width:640px;background:var(--bone);border:1px solid var(--ink);border-top:none;box-shadow:0 4px 0 var(--ink);z-index:3}
+.pn-sec{padding:18px 20px 16px;border-bottom:1px solid var(--line)}
+.pn-sec:last-of-type{border-bottom:none}
+.pn-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.pn-h .t{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);display:flex;gap:8px;align-items:center}
+.pn-h .t b{color:var(--ink);font-weight:600}
+.pn-h a{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);border-bottom:1px solid var(--line-strong)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:7px 11px;border:1px solid var(--line);border-radius:3px;font-size:13px;color:var(--ink-2);background:transparent}
+.chip .x{font-size:11px;color:var(--mute)}
+.chip.go{border-color:var(--ink);color:var(--ink);font-weight:600}
+.chip.go .n{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--accent-text)}
+.chip.go .lit{width:7px;height:7px;border-radius:50%;background:var(--ember);box-shadow:0 0 0 3px rgba(232,183,129,.35)}
+.pn-foot{display:flex;justify-content:space-between;padding:10px 20px;background:var(--bone-2);border-top:1px solid var(--line);font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--mute)}
+.pn-foot span{display:flex;gap:6px;align-items:center}
+
+.res{display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;padding:9px 10px;margin:0 -10px;border-radius:2px}
+.res + .res{border-top:1px dashed var(--line)}
+.res.focus{background:var(--accent-tint);box-shadow:inset 2px 0 0 var(--ink)}
+.res .th{width:44px;height:58px;background:var(--bone-2);position:relative;overflow:hidden}
+.res .th.n{background:#1b2a4c}
+.res .th.w{background:#e3d6c2}
+.res .th::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(20,19,15,.07) 0 1px,transparent 1px 6px)}
+.res .ic{width:44px;height:44px;border:1px solid var(--line-strong);display:grid;place-items:center;font-family:var(--mono);font-size:9px;letter-spacing:.04em;color:var(--ink-2);text-transform:uppercase}
+.res .ic.nt{background:var(--night);border-color:var(--night);color:var(--night-mute)}
+.res .ic.nt.on{box-shadow:0 0 0 3px rgba(232,183,129,.25)}
+.res .ic.nt .gl{width:8px;height:8px;border-radius:50%;background:var(--ember);box-shadow:0 0 10px 3px rgba(232,183,129,.7)}
+.res .nm{font-size:14.5px;font-weight:700;letter-spacing:-.02em;line-height:1.35}
+.res .nm mark{background:none;color:var(--accent-text);box-shadow:inset 0 -2px 0 var(--accent)}
+.res .sb{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap}
+.res .rt{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.badge{font-family:var(--mono);font-size:10px;letter-spacing:.04em;padding:3px 7px;border-radius:2px;white-space:nowrap}
+.badge.free{background:var(--accent-text);color:#fff}
+.badge.paid{background:var(--night);color:#fff}
+.badge.part{border:1px solid var(--accent-text);color:var(--accent-text)}
+.badge.vary{border:1px solid var(--night);color:var(--night)}
+.state{font-family:var(--mono);font-size:10px;letter-spacing:.05em;display:flex;gap:6px;align-items:center;white-space:nowrap}
+.state.lit{color:var(--accent-text)}
+.state.lit::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ember);box-shadow:0 0 0 3px rgba(232,183,129,.4)}
+.state.open{color:var(--ink-2)}
+.state.open::before{content:"";width:7px;height:7px;border-radius:50%;border:1px solid var(--ink-2)}
+.dday{font-family:var(--mono);font-size:10px;color:var(--ink);font-weight:600}
+
+.empty{padding:36px 20px 26px;text-align:left}
+.empty .big{font-family:var(--sans);font-weight:800;font-size:26px;letter-spacing:-.035em;line-height:1.2}
+.empty .big em{font-style:normal;color:var(--accent)}
+.empty p{font-size:13.5px;color:var(--ink-2);margin:10px 0 18px;line-height:1.6}
+
+/* annotation */
+.anno{width:300px;display:flex;flex-direction:column;gap:12px;padding-top:6px}
+.anno h4{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin:0 0 2px}
+.anno li{font-size:13px;line-height:1.55;color:var(--ink-2)}
+.anno ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
+.anno b{color:var(--ink)}
+
+/* mobile search */
+.m-top{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--ink)}
+.m-top .sfield{width:auto;flex:1;box-shadow:none}
+.m-top .cancel{font-size:13px;font-weight:600}
+.m-tabs{display:flex;gap:6px;padding:12px 16px;border-bottom:1px solid var(--line);overflow:hidden}
+.pill{padding:7px 12px;border-radius:3px;border:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.pill.on{background:var(--ink);border-color:var(--ink);color:var(--bone)}
+.m-sec{padding:16px 16px 6px}
+.m-sec .pn-h{margin-bottom:6px}
+
+/* my page */
+.mp{padding:48px 40px 56px}
+.mp-head{display:flex;justify-content:space-between;align-items:flex-end;gap:32px;padding-bottom:28px}
+.mp-head .eb{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);display:flex;gap:10px;align-items:center}
+.mp-head .eb::before{content:"";width:20px;height:1px;background:currentColor}
+.mp-head h2{font-family:var(--sans);font-weight:800;font-size:52px;letter-spacing:-.045em;line-height:1.02;margin:14px 0 0}
+.mp-head h2 em{font-style:normal;color:var(--accent)}
+.mp-head .local{font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:var(--mute);text-align:right;line-height:1.7}
+.mp-head .local b{color:var(--ink-2);font-weight:500}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--ink);border-bottom:1px solid var(--line)}
+.stats>div{padding:18px 0 20px 0;border-right:1px solid var(--line);padding-left:20px}
+.stats>div:first-child{padding-left:0}
+.stats>div:last-child{border-right:none}
+.stats .k{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.stats .v{font-family:var(--display);font-weight:700;font-size:32px;letter-spacing:-.035em;margin-top:6px;display:flex;align-items:baseline;gap:10px}
+.stats .v small{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.05em;color:var(--accent-text)}
+.stats .v .lit{width:9px;height:9px;border-radius:50%;background:var(--ember);box-shadow:0 0 0 4px rgba(232,183,129,.35);align-self:center}
+.mp-bar{display:flex;justify-content:space-between;align-items:center;padding:24px 0 20px}
+.tabs{display:flex;gap:6px}
+.sort{display:flex;gap:16px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.sort .on{color:var(--ink);box-shadow:inset 0 -1px 0 var(--ink)}
+.soon{display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--accent-tint);border-left:2px solid var(--accent);margin-bottom:20px;font-size:13.5px}
+.soon b{font-weight:700}
+.soon .m{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text)}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);border-left:1px solid var(--line)}
+.card{border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;flex-direction:column;background:var(--bone);position:relative}
+.card .ph{aspect-ratio:3/4;position:relative;overflow:hidden}
+.card .ph.w{background:#e3d6c2}.card .ph.b{background:#dfd8cb}.card .ph.n{background:#1b2a4c}
+.card .ph::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(20,19,15,.06) 0 1px,transparent 1px 8px)}
+.card .ph.n::after{background:repeating-linear-gradient(135deg,rgba(246,242,234,.06) 0 1px,transparent 1px 8px)}
+.card .cap{position:absolute;left:12px;bottom:10px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:rgba(20,19,15,.45);z-index:1}
+.card .ph.n .cap{color:rgba(246,242,234,.55)}
+.card .hrt{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:var(--accent);display:grid;place-items:center;z-index:2;color:var(--ink);font-size:13px}
+.card .dd{position:absolute;top:10px;left:10px;z-index:2;background:var(--ink);color:var(--bone);font-family:var(--mono);font-size:10px;letter-spacing:.06em;padding:4px 7px;border-radius:2px}
+.card .bd{padding:14px 14px 16px;display:flex;flex-direction:column;flex:1}
+.card .ct{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}
+.card .tt{font-size:15.5px;font-weight:700;letter-spacing:-.025em;line-height:1.32;margin-top:8px;flex:1}
+.card .ft{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px;padding-top:11px;border-top:1px solid var(--line);font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:var(--ink-2)}
+.card.ended .ph,.card.ended .bd>*:not(.ft){opacity:.45}
+.card.ended .ph{filter:grayscale(1)}
+.card .flag{position:absolute;left:0;right:0;top:calc(50% - 60px);z-index:2;text-align:center}
+.card .flag span{display:inline-block;background:var(--bone);border:1px solid var(--ink);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:6px 10px}
+.card .del{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);border-bottom:1px solid var(--ink)}
+.card.lost .ph{background:var(--bone-2);display:grid;place-items:center}
+.card.lost .ph::after{display:none}
+.card.lost .ph .q{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);text-align:center;line-height:1.8;padding:0 18px;border:1px dashed var(--line-strong);margin:0 16px;padding:18px 12px}
+.card.space .ph{aspect-ratio:3/4}
+.card .sp{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:14px;z-index:1}
+.nightph{background:linear-gradient(178deg,#0d1830 0%,#1b2a4c 70%,#2a2f45 100%)!important}
+.nightph .glow{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--ember);box-shadow:0 0 18px 6px rgba(232,183,129,.6);z-index:1}
+.nightph .river{position:absolute;left:-10%;right:-10%;top:58%;height:2px;background:rgba(246,242,234,.18);transform:rotate(-8deg);z-index:1}
+.nightph::after{display:none}
+
+/* empty my */
+.mp-empty{display:grid;grid-template-columns:1.1fr 1fr;border-top:1px solid var(--ink)}
+.mp-empty .l{padding:56px 40px 56px 0;border-right:1px solid var(--line)}
+.mp-empty .l .big{font-family:var(--sans);font-weight:800;font-size:40px;letter-spacing:-.04em;line-height:1.1}
+.mp-empty .l .big em{font-style:normal;color:var(--accent)}
+.mp-empty .l p{font-size:14.5px;color:var(--ink-2);line-height:1.65;margin:16px 0 26px;max-width:420px}
+.mp-empty .r{padding:56px 0 56px 40px;display:flex;flex-direction:column;gap:0}
+.mp-empty .r .it{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid var(--line)}
+.mp-empty .r .it:first-child{border-top:1px solid var(--line)}
+.mp-empty .r .it b{font-size:16px;letter-spacing:-.02em}
+.mp-empty .r .it span{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.btn-s{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:3px;font-weight:700;font-size:13.5px;border:1px solid var(--ink)}
+.btn-s.solid{background:var(--ink);color:var(--bone)}
+
+/* mobile my */
+.m-mp{padding:24px 16px 32px}
+.m-mp h2{font-family:var(--sans);font-weight:800;font-size:34px;letter-spacing:-.04em;line-height:1.05;margin:10px 0 18px}
+.m-mp h2 em{font-style:normal;color:var(--accent)}
+.m-stats{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--ink)}
+.m-stats>div{padding:14px 0;border-bottom:1px solid var(--line)}
+.m-stats>div:nth-child(odd){border-right:1px solid var(--line);padding-right:12px}
+.m-stats>div:nth-child(even){padding-left:14px}
+.m-stats .k{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+.m-stats .v{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:-.035em;margin-top:4px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1px solid var(--line);border-left:1px solid var(--line);margin-top:16px}
+.grid2 .card .tt{font-size:14px}
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <header class="doc-head">
+    <div class="k">NOLSEOUL v3 · PROPOSAL · 검색 & 마이페이지</div>
+    <h1>찾고, <em>모아두는</em><br/>서울.</h1>
+    <p>헤더 검색 패널과 마이페이지 v3 시안입니다. 화면 속 숫자와 이름은 예시이며, 실제 구현에서는 문화행사·문화공간·야경명소 API 데이터와 브라우저에 저장된 찜 목록으로 채웁니다. 데이터가 없는 항목(인기 검색어, 방문 기록, 평점, 레벨·배지)은 넣지 않았습니다.</p>
+    <div class="rules"><span>콘텐츠 폭 1400</span><span>카드 3:4 cover</span><span>날짜 11.01 — 11.05</span><span>요금 배지 4종</span><span>탠저린 위 글자 = ink</span><span>켜진 곳 = 점등 중만</span></div>
+  </header>
+
+  <!-- ============ SEARCH 1 ============ -->
+  <section class="board">
+    <div class="board-label"><b>S1</b> 검색 — 패널 열림 · 입력 전 <span class="note">헤더 검색창을 누르면 그 자리에서 넓어지고 아래로 패널이 열림</span></div>
+    <div class="row">
+      <div class="frame desk" style="height:620px">
+        <div class="lb"><span><i class="dot"></i>LIVE · 서울</span><span>오늘 서울 일몰 17:25</span><span>지금 진행 중인 행사 201건</span><span class="hot">이번 주 마감 23건</span><span>지금 갈 수 있는 야경명소 20곳</span></div>
+        <div class="hd">
+          <div class="brand"><i>N</i>NOLSEOUL</div>
+          <nav><a class="on">홈</a><a>문화행사</a><a>지도탐색</a><a>야경명소</a><a>마이페이지</a></nav>
+          <div class="sfield"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg><span class="q"><span class="caret"></span></span><span class="kbd">ESC</span></div>
+          <div class="ib">♢</div><div class="ib">♡</div><div class="av"></div>
+        </div>
+        <div class="ghostpage"><div class="gh1">THIS WEEK<br/>in 서울</div><div class="ggrid"><div></div><div></div><div></div><div></div></div></div>
+        <div class="scrim"></div>
+        <div class="panel">
+          <div class="pn-sec">
+            <div class="pn-h"><div class="t"><b>최근 검색</b></div><a>전체 지우기</a></div>
+            <div class="chips"><span class="chip">한강 <span class="x">✕</span></span><span class="chip">은평 한옥 <span class="x">✕</span></span><span class="chip">재즈 <span class="x">✕</span></span><span class="chip">성수동 <span class="x">✕</span></span></div>
+          </div>
+          <div class="pn-sec">
+            <div class="pn-h"><div class="t"><b>바로 가기</b> · 오늘 데이터 기준</div></div>
+            <div class="chips">
+              <span class="chip go">이번 주 무료 행사 <span class="n">68</span></span>
+              <span class="chip go">곧 마감 <span class="n">23</span></span>
+              <span class="chip go"><span class="lit"></span>지금 켜진 야경 <span class="n">11</span></span>
+              <span class="chip go">박물관·미술관 <span class="n">155</span></span>
+            </div>
+          </div>
+          <div class="pn-sec">
+            <div class="pn-h"><div class="t"><b>찾을 수 있는 것</b></div></div>
+            <div class="sb" style="font-family:var(--mono);font-size:11px;color:var(--ink-2);letter-spacing:.03em">행사 이름 · 장소 · 자치구 · 분류 / 문화공간 이름 · 주소 / 야경명소 이름</div>
+          </div>
+          <div class="pn-foot"><span><span class="kbd">↑</span><span class="kbd">↓</span> 이동</span><span><span class="kbd">ENTER</span> 열기</span><span><span class="kbd">ESC</span> 닫기</span></div>
+        </div>
+      </div>
+      <ul class="anno"><h4>설계 포인트</h4><ol>
+        <li><b>최근 검색</b>은 이 브라우저에만 저장. 하나씩 지우거나 전체 지우기.</li>
+        <li><b>바로 가기</b>는 "인기 검색어" 대신 실제 데이터로 계산한 묶음. 숫자도 실시간.</li>
+        <li>"지금 켜진 야경"은 일몰 전이면 <b>"곧 켜져요"</b>로 바뀜.</li>
+        <li>입력 전부터 무엇을 찾을 수 있는지 알려줘서 빈 검색을 줄임.</li>
+      </ol></ul>
+    </div>
+  </section>
+
+  <!-- ============ SEARCH 2 ============ -->
+  <section class="board">
+    <div class="board-label"><b>S2</b> 검색 — 결과 · "한강" <span class="note">입력하는 동안 바로 결과. 종류별로 묶고, 각 묶음은 최대 4개 + 전체 보기</span></div>
+    <div class="row">
+      <div class="frame desk" style="height:860px">
+        <div class="lb"><span><i class="dot"></i>LIVE · 서울</span><span>오늘 서울 일몰 17:25</span><span>지금 진행 중인 행사 201건</span><span class="hot">지금 켜진 야경명소 11곳</span></div>
+        <div class="hd">
+          <div class="brand"><i>N</i>NOLSEOUL</div>
+          <nav><a class="on">홈</a><a>문화행사</a><a>지도탐색</a><a>야경명소</a><a>마이페이지</a></nav>
+          <div class="sfield"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg><span class="q">한강<span class="caret"></span></span><span class="kbd">✕</span></div>
+          <div class="ib">♢</div><div class="ib">♡</div><div class="av"></div>
+        </div>
+        <div class="ghostpage"><div class="gh1">THIS WEEK<br/>in 서울</div><div class="ggrid"><div></div><div></div><div></div><div></div></div></div>
+        <div class="scrim"></div>
+        <div class="panel">
+          <div class="pn-sec">
+            <div class="pn-h"><div class="t"><b>문화행사</b> · 12건</div><a>문화행사에서 전체 보기 →</a></div>
+            <div class="res focus"><div class="th n"></div><div><div class="nm"><mark>한강</mark> 달빛 야시장</div><div class="sb"><span>축제·이벤트</span><span>여의도 <mark style="background:none;color:inherit">한강</mark>공원</span><span>11.07 — 12.27</span></div></div><div class="rt"><span class="badge free">무료</span></div></div>
+            <div class="res"><div class="th w"></div><div><div class="nm">[서울시립과학관] <mark>한강</mark>의 생물 탐사</div><div class="sb"><span>교육·체험</span><span>노원구</span><span>11.15</span></div></div><div class="rt"><span class="badge part">일부 무료</span></div></div>
+            <div class="res"><div class="th"></div><div><div class="nm"><mark>한강</mark> 노을 음악회 — 재즈 트리오</div><div class="sb"><span>공연·클래식</span><span>반포<mark style="background:none;color:inherit">한강</mark>공원</span><span>11.01 — 11.12</span></div></div><div class="rt"><span class="badge paid">유료</span><span class="dday">D-2</span></div></div>
+          </div>
+          <div class="pn-sec">
+            <div class="pn-h"><div class="t"><b>문화공간</b> · 4곳</div><a>지도에서 전체 보기 →</a></div>
+            <div class="res"><div class="ic">공연장</div><div><div class="nm"><mark>한강</mark>아트센터</div><div class="sb"><span>영등포구 여의동로</span></div></div><div class="rt"></div></div>
+            <div class="res"><div class="ic">미술관</div><div><div class="nm">갤러리 <mark>한강</mark></div><div class="sb"><span>용산구 이촌로</span></div></div><div class="rt"></div></div>
+          </div>
+          <div class="pn-sec">
+            <div class="pn-h"><div class="t"><b>야경명소</b> · 3곳</div><a>야경명소에서 전체 보기 →</a></div>
+            <div class="res"><div class="ic nt on"><span class="gl"></span></div><div><div class="nm"><mark>한강</mark>대교</div><div class="sb"><span>용산구 · 동작구</span><span>일몰 ~ 23:00</span></div></div><div class="rt"><span class="state lit">점등 중</span></div></div>
+            <div class="res"><div class="ic nt"></div><div><div class="nm">이촌<mark>한강</mark>공원</div><div class="sb"><span>용산구</span><span>24시간</span></div></div><div class="rt"><span class="state open">갈 수 있음</span></div></div>
+          </div>
+          <div class="pn-foot"><span>"한강" 결과 19건 · 이름·장소·주소에서 찾음</span><span><span class="kbd">ENTER</span> 선택한 결과 열기</span></div>
+        </div>
+      </div>
+      <ul class="anno"><h4>설계 포인트</h4><ol>
+        <li>결과는 <b>문화행사 → 문화공간 → 야경명소</b> 순. 결과가 없는 묶음은 숨김.</li>
+        <li>일치한 글자는 <b>탠저린 밑줄 + accent-text</b>로 표시.</li>
+        <li>행사는 기존 요금 배지 4종과 <b>마감 D-day</b>(7일 이내만), 야경은 <b>점등 중 / 갈 수 있음</b> 상태를 재사용.</li>
+        <li>키보드로 고른 줄은 accent-tint 배경 + 왼쪽 ink 선 (카드 호버와 같은 언어).</li>
+        <li>"전체 보기"는 각 페이지로 이동하면서 <b>검색어가 필터로 적용</b>된 상태로 열림.</li>
+      </ol></ul>
+    </div>
+  </section>
+
+  <!-- ============ SEARCH 3 + MOBILE ============ -->
+  <section class="board">
+    <div class="board-label"><b>S3</b> 결과 없음 · <b>S4</b> 모바일 <span class="note">결과가 없으면 막다른 길 대신 바로 가기로 연결 / 모바일은 전체 화면 + 종류 탭</span></div>
+    <div class="row">
+      <div class="frame" style="width:640px">
+        <div style="padding:14px 20px;border-bottom:1px solid var(--ink)"><div class="sfield" style="width:100%"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg><span class="q">루브르 박물관<span class="caret"></span></span><span class="kbd">✕</span></div></div>
+        <div class="empty">
+          <div class="big">‘루브르 박물관’과<br/>맞는 곳이 <em>서울엔</em> 없어요.</div>
+          <p>행사 이름 대신 장소나 동네(예: 종로, 성수)로 찾거나,<br/>띄어쓰기를 바꿔 다시 검색해 보세요.</p>
+          <div class="chips"><span class="chip go">박물관·미술관 <span class="n">155</span></span><span class="chip go">이번 주 전시 <span class="n">41</span></span><span class="chip go">이번 주 무료 행사 <span class="n">68</span></span></div>
+        </div>
+        <div class="pn-foot"><span>찾는 범위: 진행 중·3개월 내 행사 · 문화공간 · 야경명소</span></div>
+      </div>
+
+      <div class="frame mob" style="height:780px">
+        <div class="m-top"><div class="sfield"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg><span class="q">한강<span class="caret"></span></span></div><span class="cancel">취소</span></div>
+        <div class="m-tabs"><span class="pill on">전체 19</span><span class="pill">행사 12</span><span class="pill">공간 4</span><span class="pill">야경 3</span></div>
+        <div class="m-sec">
+          <div class="pn-h"><div class="t"><b>문화행사</b> · 12</div><a>전체 →</a></div>
+          <div class="res"><div class="th n"></div><div><div class="nm"><mark>한강</mark> 달빛 야시장</div><div class="sb"><span>여의도한강공원</span><span>11.07–12.27</span></div></div><div class="rt"><span class="badge free">무료</span></div></div>
+          <div class="res"><div class="th"></div><div><div class="nm"><mark>한강</mark> 노을 음악회</div><div class="sb"><span>반포한강공원</span><span>11.01–11.12</span></div></div><div class="rt"><span class="badge paid">유료</span><span class="dday">D-2</span></div></div>
+        </div>
+        <div class="m-sec">
+          <div class="pn-h"><div class="t"><b>문화공간</b> · 4</div><a>전체 →</a></div>
+          <div class="res"><div class="ic">공연장</div><div><div class="nm"><mark>한강</mark>아트센터</div><div class="sb"><span>영등포구</span></div></div><div class="rt"></div></div>
+        </div>
+        <div class="m-sec">
+          <div class="pn-h"><div class="t"><b>야경명소</b> · 3</div><a>전체 →</a></div>
+          <div class="res"><div class="ic nt on"><span class="gl"></span></div><div><div class="nm"><mark>한강</mark>대교</div><div class="sb"><span>일몰 ~ 23:00</span></div></div><div class="rt"><span class="state lit">점등 중</span></div></div>
+          <div class="res"><div class="ic nt"></div><div><div class="nm">이촌<mark>한강</mark>공원</div><div class="sb"><span>24시간</span></div></div><div class="rt"><span class="state open">갈 수 있음</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MY 1 ============ -->
+  <section class="board">
+    <div class="board-label"><b>M1</b> 마이페이지 — 찜 모아보기 <span class="note">로그인 없이 이 브라우저에 저장되는 찜을 중심으로. 통계는 찜 데이터와 오늘 날짜로만 계산</span></div>
+    <div class="row">
+      <div class="frame desk">
+        <div class="lb"><span><i class="dot"></i>LIVE · 서울</span><span>오늘 서울 일몰 17:25</span><span class="hot">지금 켜진 야경명소 11곳</span></div>
+        <div class="hd">
+          <div class="brand"><i>N</i>NOLSEOUL</div>
+          <nav><a>홈</a><a>문화행사</a><a>지도탐색</a><a>야경명소</a><a class="on">마이페이지</a></nav>
+          <div class="search-pill"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg><span>행사 · 장소 · 동네 검색</span></div>
+          <div class="ib">♢</div><div class="ib">♡</div><div class="av"></div>
+        </div>
+        <div class="mp">
+          <div class="mp-head">
+            <div><div class="eb">MY · 나의 놀서울</div><h2>찜해 둔 서울,<br/><em>32</em>곳.</h2></div>
+            <div class="local"><b>이 브라우저에 저장돼요</b><br/>로그인 없이 사용 · 다른 기기와 공유되지 않음</div>
+          </div>
+          <div class="stats">
+            <div><div class="k">찜한 행사</div><div class="v">18 <small>진행 중 12</small></div></div>
+            <div><div class="k">이번 주 마감</div><div class="v">3 <small>놓치기 전에</small></div></div>
+            <div><div class="k">찜한 문화공간</div><div class="v">9</div></div>
+            <div><div class="k">지금 켜진 찜 야경</div><div class="v"><span class="lit"></span>2 <small>/ 5곳</small></div></div>
+          </div>
+          <div class="mp-bar">
+            <div class="tabs"><span class="pill on">전체 32</span><span class="pill">문화행사 18</span><span class="pill">문화공간 9</span><span class="pill">야경명소 5</span></div>
+            <div class="sort"><span class="on">마감 임박순</span><span>찜한 순</span></div>
+          </div>
+          <div class="soon"><span class="m">이번 주 마감</span><span><b>한강 노을 음악회</b> 외 2건이 이번 주에 끝나요.</span></div>
+          <div class="grid4">
+            <div class="card"><div class="ph n"><span class="dd">D-2</span><span class="hrt">♥</span><span class="cap">/poster</span></div><div class="bd"><div class="ct">공연·클래식</div><div class="tt">한강 노을 음악회 — 재즈 트리오</div><div class="ft"><span>11.01 — 11.12</span><span class="badge paid">유료</span></div></div></div>
+            <div class="card"><div class="ph w"><span class="dd">D-5</span><span class="hrt">♥</span><span class="cap">/poster</span></div><div class="bd"><div class="ct">전시·미술</div><div class="tt">2026 은평역사한옥박물관 기획전</div><div class="ft"><span>09.13 — 11.15</span><span class="badge free">무료</span></div></div></div>
+            <div class="card"><div class="ph nightph"><span class="river"></span><span class="glow" style="left:58%;top:52%"></span><span class="hrt">♥</span><span class="cap" style="color:rgba(246,242,234,.6)">실제 위치 그래픽</span></div><div class="bd"><div class="ct">야경명소 · 공공시설</div><div class="tt">한강대교</div><div class="ft"><span>일몰 ~ 23:00</span><span class="state lit">점등 중</span></div></div></div>
+            <div class="card"><div class="ph b"><span class="hrt">♥</span><span class="cap">/photo · 문화공간</span></div><div class="bd"><div class="ct">문화공간 · 미술관</div><div class="tt">서울시립미술관 서소문본관</div><div class="ft"><span>중구 덕수궁길</span><span>월 휴관</span></div></div></div>
+            <div class="card"><div class="ph b"><span class="hrt">♥</span><span class="cap">/poster</span></div><div class="bd"><div class="ct">교육·체험</div><div class="tt">[서울시립과학관] 어른이 과학놀이터</div><div class="ft"><span>11.22</span><span class="badge part">일부 무료</span></div></div></div>
+            <div class="card ended"><div class="ph w"><span class="cap">/poster</span></div><div class="flag"><span>종료된 행사</span></div><div class="bd"><div class="ct">축제·이벤트</div><div class="tt">서울 빛초롱 축제 2026</div><div class="ft"><span>10.03 — 10.27</span><span class="del">찜 삭제</span></div></div></div>
+            <div class="card lost"><div class="ph"><div class="q">정보를 불러올 수 없는 행사<br/>서울시 데이터에서 사라졌어요</div></div><div class="bd"><div class="ct">공연·뮤지컬</div><div class="tt">노원문화재단 기획공연</div><div class="ft"><span>저장: 05.15 — 05.30</span><span class="del">찜 삭제</span></div></div></div>
+            <div class="card"><div class="ph nightph" style="background:linear-gradient(178deg,#0d1830,#22335c 60%,#7d4a45)!important"><span class="hrt">♥</span><span class="cap" style="color:rgba(246,242,234,.65)">사진: 한국관광공사 · 촬영 이범수</span></div><div class="bd"><div class="ct">야경명소 · 공원/광장</div><div class="tt">남산서울타워</div><div class="ft"><span>개별시설 상이</span><span></span></div></div></div>
+          </div>
+        </div>
+      </div>
+      <ul class="anno"><h4>설계 포인트</h4><ol>
+        <li>제목 숫자와 통계 4칸은 <b>찜 데이터 + 오늘 날짜</b>로만 계산. 방문 기록·레벨·배지는 데이터가 없어 제외.</li>
+        <li><b>"이번 주 마감"</b>을 가장 먼저 알려줌 — 찜의 실제 쓸모는 놓치지 않는 것.</li>
+        <li>카드는 홈·목록과 <b>같은 공용 카드</b>. 마감 7일 이내면 왼쪽 위 D-day.</li>
+        <li>문화공간·야경도 같은 그리드에. 야경은 사진(15곳) 또는 빛 점 그래픽 + 점등 상태.</li>
+        <li><b>종료된 행사 / 불러올 수 없는 행사</b>는 흐리게 + 라벨 + 찜 삭제. 자동으로 지우지 않음.</li>
+        <li>"이 브라우저에 저장돼요" 안내로 로그인 없는 구조를 솔직하게 알림.</li>
+      </ol></ul>
+    </div>
+  </section>
+
+  <!-- ============ MY 2 + MOBILE ============ -->
+  <section class="board">
+    <div class="board-label"><b>M2</b> 찜이 없을 때 · <b>M3</b> 모바일 <span class="note">빈 화면도 다음 행동으로 연결</span></div>
+    <div class="row">
+      <div class="frame" style="width:860px">
+        <div class="mp" style="padding-top:40px">
+          <div class="mp-head" style="padding-bottom:24px"><div><div class="eb">MY · 나의 놀서울</div><h2 style="font-size:44px">아직 찜한<br/>서울이 없어요.</h2></div></div>
+          <div class="mp-empty">
+            <div class="l"><div class="big">마음에 드는 곳에서<br/><em>♥</em>를 눌러 두세요.</div><p>행사·문화공간·야경명소를 찜하면 여기에 모이고, 마감이 다가오면 가장 먼저 알려드려요.</p><span class="btn-s solid">이번 주 행사 보기 →</span></div>
+            <div class="r">
+              <div class="it"><b>이번 주 무료 행사</b><span>68건 →</span></div>
+              <div class="it"><b>곧 마감되는 전시</b><span>23건 →</span></div>
+              <div class="it"><b>지금 켜진 야경명소</b><span>11곳 →</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="frame mob">
+        <div class="m-mp">
+          <div class="eb" style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)">MY · 나의 놀서울</div>
+          <h2>찜해 둔 서울,<br/><em>32</em>곳.</h2>
+          <div class="m-stats">
+            <div><div class="k">찜한 행사</div><div class="v">18</div></div>
+            <div><div class="k">이번 주 마감</div><div class="v">3</div></div>
+            <div><div class="k">찜한 공간</div><div class="v">9</div></div>
+            <div><div class="k">켜진 찜 야경</div><div class="v">2</div></div>
+          </div>
+          <div class="m-tabs" style="padding:14px 0 0;border:none"><span class="pill on">전체</span><span class="pill">행사</span><span class="pill">공간</span><span class="pill">야경</span></div>
+          <div class="grid2">
+            <div class="card"><div class="ph n"><span class="dd">D-2</span><span class="hrt">♥</span></div><div class="bd"><div class="ct">공연</div><div class="tt">한강 노을 음악회</div><div class="ft"><span>11.01–11.12</span><span class="badge paid">유료</span></div></div></div>
+            <div class="card"><div class="ph w"><span class="dd">D-5</span><span class="hrt">♥</span></div><div class="bd"><div class="ct">전시</div><div class="tt">은평역사한옥박물관 기획전</div><div class="ft"><span>09.13–11.15</span><span class="badge free">무료</span></div></div></div>
+            <div class="card"><div class="ph nightph"><span class="river"></span><span class="glow" style="left:55%;top:50%"></span><span class="hrt">♥</span></div><div class="bd"><div class="ct">야경</div><div class="tt">한강대교</div><div class="ft"><span>~23:00</span><span class="state lit">점등 중</span></div></div></div>
+            <div class="card ended"><div class="ph w"></div><div class="flag"><span>종료</span></div><div class="bd"><div class="ct">축제</div><div class="tt">서울 빛초롱 축제</div><div class="ft"><span>10.03–10.27</span><span class="del">삭제</span></div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

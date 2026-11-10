@@ -4,6 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { parseOperatingTime, nightState } from '../utils/night';
+import { buildNight } from '../components/night/selectors';
 
 const SUNSET = 17 * 60 + 25;
 const TUE = 2, MON = 1, SAT = 6;
@@ -64,5 +65,28 @@ test.describe('Night spot status from OPERATING_TIME', () => {
       expect(parseOperatingTime(t, 11).kind).toBe('none');
       expect(at(t, '19:30')).toBe('');
     }
+  });
+});
+
+test.describe('Manual rules (data/night-manual-rules.json)', () => {
+  const spot = { NUM: '1', SUBJECT_CD: '문화/체육', TITLE: '남산서울타워', ADDR: '서울특별시 용산구 남산공원길 105', LA: '37.55', LO: '126.99', URL: '', OPERATING_TIME: '연중무휴 * 타워내 개별시설 운영시간 상이', ENTR_FEE: '', SUBWAY: '', BUS: '' } as never;
+  const at1930 = new Date('2026-11-10T19:30:00+09:00');
+
+  test('without a manual rule the unparseable time has no status', () => {
+    const v = buildNight([spot], at1930, {}).views[0];
+    expect(v.state.badge).toBe('none');
+    expect(v.manual).toBe(false);
+  });
+
+  test('an enabled manual rule replaces OPERATING_TIME and is flagged', () => {
+    const v = buildNight([spot], at1930, { 남산서울타워: { enabled: true, operatingTime: '일몰후~ 23:00', source: 'test' } }).views[0];
+    expect(v.state.label).toBe('점등 중');
+    expect(v.manual).toBe(true);
+  });
+
+  test('a disabled manual rule is ignored (the shipped 남산서울타워 example is disabled)', () => {
+    const v = buildNight([spot], at1930, { 남산서울타워: { enabled: false, operatingTime: '일몰후~ 23:00' } }).views[0];
+    expect(v.state.badge).toBe('none');
+    expect(buildNight([spot], at1930).views[0].manual).toBe(false); // real data file
   });
 });

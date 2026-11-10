@@ -7,9 +7,9 @@ import './live-bar.css';
  * v3 Live Bar (design-ref chrome-v2.jsx `LiveBar`), real data only. Status "LIVE · 서울 · date",
  * scrolling ticker, KST clock. The ticker pauses on hover/focus and with the pause button
  * (WCAG 2.2.2); with prefers-reduced-motion it doesn't move and shows one static copy.
- * Hidden on the map route (App.tsx), where the header is fixed over a full-screen map.
+ * On the map route it is fixed at the top (`fixed`), above the fixed header; the map subtracts its 34px.
  */
-const LiveBar: React.FC = () => {
+const LiveBar: React.FC<{ fixed?: boolean }> = ({ fixed }) => {
   const { events, loading: evLoading, isError: evError } = useEvents();
   const { spots, loading: spLoading, isError: spError } = useNightViewSpots();
   const [now, setNow] = useState(() => new Date());
@@ -47,7 +47,7 @@ const LiveBar: React.FC = () => {
   );
 
   return (
-    <div className="v3-live" role="region" aria-label="실시간 정보">
+    <div className={`v3-live ${fixed ? 'v3-live--fixed' : ''}`} role="region" aria-label="실시간 정보">
       <div className="v3-live__status"><span className="v3-live__dot" aria-hidden="true" />LIVE · 서울 · {date}</div>
       <div className={`v3-live__stream ${paused ? 'is-paused' : ''}`}>
         <div className="v3-live__track">

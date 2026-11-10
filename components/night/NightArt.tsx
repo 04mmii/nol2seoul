@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import NightLights from './NightLights';
 import type { NightSpotView } from './selectors';
+import './night-v3.css'; // shared with the map's selected card
 
 /**
  * Card / feature artwork. A night photo from 한국관광공사 when the spot has one (static mapping,

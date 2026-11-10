@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useFavorites, useNightViewSpots } from '../hooks';
 import NightLights from '../components/night/NightLights';
 import NightArt from '../components/night/NightArt';
-import { COLLECTIONS, buildNight, pickFeature, type CollectionId, type NightSpotView } from '../components/night/selectors';
+import { COLLECTIONS, buildNight, matchesNightFilter, pickFeature, type CollectionId, type NightFilter, type NightSpotView } from '../components/night/selectors';
 import { formatHm } from '../utils/sun';
 import '../components/night/night-v3.css';
 
@@ -34,12 +34,23 @@ const NightPage: React.FC = () => {
 
   const [subject, setSubject] = useState(ALL);
   const [collection, setCollection] = useState<CollectionId | null>(null);
-  const [onlyOn, setOnlyOn] = useState(false);
+  const [nowFilter, setNowFilter] = useState<NightFilter>(null);
+
+  // Deep link from the map ("야경명소에서 보기"): /night?spot=<index> scrolls to that card and highlights it.
+  const [params] = useSearchParams();
+  const target = params.get('spot');
+  useEffect(() => {
+    if (loading || target === null) return;
+    const el = document.getElementById(`night-spot-${target}`);
+    if (!el) return;
+    el.scrollIntoView({ block: 'center', behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    el.focus({ preventScroll: true });
+  }, [loading, target]);
 
   const shown = night.views.filter((v) =>
     (subject === ALL || v.spot.SUBJECT_CD === subject)
     && (!collection || COLLECTIONS.find((c) => c.id === collection)!.test(v))
-    && (!onlyOn || v.state.badge === 'lit' || v.state.badge === 'open'),
+    && matchesNightFilter(v.state.badge, nowFilter),
   );
 
   const toSunset = night.sunset - night.minutes;
@@ -48,7 +59,7 @@ const NightPage: React.FC = () => {
       ? `곧 켜져요 · 일몰까지 ${Math.floor(toSunset / 60) ? `${Math.floor(toSunset / 60)}시간 ` : ''}${toSunset % 60}분`
       : night.phase === 'lit'
         ? '지금 켜져 있어요'
-        : '대부분 꺼졌어요 · 아직 열린 곳만 빛나요';
+        : `대부분 꺼졌어요 · 갈 수 있는 곳 ${night.open}곳`;
 
   return (
     <div className={`v3-night is-${night.phase}`}>
@@ -74,8 +85,9 @@ const NightPage: React.FC = () => {
             </p>
             <dl className="v3-night__stats">
               <div><dt>오늘 일몰</dt><dd>{formatHm(night.sunset)}</dd></div>
-              <div><dt>점등 중</dt><dd>{loading ? '—' : `${night.lit}곳`}</dd></div>
-              <div><dt>운영 중</dt><dd>{loading ? '—' : `${night.open}곳`}</dd></div>
+              {/* 켜진 곳 = 점등 중 only (0 before sunset → "곧 켜져요"); 갈 수 있는 곳 = 운영 중, counted separately. */}
+              <div><dt>켜진 곳</dt><dd className={!loading && night.lit === 0 && night.phase === 'before' ? 'is-soon' : undefined}>{loading ? '—' : night.lit === 0 && night.phase === 'before' ? '곧 켜져요' : `${night.lit}곳`}</dd></div>
+              <div><dt>갈 수 있는 곳</dt><dd>{loading ? '—' : `${night.open}곳`}</dd></div>
             </dl>
           </div>
         </div>
@@ -146,7 +158,9 @@ const NightPage: React.FC = () => {
                     <button key={s} type="button" className="v3-night__chip v3-focus" aria-pressed={subject === s} onClick={() => setSubject(s)}>{s}</button>
                   ))}
                 </div>
-                <button type="button" className="v3-night__chip v3-night__chip--toggle v3-focus" aria-pressed={onlyOn} onClick={() => setOnlyOn((o) => !o)}>● 지금 켜진 곳만</button>
+                {([['lit', '● 지금 켜진 곳만'], ['open', '지금 갈 수 있는 곳만']] as const).map(([f, label]) => (
+                  <button key={f} type="button" className="v3-night__chip v3-night__chip--toggle v3-focus" aria-pressed={nowFilter === f} onClick={() => setNowFilter((cur) => (cur === f ? null : f))}>{label}</button>
+                ))}
               </div>
             </div>
             <p className="v3-night__count">{shown.length}곳{collection ? ` · ${COLLECTIONS.find((c) => c.id === collection)!.ko}` : ''}</p>
@@ -155,7 +169,7 @@ const NightPage: React.FC = () => {
             ) : (
               <div className="v3-night__grid">
                 {shown.map((v) => (
-                  <article key={v.index} className="v3-night__card">
+                  <article key={v.index} id={`night-spot-${v.index}`} tabIndex={-1} className={`v3-night__card ${target === String(v.index) ? 'is-target' : ''}`}>
                     <div className="v3-night__card-top">
                       <span className="v3-night__kicker">SPOT № {String(v.index + 1).padStart(2, '0')}</span>
                       <StateBadge view={v} />
@@ -163,7 +177,10 @@ const NightPage: React.FC = () => {
                     <div className="v3-night__card-art"><NightArt view={v} views={night.views} /></div>
                     <h3 className="v3-night__card-title">{v.spot.TITLE}</h3>
                     <p className="v3-night__card-meta">{[v.district, v.spot.SUBJECT_CD].filter(Boolean).join(' · ')}</p>
-                    <p className="v3-night__card-time">{v.spot.OPERATING_TIME}</p>
+                    <p className="v3-night__card-time">
+                      {v.spot.OPERATING_TIME}
+                      {v.manual && <span className="v3-night__manual" title="data/night-manual-rules.json — API 값이 아닌 수동 규칙"> · 수동 규칙 적용</span>}
+                    </p>
                     {v.desc && <p className="v3-night__card-desc">{v.desc}</p>}
                     <SpotActions view={v} saved={isFavorite(v.fav.id, 'spot')} onToggle={() => toggleFavorite(v.fav)} compact />
                   </article>

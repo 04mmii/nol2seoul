@@ -157,6 +157,81 @@ test.describe('Map (v3) — with the Kakao SDK stub (zoomed in, no clusters)', (
   });
 });
 
+test.describe('Map (v3) — night spots use the night page language (Kakao SDK stub)', () => {
+  // One sunset-lit spot (bridge) + one 24h spot. Tue 2026-11-10, Seoul sunset 17:25 → bridge lights at 17:55.
+  const NIGHT = [
+    { NUM: '1', SUBJECT_CD: '공공시설', TITLE: '[픽스처] 야경 다리', ADDR: '서울특별시 마포구 다리로 1', LA: '37.54', LO: '126.93', URL: '', OPERATING_TIME: '일몰 30분후 점등 ~ 23:00 소등', ENTR_FEE: '무료', FREE_YN: '무료', CONTENTS: '', SUBWAY: '', BUS: '' },
+    { NUM: '2', SUBJECT_CD: '공원/광장', TITLE: '청계천', ADDR: '서울특별시 종로구 청계천로 1', LA: '37.569', LO: '126.978', URL: '', OPERATING_TIME: '24시간 연중무휴', ENTR_FEE: '무료', FREE_YN: '무료', CONTENTS: '', SUBWAY: '', BUS: '' },
+  ];
+  const openAt = async (page: import('@playwright/test').Page, kst: string) => {
+    await page.clock.setFixedTime(new Date(`2026-11-10T${kst}:00+09:00`));
+    await page.route('**/api/seoulapi?type=night', (r) => r.fulfill({ json: { viewNightSpot: { row: NIGHT } } }));
+    await page.route('https://tong.visitkorea.or.kr/**', (r) => r.fulfill({ contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64') }));
+    await useKakaoStub(page);
+    await page.goto('/#/map');
+    await page.getByRole('group', { name: '종류' }).getByRole('button', { name: '야경명소' }).click();
+    // Level 6: both fixture spots on screen; they are far apart, so they are not clustered.
+    for (let i = 0; i < 2; i++) await page.getByRole('button', { name: '확대' }).click();
+  };
+  const src = async (page: import('@playwright/test').Page, title: string) => decodeURIComponent((await pin(page, title).getAttribute('src')) ?? '');
+
+  test('before sunset: night pins stay night; info line shows sunset and what is on', async ({ page }) => {
+    await openAt(page, '15:00');
+    expect(await src(page, '[픽스처] 야경 다리')).toContain('fill="#111d38"');
+    await expect(page.getByRole('status').filter({ hasText: '오늘 일몰' })).toHaveText('오늘 일몰 17:25 · 곧 켜져요 · 갈 수 있는 곳 1곳'); // nothing lit yet; 24h place can be visited
+    await expect(page.locator('.v3-map__stage')).toHaveClass(/is-night/); // darkening kept
+  });
+
+  test('after sunset: the lit spot glows ember; toggle, legend, card with photo and night-page link', async ({ page }) => {
+    await openAt(page, '19:30');
+    const lit = await src(page, '[픽스처] 야경 다리');
+    expect(lit).toContain('fill="#e8b781"');
+    expect(lit).toContain('radialGradient'); // soft glow
+    expect(await src(page, '청계천')).toContain('fill="#111d38"'); // open but not sunset-lit → night pin
+    await expect(page.getByLabel('범례')).toContainText('켜진 야경');
+    await expect(page.getByRole('status').filter({ hasText: '오늘 일몰' })).toHaveText('오늘 일몰 17:25 · 지금 켜진 곳 1곳 · 갈 수 있는 곳 1곳');
+    await page.getByRole('button', { name: '● 지금 켜진 곳만' }).click();
+    await expect(list(page).getByText('1곳', { exact: true })).toBeVisible();
+    await expect(listItem(page, '[픽스처] 야경 다리')).toBeVisible();
+    await page.getByRole('button', { name: '지금 갈 수 있는 곳만' }).click();
+    await expect(listItem(page, '청계천')).toBeVisible();
+    await page.getByRole('button', { name: '지금 갈 수 있는 곳만' }).click(); // off → both again
+
+    await pin(page, '[픽스처] 야경 다리').click();
+    await expect(card(page).locator('.v3-map-card__state')).toHaveText('● 점등 중');
+    await expect(card(page)).toContainText('일몰 30분후 점등 ~ 23:00 소등');
+    await expect(card(page).locator('figcaption')).toHaveText('실제 위치 그래픽'); // no photo → mini map
+    await expect(card(page).getByRole('link', { name: '야경명소에서 보기 →' })).toHaveAttribute('href', '#/night?spot=0');
+
+    await listItem(page, '청계천').click();
+    await expect(card(page).locator('figcaption')).toHaveText('사진: 한국관광공사 · 촬영 IR 스튜디오'); // matched photo
+    await expect(card(page).locator('.v3-map-card__state')).toHaveText('운영 중');
+  });
+
+  test('lit pins are never clustered (their glow stays visible zoomed out)', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-11-10T19:30:00+09:00'));
+    // Two lit bridges right next to each other: at level 8 they would form a cluster if they were clusterable.
+    const close = [NIGHT[0], { ...NIGHT[0], NUM: '3', TITLE: '[픽스처] 야경 다리 2', LO: '126.9305' }];
+    await page.route('**/api/seoulapi?type=night', (r) => r.fulfill({ json: { viewNightSpot: { row: close } } }));
+    await useKakaoStub(page);
+    await page.goto('/#/map');
+    await page.getByRole('group', { name: '종류' }).getByRole('button', { name: '야경명소' }).click();
+    await expect(page.locator('[data-level]')).toHaveAttribute('data-level', '8');
+    await expect(page.locator('[data-kakao-stub="cluster"]')).toHaveCount(0);
+    expect(await src(page, '[픽스처] 야경 다리 2')).toContain('fill="#e8b781"');
+  });
+
+  test('"야경명소에서 보기" opens /night scrolled to that spot, highlighted', async ({ page }) => {
+    await openAt(page, '19:30');
+    await pin(page, '청계천').click();
+    await card(page).getByRole('link', { name: '야경명소에서 보기 →' }).click();
+    await expect(page).toHaveURL(/#\/night\?spot=1$/);
+    const target = page.locator('#night-spot-1');
+    await expect(target).toHaveClass(/is-target/);
+    await expect(target).toBeInViewport();
+  });
+});
+
 test.describe('Map (v3) — mobile bottom sheet (390px)', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 

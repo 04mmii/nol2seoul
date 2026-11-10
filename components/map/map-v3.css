@@ -7,8 +7,9 @@
 
 .v3-map {
   --map-header: 60px;
+  --map-live: 34px; /* fixed Live Bar above the header (App.tsx) */
   position: relative; display: grid; grid-template-columns: 380px minmax(0, 1fr);
-  height: 100vh; padding-top: var(--map-header); box-sizing: border-box;
+  height: 100vh; padding-top: calc(var(--map-live) + var(--map-header)); box-sizing: border-box;
   background: rgb(var(--v3-bone)); color: rgb(var(--v3-ink)); font-family: var(--v3-font-sans); font-size: 15px; line-height: 1.5;
   border-bottom: 1px solid rgb(var(--v3-ink));
 }
@@ -51,7 +52,15 @@
 .v3-map__dot--event { background: rgb(var(--v3-ink)); border-color: rgb(var(--v3-ink)); }
 .v3-map__dot--space { background: rgb(var(--v3-bone)); border-color: rgb(var(--v3-ink)); }
 .v3-map__dot--night { background: rgb(var(--v3-night)); border-color: rgb(var(--v3-night)); }
+.v3-map__dot--night-lit { background: rgb(var(--v3-ember)); border-color: #fff3df; box-shadow: 0 0 0 3px rgb(var(--v3-ember) / 0.35), 0 0 10px 2px rgb(var(--v3-ember) / 0.55); }
+.v3-map__legend-dot { width: 9px; height: 9px; margin: 0 2px; }
 .v3-map__item[aria-pressed="true"] .v3-map__dot { background: rgb(var(--v3-accent)); border-color: rgb(var(--v3-bone)); }
+
+/* Night info line + toggle (야경명소 filter) */
+.v3-map__night { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.v3-map__night-line { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-family: var(--v3-font-mono); font-size: 11px; letter-spacing: 0.04em; color: rgb(var(--v3-ink-2)); }
+.v3-map__night-dot { width: 8px; height: 8px; border-radius: 50%; background: rgb(var(--v3-night)); }
+.v3-map__night-dot.is-on { background: rgb(var(--v3-ember)); box-shadow: 0 0 8px rgb(var(--v3-ember) / 0.8); }
 
 /* ---------- Map stage ---------- */
 .v3-map__stage { position: relative; min-height: 0; overflow: hidden; background: rgb(var(--v3-bone-2)); }
@@ -101,7 +110,13 @@
 .v3-map-card__media { position: relative; aspect-ratio: 16 / 9; margin-bottom: 12px; overflow: hidden; background: rgb(var(--v3-bone-2)); }
 .v3-map-card__media img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
 .v3-map-card__ph { position: absolute; inset: 0; background: #e3d6c2 repeating-linear-gradient(135deg, rgb(var(--v3-ink) / 0.06) 0 1px, transparent 1px 8px); }
-.v3-map-card__kind { font-family: var(--v3-font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: rgb(var(--v3-accent-text)); }
+.v3-map-card__kind { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-family: var(--v3-font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: rgb(var(--v3-accent-text)); }
+/* Night status (same words as the night page): 점등 중 = ember, 운영 중 = ink outline, others muted. */
+.v3-map-card__state { padding: 1px 6px; border: 1px solid rgb(var(--v3-ink) / 0.34); border-radius: 2px; color: rgb(var(--v3-ink-2)); letter-spacing: 0.04em; text-transform: none; }
+.v3-map-card__state.is-lit { background: rgb(var(--v3-ember)); border-color: rgb(var(--v3-ember)); color: rgb(var(--v3-ink)); }
+.v3-map-card__state.is-open { border-color: rgb(var(--v3-ink)); color: rgb(var(--v3-ink)); }
+/* Night artwork reuses the night page frame (NightArt is absolutely positioned inside). */
+.v3-map-card__media.is-night { background: rgb(var(--v3-night-2)); }
 .v3-map-card__title { font-family: var(--v3-font-sans); font-size: 20px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.25; margin: 4px 0 10px; }
 .v3-map-card__rows { margin: 0 0 12px; display: grid; gap: 4px; }
 .v3-map-card__rows div { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px; align-items: baseline; }

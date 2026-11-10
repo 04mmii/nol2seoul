@@ -8,10 +8,15 @@ import { kstDateParts, seoulSunsetMinutes } from '../../utils/sun';
 import { nightState, parseOperatingTime, type NightRule, type NightState } from '../../utils/night';
 import { htmlToParagraphs } from '../../utils/text';
 import { districtFromAddress, projectToSeoulBox } from '../home/selectors';
-import nightPhotos from '../../data/night-photos.json';
+import nightPhotos from '../../data/night-photos.json' with { type: 'json' };
+import manualRules from '../../data/night-manual-rules.json' with { type: 'json' };
 
 export type NightPhoto = { url: string; title: string; location: string; photographer: string };
 const PHOTOS = (nightPhotos as { photos: Record<string, NightPhoto> }).photos;
+
+/** Manual operating-time rules (data/night-manual-rules.json) — owner-entered, not API data; only `enabled` ones apply. */
+export type ManualRule = { enabled: boolean; operatingTime: string; source?: string; note?: string };
+const MANUAL = (manualRules as { rules: Record<string, ManualRule> }).rules;
 
 export type Phase = 'before' | 'lit' | 'late';
 
@@ -21,8 +26,10 @@ export type NightSpotView = {
   district: string;
   rule: NightRule;
   state: NightState;
-  /** Glowing on the graphics right now: lit (sunset-based) or open after sunset. */
+  /** "켜진 곳": lit right now (sunset-based 점등 중). Glows on the graphics. */
   glowing: boolean;
+  /** OPERATING_TIME replaced by a manual rule (data/night-manual-rules.json). */
+  manual: boolean;
   pos: { top: number; left: number } | null;
   free: boolean;
   desc: string;
@@ -38,12 +45,14 @@ export function phaseAt(minutes: number, sunset: number): Phase {
   return 'late';
 }
 
-export function buildNight(spots: NightViewSpot[], now: Date) {
+export function buildNight(spots: NightViewSpot[], now: Date, manual: Record<string, ManualRule> = MANUAL) {
   const p = kstDateParts(now);
   const sunset = seoulSunsetMinutes(p.y, p.m, p.d);
   const phase = phaseAt(p.minutes, sunset);
   const views: NightSpotView[] = spots.map((spot, index) => {
-    const rule = parseOperatingTime(spot.OPERATING_TIME, p.m);
+    const m = manual[spot.TITLE];
+    const useManual = !!m?.enabled && !!m.operatingTime;
+    const rule = parseOperatingTime(useManual ? m!.operatingTime : spot.OPERATING_TIME, p.m);
     const state = nightState(rule, p.minutes, p.weekday, sunset);
     const lat = parseFloat(spot.LA), lng = parseFloat(spot.LO);
     return {
@@ -52,7 +61,8 @@ export function buildNight(spots: NightViewSpot[], now: Date) {
       district: districtFromAddress(spot.ADDR) || '',
       rule,
       state,
-      glowing: state.badge === 'lit' || (phase !== 'before' && state.badge === 'open'),
+      glowing: state.badge === 'lit',
+      manual: useManual,
       pos: Number.isFinite(lat) && Number.isFinite(lng) ? projectToSeoulBox(lat, lng) : null,
       free: spot.FREE_YN === '무료',
       desc: htmlToParagraphs(spot.CONTENTS).join(' '),
@@ -70,11 +80,19 @@ export const pickFeature = (views: NightSpotView[]) =>
   views.find((v) => v.state.badge === 'lit') ?? views.find((v) => v.rule.kind === 'sunset') ?? views[0];
 
 export type CollectionId = 'bridges' | 'always' | 'free' | 'open';
+
+/**
+ * Two separate counts (decision 2026-11-10), used by the night page, the map and the Live Bar:
+ *  - "켜진 곳"      = 점등 중 (sunset-based lighting) only — 0 before sunset, so show "곧 켜져요" then;
+ *  - "갈 수 있는 곳" = 운영 중 (24h or a time range open now).
+ */
+export type NightFilter = 'lit' | 'open' | null;
+export const matchesNightFilter = (badge: NightState['badge'] | undefined, f: NightFilter) => !f || badge === f;
 export const COLLECTIONS: Array<{ id: CollectionId; ko: string; en: string; test: (v: NightSpotView) => boolean }> = [
   { id: 'bridges', ko: '해 지면 켜지는 불빛', en: 'LIGHTS AT DUSK', test: (v) => v.rule.kind === 'sunset' },
   { id: 'always', ko: '24시간 열린 곳', en: 'ALWAYS OPEN', test: (v) => v.rule.kind === 'always' },
   { id: 'free', ko: '무료로 가는 곳', en: 'FREE ENTRY', test: (v) => v.free },
-  { id: 'open', ko: '지금 켜진 곳', en: 'ON RIGHT NOW', test: (v) => v.state.badge === 'lit' || v.state.badge === 'open' },
+  { id: 'open', ko: '지금 갈 수 있는 곳', en: 'OPEN RIGHT NOW', test: (v) => v.state.badge === 'open' },
 ];
 
 /**

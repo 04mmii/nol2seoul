@@ -8,15 +8,17 @@
  */
 import type { MapKind } from './selectors';
 
-export const PIN_HEX = { ink: '#14130f', bone: '#f6f2ea', night: '#111d38', tangerine: '#e2542f' } as const;
+export const PIN_HEX = { ink: '#14130f', bone: '#f6f2ea', night: '#111d38', tangerine: '#e2542f', ember: '#e8b781' } as const;
 
-export type PinKind = MapKind | 'selected';
-export type PinStyle = { fill: string; stroke: string; size: number };
+/** nightLit = a night spot lit right now (sunset-based "점등 중"), shown as an ember light with a soft glow. */
+export type PinKind = MapKind | 'nightLit' | 'selected';
+export type PinStyle = { fill: string; stroke: string; size: number; glow?: boolean };
 
 export const PIN_COLORS: Record<PinKind, { fill: string; stroke: string }> = {
   event: { fill: PIN_HEX.ink, stroke: PIN_HEX.bone },
   space: { fill: PIN_HEX.bone, stroke: PIN_HEX.ink },
   night: { fill: PIN_HEX.night, stroke: PIN_HEX.bone },
+  nightLit: { fill: PIN_HEX.ember, stroke: '#fff3df' },
   selected: { fill: PIN_HEX.tangerine, stroke: PIN_HEX.ink },
 };
 
@@ -30,27 +32,37 @@ export const PIN_SELECTED = 13;
  */
 export const pinSizeForLevel = (level: number) => Math.max(PIN_MIN, Math.min(PIN_MAX, PIN_MAX - (level - 5)));
 
-export const pinStyle = (kind: PinKind, size: number): PinStyle => ({ ...PIN_COLORS[kind], size: kind === 'selected' ? PIN_SELECTED : size });
+export const pinStyle = (kind: PinKind, size: number): PinStyle => ({ ...PIN_COLORS[kind], size: kind === 'selected' ? PIN_SELECTED : size, glow: kind === 'nightLit' });
 
 /** Legend / list icons use the close-in size so the colours read clearly. */
 export const PIN_STYLES: Record<PinKind, PinStyle> = {
   event: pinStyle('event', PIN_MAX),
   space: pinStyle('space', PIN_MAX),
   night: pinStyle('night', PIN_MAX),
+  nightLit: pinStyle('nightLit', PIN_MAX),
   selected: pinStyle('selected', PIN_SELECTED),
 };
 
-/** Circle with a 1px border and the v3 hard ink shadow below (offset scales with size). */
-export function pinSvg({ fill, stroke, size }: PinStyle): { svg: string; width: number; height: number; shadow: number } {
-  const shadow = size >= 12 ? 2 : 1.5;
+/** Glow padding around a lit night pin (soft ember halo, like the lights on the night page). */
+const glowPad = (style: PinStyle) => (style.glow ? Math.round(style.size * 1.6) : 0);
+
+/** Circle with a 1px border and the v3 hard ink shadow below; lit night pins get an ember halo instead. */
+export function pinSvg(style: PinStyle): { svg: string; width: number; height: number; shadow: number } {
+  const { fill, stroke, size, glow } = style;
+  const pad = glowPad(style);
+  const shadow = glow ? 0 : size >= 12 ? 2 : 1.5;
   const r = size / 2 - 0.5;
-  const width = size + 2;
-  const height = size + 2 + shadow;
+  const width = size + 2 + pad * 2;
+  const height = size + 2 + shadow + pad * 2;
   const c = width / 2;
-  const cy = size / 2 + 1;
+  const cy = pad + size / 2 + 1;
+  const halo = glow
+    ? `<defs><radialGradient id="g"><stop offset="0%" stop-color="${PIN_HEX.ember}" stop-opacity="0.65"/><stop offset="100%" stop-color="${PIN_HEX.ember}" stop-opacity="0"/></radialGradient></defs>` +
+      `<circle cx="${c}" cy="${cy}" r="${r + pad}" fill="url(#g)"/>`
+    : `<circle cx="${c}" cy="${cy + shadow}" r="${r}" fill="${PIN_HEX.ink}" opacity="0.85"/>`;
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
-    `<circle cx="${c}" cy="${cy + shadow}" r="${r}" fill="${PIN_HEX.ink}" opacity="0.85"/>` +
+    halo +
     `<circle cx="${c}" cy="${cy}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1"/>` +
     `</svg>`;
   return { svg, width, height, shadow };
@@ -59,7 +71,7 @@ export function pinSvg({ fill, stroke, size }: PinStyle): { svg: string; width: 
 /** Pixel offset of the circle centre inside the image (the Kakao anchor point). */
 export const pinAnchor = (style: PinStyle) => {
   const { width } = pinSvg(style);
-  return { x: width / 2, y: style.size / 2 + 1 };
+  return { x: width / 2, y: glowPad(style) + style.size / 2 + 1 };
 };
 
 export const pinDataUri = (style: PinStyle) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(pinSvg(style).svg)}`;

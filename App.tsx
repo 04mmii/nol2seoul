@@ -28,8 +28,8 @@ const FavoritesMigration = () => {
   return null;
 };
 
-/** Live Bar on every route except the map (full-screen map with a fixed header). */
-const LiveBarOutsideMap = () => (useLocation().pathname === '/map' ? null : <LiveBar />);
+/** Live Bar on every route. On the map it is fixed above the fixed header (the map shrinks by its height). */
+const LiveBarRoute = () => <LiveBar fixed={useLocation().pathname === '/map'} />;
 
 const App: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -39,7 +39,7 @@ const App: React.FC = () => {
       <ScrollToTop />
       <FavoritesMigration />
       <div className="flex flex-col min-h-screen relative">
-        <LiveBarOutsideMap />
+        <LiveBarRoute />
         <Header onSearchClick={() => setIsSearchOpen(true)} />
 
         <main className="flex-grow">
@@ -104,7 +104,7 @@ const Header: React.FC<{ onSearchClick: () => void }> = ({ onSearchClick }) => {
 
   return (
     <header
-      className={`${isMapPage ? 'fixed' : 'sticky'} top-0 z-[60] w-full bg-bone border-b border-line font-body text-ink`}
+      className={`${isMapPage ? 'fixed top-[34px]' : 'sticky top-0'} z-[60] w-full bg-bone border-b border-line font-body text-ink`}
     >
       {/* Background is full-width; content sits on the shared content width (--v3-content-max). */}
       <div className="max-w-shell mx-auto h-[60px] lg:h-[68px] px-gutter flex items-center gap-4 md:gap-6 xl:gap-9">

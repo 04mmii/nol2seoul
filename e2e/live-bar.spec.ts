@@ -15,7 +15,8 @@ test.describe('Live Bar ticker', () => {
     await expect(item(page, 'ongoing')).toHaveText('지금 진행 중인 행사 2건');
     await expect(item(page, 'starts-today')).toHaveText('오늘 시작하는 행사 0건');
     await expect(item(page, 'ends-week')).toHaveText('이번 주 마감 3건'); // ends 11-04, 11-05, 11-08
-    await expect(item(page, 'night')).toHaveText('지금 켜진 야경명소 0곳');
+    await expect(item(page, 'night')).toHaveText('야경명소 곧 켜져요'); // before sunset; fixture spot isn't sunset-lit
+    await expect(item(page, 'night-open')).toHaveText('지금 갈 수 있는 야경명소 0곳'); // 18:00~24:00, closed at noon
     await expect(item(page, 'free')).toHaveText('무료 행사 1건');
     await expect(bar(page)).not.toContainText(/잔여|미세먼지|°C|ISSUE/);
     await expect(bar(page)).toContainText('LIVE · 서울 · 11.03');
@@ -44,12 +45,30 @@ test.describe('Live Bar ticker', () => {
     for (const id of ['ongoing', 'starts-today', 'ends-week', 'free']) await expect(item(page, id)).toHaveCount(0);
   });
 
-  test('hidden on the map page', async ({ page }) => {
+  test('map page: fixed above the fixed header; the map shrinks so nothing is cut off', async ({ page }) => {
     await page.goto('/#/map');
     await expect(page.getByRole('heading', { level: 1, name: /지금 갈 곳/ })).toBeVisible();
-    await expect(bar(page)).toHaveCount(0);
-    await page.goto('/#/night');
+    await expect(bar(page)).toHaveCSS('position', 'fixed');
+    const barBox = (await bar(page).boundingBox())!;
+    const header = (await page.locator('header').boundingBox())!;
+    expect(barBox.y).toBe(0);
+    expect(Math.round(header.y)).toBe(Math.round(barBox.height)); // header starts under the bar
+    const stage = (await page.locator('.v3-map__stage').boundingBox())!;
+    expect(Math.abs(stage.y - (header.y + header.height))).toBeLessThanOrEqual(1); // map starts under the header (1px border overlap)
+    expect(Math.round(stage.y + stage.height)).toBeLessThanOrEqual(900); // bottom not cut (viewport 900)
+  });
+
+  test('map page on mobile: the bottom sheet stays at the bottom of the screen', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/#/map');
     await expect(bar(page)).toBeVisible();
+    const side = (await page.locator('.v3-map__side').boundingBox())!;
+    expect(844 - (side.y + side.height)).toBeLessThanOrEqual(1); // map frame has a 1px bottom border
+    const toggle = page.getByRole('button', { name: /^목록 ·/ });
+    await toggle.click();
+    const opened = (await page.locator('.v3-map__side').boundingBox())!;
+    expect(844 - (opened.y + opened.height)).toBeLessThanOrEqual(1);
+    expect(opened.y).toBeGreaterThanOrEqual((await page.locator('header').boundingBox())!.y); // never under the header
   });
 
   test('pauses on hover and with the pause button', async ({ page }) => {

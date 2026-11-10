@@ -1,5 +1,5 @@
 /* Live Bar — design-ref styles-v3.css `.live-bar` / `.ticker-*`, v3 tokens. Emphasis = ember (as in the mock-up). */
-.v3-live { display: flex; align-items: stretch; height: 34px; overflow: hidden; background: rgb(var(--v3-ink)); color: rgb(var(--v3-bone)); font-family: var(--v3-font-mono); font-size: 11px; letter-spacing: 0.05em; }
+.v3-live { --v3-live-h: 34px; display: flex; align-items: stretch; height: 34px; overflow: hidden; background: rgb(var(--v3-ink)); color: rgb(var(--v3-bone)); font-family: var(--v3-font-mono); font-size: 11px; letter-spacing: 0.05em; }
 .v3-live__status { display: flex; align-items: center; gap: 10px; padding: 0 18px 0 var(--v3-gutter); letter-spacing: 0.06em; text-transform: uppercase; border-right: 1px solid rgb(var(--v3-bone) / 0.2); white-space: nowrap; }
 .v3-live__dot { width: 6px; height: 6px; border-radius: 50%; background: rgb(var(--v3-accent)); animation: v3-live-pulse 2.4s ease-in-out infinite; }
 @keyframes v3-live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
@@ -28,3 +28,6 @@
   .v3-live__clock { display: none; }
   .v3-live__status { padding-right: 12px; }
 }
+
+/* Map route: fixed above the fixed header (App.tsx moves the header to top: 34px). */
+.v3-live--fixed { position: fixed; top: 0; left: 0; right: 0; z-index: 61; }

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useKakaoLoader, useEvents, useCulturalSpaces, useNightViewSpots, useFavorites } from '../hooks';
 import {
@@ -13,6 +13,8 @@ import {
 import { PIN_STYLES, pinDataUri } from '../components/map/pins';
 import { useKakaoMap, useMapMarkers } from '../components/map/useKakaoMap';
 import MapSelectedCard from '../components/map/MapSelectedCard';
+import { buildNight, type NightFilter } from '../components/night/selectors';
+import { formatHm } from '../utils/sun';
 import '../components/map/map-v3.css';
 
 /**
@@ -46,8 +48,16 @@ const MapDiscovery: React.FC = () => {
   const [sheetOpen, setSheetOpen] = useState(false); // mobile bottom sheet
   const [locateError, setLocateError] = useState(false);
 
-  const built = useMemo(() => buildMapItems(events, spaces, spots), [events, spaces, spots]);
-  const items = useMemo(() => filterMapItems(built, category, sub, query), [built, category, sub, query]);
+  // Night spots use the night page's rules (sunset + OPERATING_TIME). Re-evaluated every minute; the map
+  // items (and pins) are rebuilt only when a spot's status actually changes.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => { const id = window.setInterval(() => setNow(new Date()), 60_000); return () => window.clearInterval(id); }, []);
+  const night = useMemo(() => buildNight(spots, now), [spots, now]);
+  const statusKey = night.views.map((v) => v.state.badge).join(',');
+  const [nowFilter, setNowFilter] = useState<NightFilter>(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const built = useMemo(() => buildMapItems(events, spaces, spots, night.views), [events, spaces, spots, statusKey]);
+  const items = useMemo(() => filterMapItems(built, category, sub, query, category === '야경명소' ? nowFilter : null), [built, category, sub, query, nowFilter]);
   const subs = useMemo(() => subCategories(built.all, category), [built, category]);
   const selected = useMemo(() => (selectedKey ? built.all.find((i) => i.key === selectedKey) ?? null : null), [built, selectedKey]);
 
@@ -101,6 +111,17 @@ const MapDiscovery: React.FC = () => {
               ))}
             </div>
           )}
+          {category === '야경명소' && (
+            <div className="v3-map__night">
+              <p className="v3-map__night-line" role="status">
+                <span className={`v3-map__night-dot ${night.lit > 0 ? 'is-on' : ''}`} aria-hidden="true" />
+                오늘 일몰 {formatHm(night.sunset)} · {night.lit === 0 && night.phase === 'before' ? '곧 켜져요' : `지금 켜진 곳 ${night.lit}곳`} · 갈 수 있는 곳 {night.open}곳
+              </p>
+              {([['lit', '● 지금 켜진 곳만'], ['open', '지금 갈 수 있는 곳만']] as const).map(([f, label]) => (
+                <button key={f} type="button" className="v3-day-pill v3-map__chip v3-focus" aria-pressed={nowFilter === f} onClick={() => { setNowFilter((cur) => (cur === f ? null : f)); setLimit(LIST_PAGE); }}>{label}</button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div id="map-list" className="v3-map__list" role="region" aria-label="장소 목록 결과">
@@ -110,7 +131,7 @@ const MapDiscovery: React.FC = () => {
             {items.slice(0, limit).map((it) => (
               <li key={it.key}>
                 <button type="button" className="v3-map__item v3-focus" aria-pressed={selectedKey === it.key} onClick={() => pick(it.key)}>
-                  <span className={`v3-map__dot v3-map__dot--${it.kind}`} aria-hidden="true" />
+                  <span className={`v3-map__dot v3-map__dot--${it.lit ? 'night-lit' : it.kind}`} aria-hidden="true" />
                   <span className="v3-map__item-body">
                     <span className="v3-map__item-kind">{it.sub || ''}</span>
                     <span className="v3-map__item-title">{it.title}</span>
@@ -141,8 +162,8 @@ const MapDiscovery: React.FC = () => {
         {!mapError && !map && <div className="v3-map__loading" role="status">지도를 불러오는 중...</div>}
 
         <div className="v3-map__legend" aria-label="범례">
-          {(['event', 'space', 'night', 'selected'] as const).map((k) => (
-            <span key={k}><img src={pinDataUri(PIN_STYLES[k])} alt="" width={12} height={12} />{k === 'event' ? '문화행사' : k === 'space' ? '문화공간' : k === 'night' ? '야경명소' : '선택'}</span>
+          {(['event', 'space', 'night', 'nightLit', 'selected'] as const).map((k) => (
+            <span key={k}>{k === 'nightLit' ? <span className="v3-map__dot v3-map__dot--night-lit v3-map__legend-dot" aria-hidden="true" /> : <img src={pinDataUri(PIN_STYLES[k])} alt="" height={12} />}{({ event: '문화행사', space: '문화공간', night: '야경명소', nightLit: '켜진 야경', selected: '선택' } as const)[k]}</span>
           ))}
         </div>
 
@@ -165,6 +186,7 @@ const MapDiscovery: React.FC = () => {
             saved={isFavorite(selected.fav.id, selected.fav.type)}
             onToggleFavorite={() => toggleFavorite(selected.fav)}
             onClose={() => setSelectedKey(null)}
+            nightViews={night.views}
           />
         )}
       </div>

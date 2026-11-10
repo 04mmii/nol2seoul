@@ -6,6 +6,7 @@ import type { Event, CulturalSpace, NightViewSpot } from '../../types';
 import type { FavoriteItem } from '../../hooks/useFavorites';
 import { eventCardDate, eventVenue } from '../../utils/event';
 import { eventId } from '../../utils/eventId';
+import { matchesNightFilter, type NightFilter, type NightSpotView } from '../night/selectors';
 
 export type MapKind = 'event' | 'space' | 'night';
 export type MapCategory = '전체' | '문화행사' | '문화공간' | '야경명소';
@@ -32,6 +33,10 @@ export type MapItem = {
   event?: Event;
   space?: CulturalSpace;
   night?: NightViewSpot;
+  /** Night spots: status from the night page's sunset/OPERATING_TIME rules (components/night/selectors). */
+  nightView?: NightSpotView;
+  /** Night spot lit right now ("점등 중") → ember pin. */
+  lit?: boolean;
 };
 
 const num = (v: unknown) => {
@@ -77,7 +82,7 @@ export function spaceItem(s: CulturalSpace, index: number): MapItem {
   };
 }
 
-export function nightItem(n: NightViewSpot, index: number): MapItem {
+export function nightItem(n: NightViewSpot, index: number, view?: NightSpotView): MapItem {
   const id = String(index);
   return {
     key: `night:${id}`,
@@ -91,14 +96,16 @@ export function nightItem(n: NightViewSpot, index: number): MapItem {
     detailTo: null,
     fav: { id, type: 'spot', title: n.TITLE, location: n.ADDR, category: '야경명소', date: n.OPERATING_TIME },
     night: n,
+    nightView: view,
+    lit: view?.state.badge === 'lit',
   };
 }
 
 /** All items. 전체 interleaves the three kinds (round robin), like the pre-v3 "recent" strip. */
-export function buildMapItems(events: Event[], spaces: CulturalSpace[], spots: NightViewSpot[]) {
+export function buildMapItems(events: Event[], spaces: CulturalSpace[], spots: NightViewSpot[], nightViews: NightSpotView[] = []) {
   const ev = events.map(eventItem);
   const sp = spaces.map(spaceItem);
-  const ni = spots.map(nightItem);
+  const ni = spots.map((n, i) => nightItem(n, i, nightViews[i]));
   const mixed: MapItem[] = [];
   for (let i = 0; i < Math.max(ev.length, sp.length, ni.length); i++) {
     if (ev[i]) mixed.push(ev[i]);
@@ -115,17 +122,20 @@ export function subCategories(items: MapItem[], category: MapCategory): string[]
   return [ALL, ...new Set(items.filter((i) => i.kind === kind && i.sub).map((i) => i.sub))];
 }
 
-/** Category + sub-category + text query (name or address, case-insensitive). Drives both list and pins. */
+/** Category + sub-category + text query (name or address) + "지금 켜진 곳만 / 지금 갈 수 있는 곳만". Drives list and pins. */
 export function filterMapItems(
   built: ReturnType<typeof buildMapItems>,
   category: MapCategory,
   sub: string,
   query: string,
+  nowFilter: NightFilter = null,
 ): MapItem[] {
   let list = category === ALL ? built.all : built.byKind[category === '문화행사' ? 'event' : category === '문화공간' ? 'space' : 'night'];
   if (sub !== ALL) list = list.filter((i) => i.sub === sub);
   const q = query.trim().toLowerCase();
   if (q) list = list.filter((i) => i.title.toLowerCase().includes(q) || i.address.toLowerCase().includes(q));
+  // Same definitions as the night page: 'lit' = 점등 중 only, 'open' = 운영 중 only.
+  if (nowFilter) list = list.filter((i) => i.kind === 'night' && matchesNightFilter(i.nightView?.state.badge, nowFilter));
   return list;
 }
 
