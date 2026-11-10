@@ -68,7 +68,7 @@
 /* Thumbnail: fixed 3:4 box; the poster fills it (cover), anchored to the top so titles on posters survive. */
 .v3-event-card__thumb { position: relative; flex-shrink: 0; aspect-ratio: 3 / 4; overflow: hidden; }
 .v3-event-card__thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block; }
-.v3-event-card__ph { position: absolute; inset: 0; background: #e3d6c2 repeating-linear-gradient(135deg, rgb(var(--v3-ink) / 0.06) 0 1px, transparent 1px 8px); }
+.v3-event-card__ph { position: absolute; inset: 0; background: rgb(var(--v3-poster-ph)) repeating-linear-gradient(135deg, rgb(var(--v3-ink) / 0.06) 0 1px, transparent 1px 8px); }
 .v3-event-card__ph-cap { position: absolute; bottom: 10px; left: 12px; font-family: var(--v3-font-mono); font-size: 10px; color: rgb(var(--v3-ink) / 0.45); text-transform: uppercase; letter-spacing: 0.06em; }
 .v3-event-card__heart { position: absolute; top: 10px; right: 10px; z-index: 3; width: 28px; height: 28px; border-radius: 50%; border: none; background: rgb(var(--v3-bone) / 0.9); color: rgb(var(--v3-ink-2)); display: grid; place-items: center; font-size: 13px; cursor: pointer; transition: background 0.15s, color 0.15s; }
 .v3-event-card__dday { position: absolute; top: 10px; left: 10px; z-index: 2; padding: 4px 7px; border-radius: 2px; background: rgb(var(--v3-ink)); color: rgb(var(--v3-bone)); font-family: var(--v3-font-mono); font-size: 10px; letter-spacing: 0.06em; }
@@ -106,8 +106,8 @@
  * badge sits on a photo (EventList). */
 .v3-fee { display: inline-block; font-family: var(--v3-font-mono); font-size: 10px; line-height: 1.4; letter-spacing: 0.04em; font-weight: 600; }
 .v3-fee--free, .v3-fee--paid, .v3-fee--partial, .v3-fee--varies { padding: 1px 6px; border: 1px solid; border-radius: 2px; }
-.v3-fee--free { background: rgb(var(--v3-accent-text)); border-color: rgb(var(--v3-accent-text)); color: #fff; }
-.v3-fee--paid { background: rgb(var(--v3-night)); border-color: rgb(var(--v3-night)); color: #fff; }
+.v3-fee--free { background: rgb(var(--v3-accent-text)); border-color: rgb(var(--v3-accent-text)); color: rgb(var(--v3-white)); }
+.v3-fee--paid { background: rgb(var(--v3-night)); border-color: rgb(var(--v3-night)); color: rgb(var(--v3-white)); }
 .v3-fee--partial { background: transparent; border-color: rgb(var(--v3-accent-text)); color: rgb(var(--v3-accent-text)); }
 .v3-fee--varies { background: transparent; border-color: rgb(var(--v3-night)); color: rgb(var(--v3-night)); }
 .v3-fee--on-media.v3-fee--partial, .v3-fee--on-media.v3-fee--varies { background: rgb(var(--v3-bone)); }

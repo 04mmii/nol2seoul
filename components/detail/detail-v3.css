@@ -20,8 +20,8 @@
 .v3-detail-hero__grid { display: grid; grid-template-columns: 1.2fr 1fr; min-height: 600px; }
 .v3-detail-hero__media { position: relative; overflow: hidden; border-right: 1px solid rgb(var(--v3-ink)); background: rgb(var(--v3-bone-2)); display: flex; align-items: center; justify-content: center; }
 .v3-detail-hero__media img { width: 100%; height: 100%; max-height: 760px; object-fit: contain; display: block; }
-.v3-detail-hero__ph { position: absolute; inset: 0; background: repeating-linear-gradient(45deg, #ff5a3c, #ff5a3c 16px, #ffb27a 16px, #ffb27a 32px); }
-.v3-detail-hero__ph-cap { position: absolute; bottom: 20px; left: 24px; color: rgba(0, 0, 0, 0.55); font-family: var(--v3-font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+.v3-detail-hero__ph { position: absolute; inset: 0; background: rgb(var(--v3-poster-ph)) repeating-linear-gradient(135deg, rgb(var(--v3-ink) / 0.06) 0 1px, transparent 1px 8px); } /* same as card placeholder (was off-palette orange stripes) */
+.v3-detail-hero__ph-cap { position: absolute; bottom: 20px; left: 24px; color: rgb(var(--v3-ink) / 0.45); font-family: var(--v3-font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
 .v3-detail-hero__body { display: flex; flex-direction: column; justify-content: space-between; gap: 40px; padding: 64px 0 64px 48px; }
 .v3-detail-hero__cat { font-family: var(--v3-font-mono); font-size: 11px; color: rgb(var(--v3-accent-text)); letter-spacing: 0.12em; text-transform: uppercase; }
 .v3-detail-hero__title { font-family: var(--v3-font-display); font-size: clamp(36px, 4.2vw, 60px); font-weight: 700; letter-spacing: -0.04em; line-height: 1.05; margin: 16px 0 0; text-wrap: balance; }

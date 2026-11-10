@@ -75,12 +75,12 @@ const SpaceDetail: React.FC = () => {
               </div>
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-            <div className="absolute bottom-8 left-8 text-white">
+            <div className="absolute bottom-8 left-8 right-8 text-white">{/* right-8: long names wrap instead of being cut off (QA 2026-11-11) */}
               <div className="flex gap-2 mb-4">
                 {space.SUBJCODE && <span className="bg-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest">{space.SUBJCODE}</span>}
                 {hasTicket && <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest">유료</span>}
               </div>
-              <h2 className="text-4xl md:text-5xl font-black mb-4">{space.FAC_NAME}</h2>
+              <h2 className="text-4xl md:text-5xl font-black mb-4 [overflow-wrap:anywhere]">{space.FAC_NAME}</h2>
               <p className="text-white/80 font-medium">{space.ADDR}</p>
             </div>
           </div>

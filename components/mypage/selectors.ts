@@ -88,8 +88,6 @@ export function sortEntries(entries: MyEntry[]): MyEntry[] {
     .map((x) => x.e);
 }
 
-export const entryType = (e: MyEntry): FavoriteType => e.fav.type;
-
 export function myStats(entries: MyEntry[], night: { phase: 'before' | 'lit' | 'late' } | null, now: Date = new Date()) {
   const { today, weekLater } = dateKeys(now);
   const events = entries.filter((e) => e.fav.type === 'event');

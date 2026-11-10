@@ -7,7 +7,6 @@
  *  - "none":   seasonal / monthly / unclear → no badge, the raw text only.
  * Public holidays are not modelled (shown as their weekday).
  */
-import { seoulSunsetMinutes } from './sun';
 
 export type NightRule =
   | { kind: 'sunset'; offset: number; off: number; closed: number[] } // minutes relative to sunset; off = minutes after midnight
@@ -117,12 +116,4 @@ export function nightState(rule: NightRule, minutes: number, weekday: number, su
     default:
       return { badge: 'none', label: '' };
   }
-}
-
-/** Convenience: status of a spot right now (KST). */
-export function spotStateNow(operatingTime: string | undefined, now: Date, parts: { y: number; m: number; d: number; weekday: number; minutes: number }) {
-  void now;
-  const sunset = seoulSunsetMinutes(parts.y, parts.m, parts.d);
-  const rule = parseOperatingTime(operatingTime, parts.m);
-  return { rule, state: nightState(rule, parts.minutes, parts.weekday, sunset), sunset };
 }

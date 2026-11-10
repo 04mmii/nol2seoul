@@ -40,9 +40,9 @@
 /* Readability gradient: bottom 45% only, transparent → night @ 92%, front-loaded (70% already at
  * 40% of the band) so the caption's first line reads on bright posters. The top half stays uncovered. */
 .v3-hero__right::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 45%; background: linear-gradient(180deg, rgb(var(--v3-night) / 0) 0%, rgb(var(--v3-night) / 0.7) 40%, rgb(var(--v3-night) / 0.92) 100%); pointer-events: none; z-index: 1; }
-.v3-hero__slide { position: absolute; inset: 0; background: #1b2a4c repeating-linear-gradient(135deg, rgb(var(--v3-bone) / 0.06) 0 1px, transparent 1px 8px); opacity: 0; transition: opacity 0.7s ease; }
-.v3-hero__slide:nth-child(2) { background-color: #2a2f45; }
-.v3-hero__slide:nth-child(3) { background-color: #3a2e3a; }
+.v3-hero__slide { position: absolute; inset: 0; background: rgb(var(--v3-night-2)) repeating-linear-gradient(135deg, rgb(var(--v3-bone) / 0.06) 0 1px, transparent 1px 8px); opacity: 0; transition: opacity 0.7s ease; }
+.v3-hero__slide:nth-child(2) { background-color: rgb(var(--v3-night-slate)); }
+.v3-hero__slide:nth-child(3) { background-color: rgb(var(--v3-night-plum)); }
 .v3-hero__slide.is-active { opacity: 1; }
 .v3-hero__slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .v3-hero__cap { position: absolute; left: 28px; right: 28px; bottom: 64px; z-index: 2; max-width: 560px; display: block; color: rgb(var(--v3-bone)); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
@@ -138,9 +138,9 @@
 .v3-tonight__status { padding: 48px 0; font-family: var(--v3-font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: rgb(var(--v3-bone) / 0.62); }
 .v3-night-card { display: flex; flex-direction: column; min-height: 400px; padding: 20px 20px 24px; border-right: 1px solid rgb(var(--v3-bone) / 0.18); border-bottom: 1px solid rgb(var(--v3-bone) / 0.18); }
 .v3-night-card__index { display: flex; justify-content: space-between; gap: 12px; font-family: var(--v3-font-mono); font-size: 10px; color: rgb(var(--v3-bone) / 0.62); letter-spacing: 0.1em; text-transform: uppercase; }
-.v3-night-card__frame { position: relative; flex: 1; min-height: 160px; margin-top: 14px; overflow: hidden; background: #1b2a4c; }
+.v3-night-card__frame { position: relative; flex: 1; min-height: 160px; margin-top: 14px; overflow: hidden; background: rgb(var(--v3-night-2)); }
 .v3-night-card__frame::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(135deg, rgb(var(--v3-bone) / 0.06) 0 1px, transparent 1px 8px); pointer-events: none; }
-.v3-night-card.is-feature .v3-night-card__frame { background: linear-gradient(178deg, #0d1830 0%, #22335c 60%, #7d4a45 100%); }
+.v3-night-card.is-feature .v3-night-card__frame { background: linear-gradient(178deg, rgb(var(--v3-night-deep)) 0%, rgb(var(--v3-night-3)) 60%, rgb(var(--v3-night-dusk)) 100%); }
 .v3-night-card__frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .v3-night-card__info { margin-top: 18px; }
 .v3-night-card__name { font-family: var(--v3-font-sans); font-size: 20px; font-weight: 800; letter-spacing: -0.03em; margin: 0; }
