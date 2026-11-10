@@ -178,8 +178,8 @@ test.describe('Home (v3)', () => {
     await expect(card).toContainText('FEATURED');
     await expect(card).toContainText('중구'); // district parsed from ADDR
     await expect(card).toContainText(SPOTS[0].OPERATING_TIME);
-    await night.getByRole('link', { name: /지도에서 야경 보기/ }).click();
-    await expect(page).toHaveURL(/#\/map$/);
+    await night.getByRole('link', { name: /야경명소 전체 보기/ }).click();
+    await expect(page).toHaveURL(/#\/night$/);
   });
 
   test('curators render from the constants file', async ({ page }) => {

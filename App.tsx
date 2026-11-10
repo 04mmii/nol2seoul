@@ -7,6 +7,7 @@ import EventDetail from './pages/EventDetail';
 import SpaceDetail from './pages/SpaceDetail';
 import MapDiscovery from './pages/MapDiscovery';
 import MyPage from './pages/MyPage';
+import NightPage from './pages/NightPage';
 import SearchOverlay from './components/SearchOverlay';
 import { useEvents } from './hooks';
 import { useFavoritesMigration } from './hooks/useFavoritesMigration';
@@ -43,6 +44,7 @@ const App: React.FC = () => {
             <Route path="/event/:id" element={<EventDetail />} />
             <Route path="/space/:id" element={<SpaceDetail />} />
             <Route path="/map" element={<MapDiscovery />} />
+            <Route path="/night" element={<NightPage />} />
             <Route path="/mypage" element={<MyPage />} />
           </Routes>
         </main>
@@ -57,13 +59,14 @@ const App: React.FC = () => {
 
 // ---------------------------------------------------------------------------
 // Site chrome — Redesign v3 (design-ref/src/chrome-v2.jsx, styles-v3.css).
-// Nav keeps only existing routes; v3's 야경명소/스토리 items and LiveBar are out of scope.
+// v3 nav. 야경명소 approved 2026-11-10; 스토리 and LiveBar remain out of scope.
 // ---------------------------------------------------------------------------
 
 const NAV_ITEMS = [
   { to: '/', label: '홈' },
   { to: '/events', label: '문화행사' },
   { to: '/map', label: '지도탐색' },
+  { to: '/night', label: '야경명소' },
   { to: '/mypage', label: '마이페이지' },
 ] as const;
 
@@ -203,6 +206,7 @@ const Footer: React.FC = () => {
             <ul className="text-sm">
               <li className="py-[5px]"><Link to="/events" className={FOOTER_LINK}>문화행사 탐색</Link></li>
               <li className="py-[5px]"><Link to="/map" className={FOOTER_LINK}>지도 탐색</Link></li>
+              <li className="py-[5px]"><Link to="/night" className={FOOTER_LINK}>야경명소</Link></li>
               <li className="py-[5px]"><a href="#" className={FOOTER_LINK}>야경 가이드</a></li>
               <li className="py-[5px]"><a href="#" className={FOOTER_LINK}>커뮤니티</a></li>
             </ul>

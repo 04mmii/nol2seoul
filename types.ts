@@ -66,6 +66,8 @@ export interface NightViewSpot {
   URL: string;
   OPERATING_TIME: string;
   ENTR_FEE: string;
+  /** "무료" | "유료". */
+  FREE_YN?: string;
   /** Description (BUG-12: the code used to read a non-existent CONTENT). */
   CONTENTS?: string;
   SUBWAY: string;

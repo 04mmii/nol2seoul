@@ -22,8 +22,7 @@ const AfterDark: React.FC<Props> = ({ spots, loading }) => {
               공연이 끝난 뒤, <em>가장 빛나는</em> 서울.
             </h2>
           </div>
-          {/* The dedicated 야경명소 page is out of scope; the map hosts night spots today. */}
-          <Link to="/map" className="v3-btn v3-btn--ghost-light">지도에서 야경 보기 →</Link>
+          <Link to="/night" className="v3-btn v3-btn--ghost-light">야경명소 전체 보기 →</Link>
         </div>
 
         {loading ? (

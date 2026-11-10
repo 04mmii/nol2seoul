@@ -31,6 +31,12 @@ const clusters = (page: import('@playwright/test').Page) => page.locator('[data-
 const level = (page: import('@playwright/test').Page) => page.locator('[data-level]');
 const pinWidth = async (page: import('@playwright/test').Page, title: string) => Number(await pin(page, title).getAttribute('width'));
 
+test('deep link from the night page: /map?cat=야경명소&spot=0 opens filtered with the spot selected', async ({ page }) => {
+  await page.goto(`/#/map?cat=${encodeURIComponent('야경명소')}&spot=0`);
+  await expect(page.getByRole('group', { name: '종류' }).getByRole('button', { name: '야경명소' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(card(page)).toContainText(SPOTS[0].TITLE);
+});
+
 test.describe('Map (v3) — clustering and pin size by zoom (Kakao SDK stub)', () => {
   test.beforeEach(async ({ page }) => {
     await useKakaoStub(page);

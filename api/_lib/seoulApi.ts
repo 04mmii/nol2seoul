@@ -39,7 +39,8 @@ export const FIELDS: Record<string, readonly string[]> = {
   viewNightSpot: [
     'NUM', 'SUBJECT_CD', 'TITLE', 'ADDR', 'LA', 'LO', 'URL', 'OPERATING_TIME', 'ENTR_FEE', 'SUBWAY', 'BUS',
     'CONTENTS', // map selected-card description (BUG-12 fixed)
-  ], // dropped: TEL_NO, FREE_YN, PARKING_INFO, REG_DATE, MOD_DATE
+    'FREE_YN', // night page "무료로 가는 곳" collection (2026-11-10)
+  ], // dropped: TEL_NO, PARKING_INFO, REG_DATE, MOD_DATE
 };
 
 /** Keeps only `fields` (missing ones are simply absent, as in the raw API). */
