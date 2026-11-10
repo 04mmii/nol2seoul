@@ -14,7 +14,7 @@
 | 5 | AI 코스추천 리모컨 | 완료 (실제 AI 호출은 미검증 — 키 없음) | 4cdf28a |
 | 6 | 전체 QA | 완료 | 3eb3eb5 |
 | 7 | 배포 체크리스트 `docs/deploy-checklist.md` | 완료 | ee8a75c |
-| 8 | 포트폴리오 정리 `docs/portfolio-notes.md` + Before 캡처 | 완료 | (마지막 커밋) |
+| 8 | 포트폴리오 정리 `docs/portfolio-notes.md` + Before 캡처 | 완료 | 0128af6 |
 
 ## 직접 내린 판단 (결정 / 이유 / 되돌리는 방법)
 
