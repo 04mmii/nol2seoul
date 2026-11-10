@@ -51,9 +51,9 @@ test.describe('Favorites migration (BUG-08)', () => {
     await expect(page.locator(`a[href="#/event/${EV.todayFreeClassic.id}"]`)).toHaveCount(1);
     await expect(page.locator(`a[href="#/event/${EV.thisWeekPlay.id}"]`)).toHaveCount(1);
 
-    const orphanTitle = page.getByRole('heading', { level: 4, name: '[레거시] 사라진 행사' });
+    const orphanTitle = page.getByRole('heading', { level: 3, name: '[레거시] 사라진 행사' });
     await expect(orphanTitle).toBeVisible();
-    const orphanCard = orphanTitle.locator('xpath=ancestor::div[contains(@class,"group")][1]');
+    const orphanCard = orphanTitle.locator('xpath=ancestor::article[1]');
     await expect(orphanCard.getByText('종료된 행사', { exact: true })).toBeVisible(); // ended 2025-01-31 < today (KST)
     await expect(orphanCard.getByText('2025-01-01~2025-01-31')).toBeVisible();
     await expect(orphanCard.getByText('레거시 장소')).toBeVisible();
@@ -70,7 +70,7 @@ test.describe('Favorites migration (BUG-08)', () => {
     await page.goto('/#/mypage');
     await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), STORAGE.favoritesVersion)).toBe('2');
     const note = (title: string) =>
-      page.getByRole('heading', { level: 4, name: title }).locator('xpath=ancestor::div[contains(@class,"group")][1]').getByRole('note');
+      page.getByRole('heading', { level: 3, name: title }).locator('xpath=ancestor::article[1]').getByRole('note');
     await expect(note('[레거시] 사라진 행사')).toHaveText('종료된 행사');
     await expect(note('[레거시] 아직 안 끝난 행사')).toHaveText('정보를 불러올 수 없는 행사');
     await expect(note('[레거시] 날짜 없는 행사')).toHaveText('정보를 불러올 수 없는 행사');
@@ -102,7 +102,7 @@ test.describe('Favorites migration (BUG-08)', () => {
     await page.route('**/api/seoulapi?type=event', (route) => route.fulfill({ status: 500, json: { error: 'down' } }));
     await seedStorageOnce(page, { [STORAGE.favorites]: OLD });
     await page.goto('/#/mypage');
-    await expect(page.getByRole('heading', { level: 4, name: '[레거시] 사라진 행사' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name: '[레거시] 사라진 행사' })).toBeVisible();
     await page.waitForTimeout(1500);
     expect(await page.evaluate((k) => localStorage.getItem(k), STORAGE.favoritesVersion)).toBeNull();
     expect(await readStorage<StoredFavorite[]>(page, STORAGE.favorites)).toEqual(OLD);

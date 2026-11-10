@@ -12,8 +12,9 @@ import {
 } from './support/test';
 import { EV } from './fixtures/seoul-api';
 
+// v3 MyPage: type tabs are pill buttons in a group labelled "종류" (전체 / 문화행사 / 문화공간 / 야경명소).
 const myPageTab = (page: import('@playwright/test').Page, label: string) =>
-  page.locator('section').nth(1).getByRole('button', { name: new RegExp(label) });
+  page.getByRole('group', { name: '종류' }).getByRole('button', { name: new RegExp(label) });
 
 test.describe('Favorites (nolseoul-favorites)', () => {
   test('EventList heart toggles, persists across reload, and stores the current shape', async ({ page }) => {
@@ -63,8 +64,8 @@ test.describe('Favorites (nolseoul-favorites)', () => {
     await heartIn(eventListCard(page, EV.thisWeekPlay.title)).click();
 
     await page.goto('/#/mypage');
-    await expect(myPageTab(page, '저장한 행사').last()).toContainText('1');
-    const savedTitle = page.getByRole('heading', { level: 4, name: EV.thisWeekPlay.title });
+    await expect(myPageTab(page, '문화행사')).toContainText('1');
+    const savedTitle = page.getByRole('heading', { level: 3, name: EV.thisWeekPlay.title });
     await expect(savedTitle).toBeVisible();
 
     // Saved card image links to the event detail.
@@ -72,9 +73,9 @@ test.describe('Favorites (nolseoul-favorites)', () => {
     await expect(detailHeading(page, EV.thisWeekPlay.title)).toBeVisible();
 
     await page.goto('/#/mypage');
-    // Remove button's accessible name: "<title> 찜 삭제" (added with BUG-08; was the icon text "favorite").
-    await page.getByRole('button', { name: `${EV.thisWeekPlay.title} 찜 삭제` }).click();
-    await expect(page.getByText('저장한 행사가 없습니다')).toBeVisible();
+    // v3: a live event uses the shared card's heart ("<title> 찜 해제"); "찜 삭제" is for ended/unavailable ones.
+    await page.getByRole('button', { name: `${EV.thisWeekPlay.title} 찜 해제` }).click();
+    await expect(page.getByRole('heading', { level: 1, name: /아직 찜한\s*서울이 없어요/ })).toBeVisible();
     expect(await readStorage<StoredFavorite[]>(page, STORAGE.favorites)).toEqual([]);
   });
 
@@ -89,17 +90,17 @@ test.describe('Favorites (nolseoul-favorites)', () => {
     await seedStorageOnce(page, { [STORAGE.favorites]: legacy });
     await page.goto('/#/mypage');
 
-    await expect(page.getByRole('heading', { level: 4, name: '[레거시] 저장된 행사' })).toBeVisible();
-    await myPageTab(page, '저장한 장소').last().click();
-    await expect(page.getByRole('heading', { level: 4, name: '[레거시] 저장된 공간' })).toBeVisible();
-    await myPageTab(page, '저장한 야경').last().click();
-    await expect(page.getByRole('heading', { level: 4, name: '[레거시] 저장된 야경' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name: '[레거시] 저장된 행사' })).toBeVisible();
+    await myPageTab(page, '문화공간').click();
+    await expect(page.getByRole('heading', { level: 3, name: '[레거시] 저장된 공간' })).toBeVisible();
+    await myPageTab(page, '야경명소').click();
+    await expect(page.getByRole('heading', { level: 3, name: '[레거시] 저장된 야경' })).toBeVisible();
   });
 
   test('corrupted favorites JSON falls back to an empty list', async ({ page }) => {
     await page.goto('/#/mypage');
     await page.evaluate((k) => window.localStorage.setItem(k, '{not json'), STORAGE.favorites);
     await page.reload();
-    await expect(page.getByText('저장한 행사가 없습니다')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: /아직 찜한\s*서울이 없어요/ })).toBeVisible();
   });
 });

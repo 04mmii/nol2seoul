@@ -71,6 +71,7 @@
 .v3-event-card__ph { position: absolute; inset: 0; background: #e3d6c2 repeating-linear-gradient(135deg, rgb(var(--v3-ink) / 0.06) 0 1px, transparent 1px 8px); }
 .v3-event-card__ph-cap { position: absolute; bottom: 10px; left: 12px; font-family: var(--v3-font-mono); font-size: 10px; color: rgb(var(--v3-ink) / 0.45); text-transform: uppercase; letter-spacing: 0.06em; }
 .v3-event-card__heart { position: absolute; top: 10px; right: 10px; z-index: 3; width: 28px; height: 28px; border-radius: 50%; border: none; background: rgb(var(--v3-bone) / 0.9); color: rgb(var(--v3-ink-2)); display: grid; place-items: center; font-size: 13px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+.v3-event-card__dday { position: absolute; top: 10px; left: 10px; z-index: 2; padding: 4px 7px; border-radius: 2px; background: rgb(var(--v3-ink)); color: rgb(var(--v3-bone)); font-family: var(--v3-font-mono); font-size: 10px; letter-spacing: 0.06em; }
 .v3-event-card__heart:hover { background: rgb(var(--v3-bone)); }
 .v3-event-card__heart[aria-pressed="true"] { background: rgb(var(--v3-accent)); color: rgb(var(--v3-accent-ink)); }
 .v3-event-card__body { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 16px 16px 18px; }

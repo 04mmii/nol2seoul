@@ -16,7 +16,9 @@ const EventCard: React.FC<{
   saved: boolean;
   onToggleFavorite: () => void;
   headingLevel?: 'h3' | 'h4';
-}> = ({ event, id, saved, onToggleFavorite, headingLevel = 'h3' }) => {
+  /** Deadline badge (top left), e.g. "D-2" from utils/event.ts `eventDday` — MyPage only for now. */
+  dday?: string | null;
+}> = ({ event, id, saved, onToggleFavorite, headingLevel = 'h3', dday }) => {
   const [broken, setBroken] = useState(false);
   const showImage = !!event.MAIN_IMG && !broken;
   const Heading = headingLevel;
@@ -32,6 +34,7 @@ const EventCard: React.FC<{
             <span className="v3-event-card__ph-cap">NO IMAGE</span>
           </span>
         )}
+        {dday && <span className="v3-event-card__dday">{dday}</span>}
         <button
           type="button"
           className="v3-event-card__heart v3-focus"
