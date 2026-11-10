@@ -44,7 +44,11 @@ const MapDiscovery: React.FC = () => {
   const [sub, setSub] = useState(ALL);
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(LIST_PAGE);
-  const [selectedKey, setSelectedKey] = useState<string | null>(() => (initialCat === '야경명소' && initialSpot && /^n\d+$/.test(initialSpot) ? `night:${initialSpot}` : null));
+  // Course remote ("지도에서 보기"): /map?sel=<event|space|night>:<id> opens with that place selected.
+  const initialSel = params.get('sel');
+  const [selectedKey, setSelectedKey] = useState<string | null>(() =>
+    initialSel && /^(event|space|night):[\w-]+$/.test(initialSel) ? initialSel
+      : initialCat === '야경명소' && initialSpot && /^n\d+$/.test(initialSpot) ? `night:${initialSpot}` : null);
   const [sheetOpen, setSheetOpen] = useState(false); // mobile bottom sheet
   const [locateError, setLocateError] = useState(false);
 

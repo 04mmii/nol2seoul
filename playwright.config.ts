@@ -37,5 +37,7 @@ export default defineConfig({
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
+    // Never call the paid model from tests (course remote uses its rule-based path or page.route fakes).
+    env: { COURSE_AI_DISABLED: '1' },
   },
 });

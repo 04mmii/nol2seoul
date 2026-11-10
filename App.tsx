@@ -11,6 +11,7 @@ import NightPage from './pages/NightPage';
 import SearchOverlay from './components/SearchOverlay';
 import { useEvents, useCulturalSpaces, useNightViewSpots } from './hooks';
 import LiveBar from './components/live/LiveBar';
+import CourseRemote from './components/course/CourseRemote';
 import { useFavoritesMigration } from './hooks/useFavoritesMigration';
 import { usePlaceFavoritesMigration, placeMigrationPending } from './hooks/usePlaceFavoritesMigration';
 
@@ -74,6 +75,7 @@ const App: React.FC = () => {
         <Footer />
         
         {isSearchOpen && <SearchOverlay onClose={() => setIsSearchOpen(false)} />}
+        <CourseRemote />
       </div>
     </Router>
   );

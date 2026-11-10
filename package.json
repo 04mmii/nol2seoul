@@ -13,6 +13,7 @@
     "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "@tanstack/react-query": "^5.90.20",
     "@vercel/node": "^5.5.33",
     "gsap": "^3.14.2",
