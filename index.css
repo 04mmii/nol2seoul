@@ -1,0 +1,75 @@
+/*
+ * NOLSEOUL design tokens — Redesign v3 (approved 2026-11-09)
+ * Source of truth for values: design-ref/src/styles-v3.css (:root).
+ *
+ * Colors are stored as RGB channels so Tailwind (index.html → tailwind.config) can use them with
+ * opacity modifiers, e.g. `bg-ink/20`. Hex values are kept in comments for humans/Figma.
+ *
+ * Migration status: tokens are available globally, but only the site Header/Footer use them so far.
+ * Other screens still use the legacy palette (primary/navy/background) until they are migrated
+ * one screen at a time. See DESIGN.md §2.
+ */
+:root {
+  /* Neutrals — light editorial surface */
+  --v3-bone: 246 242 234;      /* #f6f2ea  page background */
+  --v3-bone-2: 239 233 221;    /* #efe9dd  subtle surface, hover */
+  --v3-sand: 221 213 197;      /* #ddd5c5  placeholder fill */
+  --v3-ink: 20 19 15;          /* #14130f  primary text, inverse surface */
+  --v3-ink-2: 61 57 49;        /* #3d3931  secondary text */
+  --v3-mute: 107 101 89;       /* #6b6559  tertiary text, captions */
+
+  /* Accent — sunset */
+  --v3-tangerine: 226 84 47;   /* #e2542f  fills, large type (≥24px or ≥18.66px bold) */
+  --v3-tangerine-deep: 177 60 27; /* #b13c1b small labels/text on bone */
+
+  /* Night */
+  --v3-night: 17 29 56;        /* #111d38 */
+  --v3-night-2: 27 42 76;      /* #1b2a4c */
+  --v3-ember: 232 183 129;     /* #e8b781  warm highlight on night/ink */
+  /* Added 2026-11-11 (QA): values that were hardcoded hex in screen CSS. Same values → no visual change. */
+  --v3-white: 255 255 255;         /* text on 무료/유료 fee badges only (DESIGN §2.0.1 #10) */
+  --v3-poster-ph: 227 214 194;     /* #e3d6c2 poster placeholder (no image) */
+  --v3-night-deep: 13 24 48;       /* #0d1830 night gradient top */
+  --v3-night-3: 34 51 92;          /* #22335c night gradient middle */
+  --v3-night-dusk: 125 74 69;      /* #7d4a45 night gradient horizon */
+  --v3-night-slate: 42 47 69;      /* #2a2f45 hero slide 2 */
+  --v3-night-plum: 58 46 58;       /* #3a2e3a hero slide 3 */
+  --v3-ember-glow: 255 243 223;    /* #fff3df ring of a lit map pin */
+
+  /* State & accent layer (DESIGN.md §2.0.1, approved 2026-11-09).
+   * Every state colour is opaque — never fade the brand colour with alpha. */
+  --v3-accent: var(--v3-tangerine);             /* the 9 approved tangerine uses only */
+  --v3-accent-hover: var(--v3-tangerine);       /* hover of accent-bearing controls */
+  --v3-accent-press: var(--v3-tangerine-deep);  /* hover/press step on an existing accent fill */
+  --v3-accent-tint: 244 229 219;                /* #f4e5db = bone + 8% tangerine, pre-mixed (opaque) */
+  --v3-accent-ink: var(--v3-ink);               /* text/icons on accent fills, any size (4.91) */
+  --v3-accent-text: var(--v3-tangerine-deep);   /* small text on bone only (5.33) */
+
+  /* Legacy tokens kept by the v3 reference (not used in app code yet) */
+  --v3-electric: 36 53 110;    /* #24356e */
+  --v3-acid: 232 201 139;      /* #e8c98b */
+
+  /* Layout
+   * --v3-content-max: the shared content width. Every section's text and images stay inside
+   *   this width (centred), while section backgrounds may run full-bleed. Reference = the Home
+   *   event list. Use it via `.v3-shell` (CSS) or `max-w-shell px-gutter` (Tailwind).
+   * --v3-maxw: content width + side gutters (the outer box of .v3-shell). Derived — don't edit.
+   */
+  --v3-content-max: 1400px;
+  --v3-gutter: 40px;
+  --v3-maxw: calc(var(--v3-content-max) + 2 * var(--v3-gutter));
+  --v3-sec-y: 104px;
+
+  /* Type */
+  --v3-font-sans: "Pretendard Variable", "Pretendard", "Space Grotesk", system-ui, sans-serif;
+  --v3-font-display: "Space Grotesk", "Pretendard Variable", sans-serif;
+  --v3-font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+  --v3-font-serif: "Instrument Serif", "Noto Serif KR", serif; /* Latin italic accents only (Noto Serif KR not loaded) */
+}
+
+@media (max-width: 1280px) {
+  :root { --v3-gutter: 28px; --v3-sec-y: 80px; }
+}
+@media (max-width: 900px) {
+  :root { --v3-sec-y: 64px; }
+}

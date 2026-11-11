@@ -1,298 +1,240 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useEvents, useCulturalSpaces, useNightViewSpots } from '../hooks';
+import FeeBadge from './v3/FeeBadge';
+import { eventId } from '../utils/eventId';
+import { eventCardDate, eventDday, eventVenue } from '../utils/event';
+import { searchAll, highlightParts } from './search/selectors';
+import { QUICK_LINKS, nightChipText, type QuickLink } from './search/quickLinks';
+import { buildNight } from './night/selectors';
+import { districtFromAddress } from './home/selectors';
+import { spaceId, spotId } from '../utils/placeId';
+import './search/search-v3.css';
 
-interface SearchOverlayProps {
-  onClose: () => void;
-}
+/**
+ * v3 search panel (design-ref "Search and My v3", scoped for the portfolio, 2026-11-10).
+ * Desktop: a panel under the header with a scrim; ≤900px: full screen.
+ * Kept from before: same search fields, recent searches in localStorage `nolseoul-recent` (Enter saves,
+ * de-duplicated, max 8, remove one, clear all), result click saves the query and closes, 취소 closes.
+ * New: Esc closes, shortcut chips (names; the night chip shows the night page's lit count), up to 4 per
+ * group + total + "전체 보기" (just opens the page), matched text highlighted (accent-text), no-result
+ * screen; space results open /space/<id>, night results /night?spot=<id> (BUG-06 fixed; stable IDs, utils/placeId.ts).
+ * Focus (A11Y-04, 2026-11-11): Tab stays inside the panel; closing returns focus to the opener.
+ * Not included (scope): arrow-key navigation, mobile type tabs, passing the query to other pages.
+ */
+const RECENT_KEY = 'nolseoul-recent';
+const RECENT_MAX = 8;
 
-const SearchOverlay: React.FC<SearchOverlayProps> = ({ onClose }) => {
+const Mark: React.FC<{ text: string; query: string }> = ({ text, query }) => (
+  <>
+    {highlightParts(text, query).map((p, i) => (p.hit ? <mark key={i} className="v3-search__hit">{p.text}</mark> : <React.Fragment key={i}>{p.text}</React.Fragment>))}
+  </>
+);
+
+const SearchOverlay: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [query, setQuery] = useState('');
-  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('nolseoul-recent') || '[]');
-    } catch { return []; }
+  const [recent, setRecent] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; }
   });
-
   const { events } = useEvents();
   const { spaces } = useCulturalSpaces();
   const { spots } = useNightViewSpots();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [top, setTop] = useState(0);
 
-  // 검색어 저장
-  const addRecent = (term: string) => {
-    const updated = [term, ...recentSearches.filter(s => s !== term)].slice(0, 8);
-    setRecentSearches(updated);
-    localStorage.setItem('nolseoul-recent', JSON.stringify(updated));
-  };
-
-  const removeRecent = (term: string) => {
-    const updated = recentSearches.filter(s => s !== term);
-    setRecentSearches(updated);
-    localStorage.setItem('nolseoul-recent', JSON.stringify(updated));
-  };
-
-  const clearRecent = () => {
-    setRecentSearches([]);
-    localStorage.removeItem('nolseoul-recent');
-  };
-
-  // 검색 결과
-  const searchResults = useMemo(() => {
-    if (query.length < 1) return { events: [], spaces: [], spots: [] };
-    const q = query.toLowerCase();
-    return {
-      events: events.filter(e =>
-        e.TITLE?.toLowerCase().includes(q) ||
-        e.PLACE?.toLowerCase().includes(q) ||
-        e.CODENAME?.toLowerCase().includes(q) ||
-        e.GUNAME?.toLowerCase().includes(q)
-      ).slice(0, 6),
-      spaces: spaces.filter(s =>
-        s.FAC_NAME?.toLowerCase().includes(q) ||
-        s.ADDR?.toLowerCase().includes(q)
-      ).slice(0, 4),
-      spots: spots.filter(s =>
-        s.TITLE?.toLowerCase().includes(q) ||
-        s.ADDR?.toLowerCase().includes(q)
-      ).slice(0, 4),
+  // Panel sits right under the header (whatever is above it: Live Bar, scroll position).
+  useEffect(() => {
+    const header = document.querySelector('header');
+    setTop(header ? Math.max(0, header.getBoundingClientRect().bottom) : 0);
+    inputRef.current?.focus();
+  }, []);
+  // A11Y-04: Esc closes; Tab / Shift+Tab stay inside the panel; on close, focus returns to what opened it
+  // (the header search button).
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Read during the first render, before the input takes focus.
+  const [opener] = useState(() => document.activeElement as HTMLElement | null);
+  useEffect(() => () => { if (opener && opener !== document.body && document.contains(opener)) opener.focus(); }, [opener]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key !== 'Tab' || !panelRef.current) return;
+      const items = Array.from(panelRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])'))
+        .filter((el) => el.offsetParent !== null);
+      if (items.length === 0) return;
+      const first = items[0], last = items[items.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || !panelRef.current.contains(active))) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (active === last || !panelRef.current.contains(active))) { e.preventDefault(); first.focus(); }
     };
-  }, [query, events, spaces, spots]);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
-  const hasResults = searchResults.events.length > 0 || searchResults.spaces.length > 0 || searchResults.spots.length > 0;
-
-  // 인기 장르 (행사 수 기준)
-  const popularGenres = useMemo(() => {
-    const counts: Record<string, number> = {};
-    events.forEach(e => {
-      if (e.CODENAME) counts[e.CODENAME] = (counts[e.CODENAME] || 0) + 1;
-    });
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
-      .map(([name, count]) => ({ name, count }));
-  }, [events]);
-
-  // 추천 행사 (랜덤 3개)
-  const recommended = useMemo(() => {
-    if (events.length === 0) return [];
-    const shuffled = [...events].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 3);
-  }, [events]);
-
-  const handleSearch = (term: string) => {
-    setQuery(term);
-    addRecent(term);
+  const saveRecent = (term: string) => {
+    const t = term.trim();
+    if (!t) return;
+    const updated = [t, ...recent.filter((s) => s !== t)].slice(0, RECENT_MAX);
+    setRecent(updated);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(updated));
   };
+  const removeRecent = (term: string) => {
+    const updated = recent.filter((s) => s !== term);
+    setRecent(updated);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(updated));
+  };
+  const clearRecent = () => { setRecent([]); localStorage.removeItem(RECENT_KEY); };
+
+  const groups = useMemo(() => searchAll(query, events, spaces, spots), [query, events, spaces, spots]);
+  const night = useMemo(() => (spots.length ? buildNight(spots, new Date()) : null), [spots]);
+  const q = query.trim();
+  const open = (term?: string) => { saveRecent(term ?? q); onClose(); };
+
+  const Chip: React.FC<{ link: QuickLink }> = ({ link }) => (
+    <Link to={link.to} className="v3-search__chip v3-focus" onClick={onClose}>
+      {link.night && <span className={`v3-search__lit ${night && night.lit > 0 ? 'is-on' : ''}`} aria-hidden="true" />}
+      {link.night ? nightChipText(night) : link.label}
+    </Link>
+  );
 
   return (
-    <div className="fixed inset-0 z-[100] bg-white flex flex-col overflow-y-auto">
-      {/* Header with Search Input */}
-      <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center gap-4 z-10">
-        <div className="flex-1 flex items-center bg-gray-100 rounded-full px-5 h-12">
-          <span className="material-symbols-outlined text-gray-400">search</span>
+    <div className="v3-search" role="dialog" aria-modal="true" aria-label="검색">
+      <div className="v3-search__scrim" style={{ top }} onClick={onClose} aria-hidden="true" />
+      <div ref={panelRef} className="v3-search__panel" style={{ ['--search-top' as string]: `${top}px` }}>
+        <div className="v3-search__field">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3-3" /></svg>
           <input
-            autoFocus
+            ref={inputRef}
+            type="search"
             value={query}
-            onChange={e => setQuery(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && query.trim()) addRecent(query.trim()); }}
-            className="flex-1 bg-transparent border-none focus:ring-0 text-base md:text-lg font-medium placeholder:text-gray-400 truncate"
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && q) saveRecent(q); }}
             placeholder="행사, 장소, 키워드를 검색해보세요"
+            aria-label="검색어"
           />
-          {query && (
-            <button onClick={() => setQuery('')} className="p-1 hover:bg-gray-200 rounded-full text-gray-400">
-              <span className="material-symbols-outlined">cancel</span>
-            </button>
-          )}
+          {query && <button type="button" className="v3-search__clear v3-focus" onClick={() => { setQuery(''); inputRef.current?.focus(); }} aria-label="검색어 지우기">✕</button>}
+          <button type="button" className="v3-search__cancel v3-focus" onClick={onClose}>취소</button>
         </div>
-        <button onClick={onClose} className="text-sm font-bold text-navy px-4">취소</button>
-      </div>
 
-      <div className="max-w-4xl mx-auto w-full px-6 py-10 space-y-12">
-        {/* 검색 결과 */}
-        {query.length > 0 ? (
-          hasResults ? (
+        <div className="v3-search__body">
+          {!q ? (
             <>
-              {/* 문화행사 결과 */}
-              {searchResults.events.length > 0 && (
-                <section>
-                  <h2 className="text-lg font-black mb-4 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-xl">event</span>
-                    문화행사
-                    <span className="text-sm font-bold text-gray-400 ml-1">{searchResults.events.length}</span>
-                  </h2>
-                  <div className="space-y-2">
-                    {searchResults.events.map((event, i) => {
-                      const idx = events.indexOf(event);
+              {recent.length > 0 && (
+                <section className="v3-search__sec" aria-labelledby="search-recent">
+                  <div className="v3-search__sec-h">
+                    <h2 id="search-recent">최근 검색어</h2>
+                    <button type="button" className="v3-search__link v3-focus" onClick={clearRecent}>전체 삭제</button>
+                  </div>
+                  <div className="v3-search__chips">
+                    {recent.map((term) => (
+                      <span key={term} className="v3-search__chip is-recent">
+                        <button type="button" className="v3-search__chip-term v3-focus" onClick={() => setQuery(term)}>{term}</button>
+                        <button type="button" className="v3-search__chip-x v3-focus" onClick={() => removeRecent(term)} aria-label={`최근 검색어 ${term} 삭제`}>✕</button>
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              )}
+              <section className="v3-search__sec" aria-labelledby="search-quick">
+                <div className="v3-search__sec-h"><h2 id="search-quick">바로 가기</h2></div>
+                <div className="v3-search__chips">
+                  {[QUICK_LINKS.freeWeek, QUICK_LINKS.endingSoon, QUICK_LINKS.nightOn, QUICK_LINKS.museums].map((l) => <Chip key={l.id} link={l} />)}
+                </div>
+              </section>
+              <p className="v3-search__scope">찾을 수 있는 것 — 행사 이름 · 장소 · 자치구 · 분류 / 문화공간 이름 · 주소 / 야경명소 이름 · 주소</p>
+            </>
+          ) : groups.total === 0 ? (
+            <div className="v3-search__empty" role="status">
+              <p className="v3-search__empty-big">‘{q}’와 맞는 곳이<br />서울엔 <em>없어요.</em></p>
+              <p>행사 이름 대신 장소나 동네(예: 종로, 성수)로 찾거나, 띄어쓰기를 바꿔 다시 검색해 보세요.</p>
+              <div className="v3-search__chips">
+                {[QUICK_LINKS.museums, QUICK_LINKS.exhibitWeek, QUICK_LINKS.freeWeek].map((l) => <Chip key={l.id} link={l} />)}
+              </div>
+              <p className="v3-search__scope">찾는 범위: 진행 중·3개월 내 행사 · 문화공간 · 야경명소</p>
+            </div>
+          ) : (
+            <>
+              {groups.events.total > 0 && (
+                <section className="v3-search__sec" aria-labelledby="search-events">
+                  <div className="v3-search__sec-h">
+                    <h2 id="search-events">문화행사 <span>· {groups.events.total}건</span></h2>
+                    <Link to="/events" className="v3-search__link v3-focus" onClick={() => open()}>문화행사에서 전체 보기 →</Link>
+                  </div>
+                  <ul className="v3-search__list">
+                    {groups.events.items.map((e) => {
+                      const dday = eventDday(e);
                       return (
-                        <Link
-                          key={i}
-                          to={`/event/${idx}`}
-                          onClick={() => { addRecent(query); onClose(); }}
-                          className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-2xl cursor-pointer group transition-all"
-                        >
-                          <div className="size-14 rounded-xl overflow-hidden shrink-0 bg-gray-100">
-                            {event.MAIN_IMG ? (
-                              <img className="size-full object-cover" src={event.MAIN_IMG} alt={event.TITLE} />
-                            ) : (
-                              <div className="size-full flex items-center justify-center text-gray-300">
-                                <span className="material-symbols-outlined">image</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold group-hover:text-primary transition-colors truncate">{event.TITLE}</p>
-                            <p className="text-xs text-gray-400 font-bold mt-0.5 truncate">{event.PLACE} · {event.CODENAME}</p>
-                          </div>
-                          <span className="material-symbols-outlined text-gray-200 group-hover:text-primary shrink-0">arrow_forward_ios</span>
-                        </Link>
+                        <li key={eventId(e)}>
+                          <Link to={`/event/${eventId(e)}`} className="v3-search__res v3-focus" onClick={() => open()}>
+                            <span className="v3-search__thumb">{e.MAIN_IMG && <img src={e.MAIN_IMG} alt="" loading="lazy" />}</span>
+                            <span className="v3-search__main">
+                              <span className="v3-search__name"><Mark text={e.TITLE} query={q} /></span>
+                              <span className="v3-search__sub"><span>{e.CODENAME}</span><span>{eventVenue(e)}</span><span>{eventCardDate(e)}</span></span>
+                            </span>
+                            <span className="v3-search__right"><FeeBadge event={e} hideCheck />{dday && <span className="v3-search__dday">{dday}</span>}</span>
+                          </Link>
+                        </li>
                       );
                     })}
-                  </div>
+                  </ul>
                 </section>
               )}
-
-              {/* 문화공간 결과 */}
-              {searchResults.spaces.length > 0 && (
-                <section>
-                  <h2 className="text-lg font-black mb-4 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-blue-500 text-xl">museum</span>
-                    문화공간
-                    <span className="text-sm font-bold text-gray-400 ml-1">{searchResults.spaces.length}</span>
-                  </h2>
-                  <div className="space-y-2">
-                    {searchResults.spaces.map((space, i) => (
-                      <div key={i} className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-2xl cursor-pointer group transition-all">
-                        <div className="size-14 rounded-xl overflow-hidden shrink-0 bg-blue-50 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-blue-400">museum</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold group-hover:text-blue-500 transition-colors truncate">{space.FAC_NAME}</p>
-                          <p className="text-xs text-gray-400 font-bold mt-0.5 truncate">{space.ADDR}</p>
-                        </div>
-                      </div>
-                    ))}
+              {groups.spaces.total > 0 && (
+                <section className="v3-search__sec" aria-labelledby="search-spaces">
+                  <div className="v3-search__sec-h">
+                    <h2 id="search-spaces">문화공간 <span>· {groups.spaces.total}곳</span></h2>
+                    <Link to="/map" className="v3-search__link v3-focus" onClick={() => open()}>지도에서 전체 보기 →</Link>
                   </div>
+                  <ul className="v3-search__list">
+                    {groups.spaces.items.map(({ space, index }) => (
+                      <li key={index}>
+                        <Link to={`/space/${spaceId(space)}`} className="v3-search__res v3-focus" onClick={() => open()}>
+                          <span className="v3-search__icon">{(space.SUBJCODE || '공간').split('/')[0]}</span>
+                          <span className="v3-search__main">
+                            <span className="v3-search__name"><Mark text={space.FAC_NAME} query={q} /></span>
+                            <span className="v3-search__sub"><span>{space.ADDR}</span></span>
+                          </span>
+                          <span className="v3-search__right" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
                 </section>
               )}
-
-              {/* 야경명소 결과 */}
-              {searchResults.spots.length > 0 && (
-                <section>
-                  <h2 className="text-lg font-black mb-4 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-indigo-500 text-xl">nightlight</span>
-                    야경명소
-                    <span className="text-sm font-bold text-gray-400 ml-1">{searchResults.spots.length}</span>
-                  </h2>
-                  <div className="space-y-2">
-                    {searchResults.spots.map((spot, i) => (
-                      <div key={i} className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-2xl cursor-pointer group transition-all">
-                        <div className="size-14 rounded-xl overflow-hidden shrink-0 bg-indigo-50 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-indigo-400">nightlight</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold group-hover:text-indigo-500 transition-colors truncate">{spot.TITLE}</p>
-                          <p className="text-xs text-gray-400 font-bold mt-0.5 truncate">{spot.ADDR}</p>
-                        </div>
-                      </div>
-                    ))}
+              {groups.spots.total > 0 && (
+                <section className="v3-search__sec" aria-labelledby="search-spots">
+                  <div className="v3-search__sec-h">
+                    <h2 id="search-spots">야경명소 <span>· {groups.spots.total}곳</span></h2>
+                    <Link to="/night" className="v3-search__link v3-focus" onClick={() => open()}>야경명소에서 전체 보기 →</Link>
                   </div>
+                  <ul className="v3-search__list">
+                    {groups.spots.items.map(({ spot, index }) => {
+                      const st = night?.views[index]?.state;
+                      return (
+                        <li key={index}>
+                          <Link to={`/night?spot=${spotId(spot)}`} className="v3-search__res v3-focus" onClick={() => open()}>
+                            <span className={`v3-search__icon is-night ${st?.badge === 'lit' ? 'is-on' : ''}`}><span className="v3-search__glow" aria-hidden="true" /></span>
+                            <span className="v3-search__main">
+                              <span className="v3-search__name"><Mark text={spot.TITLE} query={q} /></span>
+                              <span className="v3-search__sub"><span>{districtFromAddress(spot.ADDR)}</span><span>{spot.OPERATING_TIME}</span></span>
+                            </span>
+                            <span className="v3-search__right">
+                              {st && (st.badge === 'lit' || st.badge === 'open') && <span className={`v3-search__state is-${st.badge}`}>{st.badge === 'lit' ? '● ' : ''}{st.label}</span>}
+                            </span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </section>
               )}
             </>
-          ) : (
-            <div className="flex flex-col items-center py-20 text-gray-400">
-              <span className="material-symbols-outlined text-5xl mb-4">search_off</span>
-              <p className="font-bold text-lg">'{query}'에 대한 검색 결과가 없습니다</p>
-              <p className="text-sm mt-2">다른 키워드로 검색해보세요</p>
-            </div>
-          )
-        ) : (
-          <>
-            {/* 추천 행사 */}
-            {recommended.length > 0 && (
-              <section>
-                <h2 className="text-xl font-black mb-6 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary">auto_awesome</span>
-                  추천 행사
-                </h2>
-                <div className="space-y-2">
-                  {recommended.map((event, i) => {
-                    const idx = events.indexOf(event);
-                    return (
-                      <Link
-                        key={i}
-                        to={`/event/${idx}`}
-                        onClick={onClose}
-                        className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-2xl cursor-pointer group transition-all"
-                      >
-                        <div className="size-14 rounded-xl overflow-hidden shrink-0 bg-gray-100">
-                          {event.MAIN_IMG ? (
-                            <img className="size-full object-cover" src={event.MAIN_IMG} alt={event.TITLE} />
-                          ) : (
-                            <div className="size-full flex items-center justify-center text-gray-300">
-                              <span className="material-symbols-outlined">image</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold group-hover:text-primary transition-colors truncate">{event.TITLE}</p>
-                          <p className="text-xs text-gray-400 font-bold mt-0.5 truncate">{event.PLACE} · {event.CODENAME}</p>
-                        </div>
-                        <span className="material-symbols-outlined text-gray-200 group-hover:text-primary">north_west</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
+          )}
+        </div>
 
-            {/* 최근 검색어 */}
-            {recentSearches.length > 0 && (
-              <section>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-lg font-black">최근 검색어</h2>
-                  <button onClick={clearRecent} className="text-xs font-bold text-gray-400 hover:text-navy transition-colors">전체 삭제</button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {recentSearches.map(tag => (
-                    <div key={tag} className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-full border border-gray-100 hover:border-primary/30 transition-all cursor-pointer"
-                      onClick={() => handleSearch(tag)}
-                    >
-                      <span className="text-sm font-bold">{tag}</span>
-                      <span
-                        className="material-symbols-outlined text-xs text-gray-300 hover:text-primary"
-                        onClick={(e) => { e.stopPropagation(); removeRecent(tag); }}
-                      >close</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* 인기 장르 */}
-            {popularGenres.length > 0 && (
-              <section>
-                <h2 className="text-lg font-black mb-6">인기 장르</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2">
-                  {popularGenres.map((item, i) => (
-                    <div
-                      key={item.name}
-                      onClick={() => handleSearch(item.name)}
-                      className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-2xl cursor-pointer transition-all"
-                    >
-                      <div className="flex items-center gap-4">
-                        <span className={`w-4 font-black text-center ${i < 3 ? 'text-primary' : 'text-gray-300'}`}>{i + 1}</span>
-                        <span className="font-bold text-navy">{item.name}</span>
-                      </div>
-                      <span className="text-xs font-bold text-gray-400">{item.count}건</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-          </>
-        )}
+        <div className="v3-search__foot">
+          <span>{q && groups.total > 0 ? `‘${q}’ 결과 ${groups.total}건 · 이름·장소·주소에서 찾음` : ' '}</span>
+          <span><kbd>ESC</kbd> 닫기</span>
+        </div>
       </div>
     </div>
   );

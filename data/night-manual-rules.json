@@ -1,0 +1,11 @@
+{
+  "note": "MANUAL VALUES — not from the Seoul API. Operating-time rules for night spots whose OPERATING_TIME can't be parsed (e.g. '연중무휴 * 개별시설 운영시간 상이'). An entry only applies when enabled is true. `operatingTime` uses the same wording the parser understands (e.g. '일몰후~ 23:00', '일몰 30분후 점등 ~ 23:00 소등', '18:00~23:00'). Fill in `source` with where the hours were confirmed. See DESIGN.md (Night page, manual rules).",
+  "rules": {
+    "남산서울타워": {
+      "enabled": false,
+      "operatingTime": "일몰후~ 23:00",
+      "source": "",
+      "note": "Example from the owner's request (2026-11-10). Not verified — keep disabled until the lighting hours are confirmed."
+    }
+  }
+}

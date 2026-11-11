@@ -1,0 +1,9 @@
+{
+  "note": "Home map promo cards (decision 2026-11-11). Space IDs (utils/placeId.ts \"s<NUM>\"). Chosen: one per type, MAIN_IMG at least 400px wide and at most 500 KB (checked 2026-11-11). A space missing from the API or without MAIN_IMG is skipped.",
+  "checked": {
+    "s41": "국립현대미술관 서울 · 1280×960 · 236 KB",
+    "s74": "국립고궁박물관 · 1280×853 · 120 KB",
+    "s26": "국립정동극장 · 1280×854 · 199 KB"
+  },
+  "ids": ["s41", "s74", "s26"]
+}

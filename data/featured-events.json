@@ -1,0 +1,4 @@
+{
+  "note": "Home hero banners chosen by hand, in display order (event cultcodes, utils/eventId.ts). Empty = automatic rule only (decision 2026-11-11: banners follow the \"THIS WEEK\" title). Upcoming picks show \"D-n 개막\"; ended or missing ones are skipped and empty slots are auto-filled (components/home/selectors.ts pickHeroEvents). Christmas set for December: see DESIGN.md §3.y.",
+  "ids": []
+}

@@ -1,385 +1,256 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { useEvents, useFavorites } from "../hooks";
+import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useEvents, useFavorites } from '../hooks';
+import EventCard from '../components/v3/EventCard';
+import { eventId } from '../utils/eventId';
+import {
+  ALL,
+  DEFAULT_FILTERS,
+  activeFilterCount,
+  applyFilters,
+  categoryOptions,
+  ongoingCount,
+  pageNumbers,
+  regionOptions,
+  sortEvents,
+  type EventFilters,
+  type SortKey,
+} from '../components/events/selectors';
+import { EVENTS_COPY, EVENTS_PER_PAGE, FEE_FILTERS, PERIOD_TABS, SORT_OPTIONS } from '../constants/events';
+import '../components/events/events-v3.css';
 
-const ITEMS_PER_PAGE = 12;
-
-const DropdownFilter: React.FC<{
-  label: string;
-  options: string[];
-  value: string;
-  defaultLabel: string;
-  onChange: (value: string) => void;
-}> = ({ label, options, value, defaultLabel, onChange }) => {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const display = value === defaultLabel ? label : value;
-
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1 px-4 py-2 rounded-full border text-sm font-medium whitespace-nowrap transition-all ${
-          value !== defaultLabel
-            ? "bg-primary text-white border-primary"
-            : "bg-white border-gray-200 hover:border-primary"
-        }`}
-      >
-        {display}
-        <span className="material-symbols-outlined text-[18px]">
-          {open ? "expand_less" : "expand_more"}
-        </span>
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 mt-2 bg-white rounded-xl border border-gray-100 shadow-xl z-50 min-w-[160px] max-h-[280px] overflow-y-auto py-1">
-          {options.map((opt) => (
-            <button
-              key={opt}
-              onClick={() => {
-                onChange(opt);
-                setOpen(false);
-              }}
-              className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
-                value === opt
-                  ? "bg-primary/10 text-primary"
-                  : "hover:bg-gray-50 text-gray-700"
-              }`}
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
+/**
+ * v3 EventList (design-ref/src/page-events.jsx), fed by the event API.
+ * Kept from the pre-v3 page: single-select genre / district / fee filters (fee = BUG-03 option D),
+ * 12 per page, pagination reset on filter change, favorites, "지도 보기" link, loading/error/empty states.
+ * New (approved 2026-11-09): period tabs (Home tab rules, default 전체), sort 기본순 / 마감임박.
+ * Not rendered (no data / out of scope): featured banner with curator quote, price-range checkboxes,
+ * popularity sort, grid/list view toggle.
+ */
 const EventList: React.FC = () => {
   const { events, loading, isError } = useEvents();
   const { toggleFavorite, isFavorite } = useFavorites();
-  const [selectedCategory, setSelectedCategory] = useState("전체");
-  const [selectedRegion, setSelectedRegion] = useState("전체");
-  const [feeFilter, setFeeFilter] = useState("전체");
+  const now = useMemo(() => new Date(), []);
+
+  const [filters, setFilters] = useState<EventFilters>(DEFAULT_FILTERS);
+  const [sort, setSort] = useState<SortKey>('default');
   const [page, setPage] = useState(1);
+  const [filtersOpen, setFiltersOpen] = useState(false); // mobile disclosure
 
-  // 카테고리(장르) 목록
-  const categories = useMemo(() => {
-    const codes = [...new Set(events.map((e) => e.CODENAME).filter(Boolean))];
-    return ["전체", ...codes];
-  }, [events]);
-
-  // 지역(자치구) 목록
-  const regions = useMemo(() => {
-    const guNames = [...new Set(events.map((e) => e.GUNAME).filter(Boolean))].sort();
-    return ["전체", ...guNames];
-  }, [events]);
-
-  // 필터링
-  const filteredEvents = useMemo(() => {
-    let list = events;
-    if (selectedCategory !== "전체") {
-      list = list.filter((e) => e.CODENAME === selectedCategory);
-    }
-    if (selectedRegion !== "전체") {
-      list = list.filter((e) => e.GUNAME === selectedRegion);
-    }
-    if (feeFilter === "무료") {
-      list = list.filter((e) => e.IS_FREE === "무료");
-    } else if (feeFilter === "유료") {
-      list = list.filter((e) => e.IS_FREE !== "무료");
-    }
-    return list;
-  }, [events, selectedCategory, selectedRegion, feeFilter]);
-
-  // 페이지네이션
-  const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE);
-  const pagedEvents = filteredEvents.slice(
-    (page - 1) * ITEMS_PER_PAGE,
-    page * ITEMS_PER_PAGE,
-  );
-
-  const getPageNumbers = () => {
-    const pages: (number | "...")[] = [];
-    if (totalPages <= 7) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-      pages.push(1);
-      if (page > 3) pages.push("...");
-      for (
-        let i = Math.max(2, page - 1);
-        i <= Math.min(totalPages - 1, page + 1);
-        i++
-      )
-        pages.push(i);
-      if (page < totalPages - 2) pages.push("...");
-      pages.push(totalPages);
-    }
-    return pages;
-  };
-
-  const hasActiveFilter =
-    selectedCategory !== "전체" || selectedRegion !== "전체" || feeFilter !== "전체";
-
-  const resetFilters = () => {
-    setSelectedCategory("전체");
-    setSelectedRegion("전체");
-    setFeeFilter("전체");
+  const update = (patch: Partial<EventFilters>) => {
+    setFilters((f) => ({ ...f, ...patch }));
     setPage(1);
   };
 
+  const categories = useMemo(() => categoryOptions(events, filters, now), [events, filters, now]);
+  const regions = useMemo(() => regionOptions(events), [events]);
+  const filtered = useMemo(() => sortEvents(applyFilters(events, filters, now), sort, now), [events, filters, sort, now]);
+  const ongoing = useMemo(() => ongoingCount(events, now), [events, now]);
+
+  const totalPages = Math.ceil(filtered.length / EVENTS_PER_PAGE);
+  const paged = filtered.slice((page - 1) * EVENTS_PER_PAGE, page * EVENTS_PER_PAGE);
+  const active = activeFilterCount(filters);
+
   if (loading) {
     return (
-      <div className="max-w-[1200px] mx-auto px-6 py-20 flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        <p className="text-navy font-bold">문화행사를 불러오는 중...</p>
+      <div className="v3-evlist">
+        <div className="v3-shell v3-evlist__state" role="status">문화행사를 불러오는 중...</div>
       </div>
     );
   }
-
   if (isError) {
     return (
-      <div className="max-w-[1200px] mx-auto px-6 py-20 text-center">
-        <span className="material-symbols-outlined text-5xl text-gray-300 mb-4 block">
-          error
-        </span>
-        <p className="text-gray-500 font-bold">
-          문화행사를 불러올 수 없습니다.
-        </p>
+      <div className="v3-evlist">
+        <div className="v3-shell v3-evlist__state" role="alert">문화행사를 불러올 수 없습니다.</div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10 pb-24">
-      {/* 헤더 */}
-      <div className="mb-10 space-y-4">
-        <h2 className="text-3xl font-black">문화행사 탐색</h2>
-        <div className="flex gap-2 overflow-x-auto no-scrollbar py-2">
-          <DropdownFilter
-            label="자치구 선택"
-            options={regions}
-            value={selectedRegion}
-            defaultLabel="전체"
-            onChange={(v) => { setSelectedRegion(v); setPage(1); }}
-          />
-          <DropdownFilter
-            label="장르"
-            options={categories}
-            value={selectedCategory}
-            defaultLabel="전체"
-            onChange={(v) => { setSelectedCategory(v); setPage(1); }}
-          />
-          <DropdownFilter
-            label="유료/무료"
-            options={["전체", "무료", "유료"]}
-            value={feeFilter}
-            defaultLabel="전체"
-            onChange={(v) => { setFeeFilter(v); setPage(1); }}
-          />
-          {hasActiveFilter && (
-            <button
-              onClick={resetFilters}
-              className="flex items-center gap-1 px-4 py-2 rounded-full bg-gray-100 text-sm font-medium text-gray-500 hover:bg-gray-200 whitespace-nowrap transition-all"
-            >
-              <span className="material-symbols-outlined text-[18px]">close</span>
-              초기화
-            </button>
-          )}
+    <div className="v3-evlist">
+      {/* Page head */}
+      <section className="v3-evlist__head">
+        <div className="v3-shell">
+          <div className="v3-eyebrow"><span className="v3-eyebrow__dash" />{EVENTS_COPY.eyebrow}</div>
+          <h1 className="v3-evlist__title">
+            <span className="v3-ko">서울에서</span> <span className="v3-evlist__em">지금</span>
+            <br />
+            <span className="v3-ko">하고 있는</span> <span className="v3-evlist__em">{ongoing.toLocaleString('ko-KR')}</span>
+            <br />
+            <span className="v3-ko">가지 일.</span>
+          </h1>
+          <div className="v3-evlist__head-row">
+            <p className="v3-evlist__sub">{EVENTS_COPY.sub}</p>
+            <div className="v3-evlist__periods" role="group" aria-label="기간">
+              {PERIOD_TABS.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className="v3-day-pill v3-focus"
+                  aria-pressed={filters.period === t.id}
+                  onClick={() => update({ period: t.id })}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* 결과 수 */}
-      <div className="flex items-baseline justify-between mb-8">
-        <h3 className="text-lg font-bold">
-          총 <span className="text-primary">{filteredEvents.length}</span>건의 문화행사
-        </h3>
-      </div>
+      <section className="v3-evlist__body">
+        <div className="v3-shell v3-evlist__grid">
+          {/* Mobile: filters collapse behind a toggle */}
+          <button
+            type="button"
+            className="v3-btn v3-evlist__filter-toggle"
+            aria-expanded={filtersOpen}
+            aria-controls="evlist-filters"
+            onClick={() => setFiltersOpen((o) => !o)}
+          >
+            필터{active > 0 ? ` · ${active}` : ''} <span aria-hidden="true">{filtersOpen ? '▴' : '▾'}</span>
+          </button>
 
-      {/* 행사 목록 */}
-      {pagedEvents.length === 0 ? (
-        <div className="py-20 text-center">
-          <span className="material-symbols-outlined text-5xl text-gray-300 block mb-4">
-            search_off
-          </span>
-          <p className="text-gray-400 font-bold">
-            조건에 맞는 행사가 없습니다.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {pagedEvents.map((event) => {
-            const idx = events.indexOf(event);
-            const favId = String(idx);
-            const isFree = event.IS_FREE === "무료";
+          <aside id="evlist-filters" className={`v3-evlist__side ${filtersOpen ? 'is-open' : ''}`} aria-label="필터">
+            <div className="v3-evlist__side-inner">
+            <div className="v3-evlist__fgroup" role="group" aria-label="카테고리">
+              <div className="v3-evlist__fnum">FILTER № 01</div>
+              <h2 className="v3-evlist__ftitle">카테고리</h2>
+              <ul className="v3-evlist__cats">
+                {categories.map((c) => (
+                  <li key={c.name}>
+                    <button
+                      type="button"
+                      className="v3-evlist__cat v3-focus"
+                      aria-pressed={filters.category === c.name}
+                      onClick={() => update({ category: c.name })}
+                    >
+                      <span>{c.name}</span>
+                      <span className="v3-evlist__cat-n">{c.count}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-            return (
-              <div
-                key={idx}
-                className="bg-white rounded-xl overflow-hidden border border-gray-100 flex flex-col group hover:shadow-xl transition-all h-full"
-              >
-                {/* 이미지 */}
-                <div className="relative w-full h-48 overflow-hidden shrink-0">
-                  {event.MAIN_IMG ? (
-                    <img
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      src={event.MAIN_IMG}
-                      alt={event.TITLE}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          "https://picsum.photos/seed/event/600/400";
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-5xl text-gray-300">
-                        event
-                      </span>
-                    </div>
-                  )}
-                  <div
-                    className={`absolute top-3 left-3 px-3 py-1 ${isFree ? "bg-primary" : "bg-gray-500"} text-white text-[10px] font-bold rounded-full shadow-lg`}
+            <div className="v3-evlist__fgroup" role="group" aria-label="지역">
+              <div className="v3-evlist__fnum">FILTER № 02</div>
+              <h2 className="v3-evlist__ftitle">지역</h2>
+              <div className="v3-evlist__chips">
+                {regions.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    className="v3-day-pill v3-evlist__chip v3-focus"
+                    aria-pressed={filters.region === r}
+                    onClick={() => update({ region: r })}
                   >
-                    {isFree ? "무료" : "유료"}
-                  </div>
-                  {event.CODENAME && (
-                    <div className="absolute bottom-3 left-3 px-2.5 py-1 bg-navy/80 backdrop-blur-sm text-white text-[10px] font-bold rounded-full">
-                      {event.CODENAME}
-                    </div>
-                  )}
-                </div>
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                {/* 정보 */}
-                <div className="flex-1 p-5 flex flex-col min-h-0">
-                  <div className="flex-1 min-h-0">
-                    <div className="flex justify-between items-start mb-2">
-                      <Link
-                        to={`/event/${idx}`}
-                        className="flex-1 min-w-0 text-lg font-bold leading-snug group-hover:text-primary transition-colors line-clamp-2 break-keep"
-                      >
-                        {event.TITLE}
-                      </Link>
-                      <button
-                        onClick={() =>
+            <div className="v3-evlist__fgroup" role="group" aria-label="관람료">
+              <div className="v3-evlist__fnum">FILTER № 03</div>
+              <h2 className="v3-evlist__ftitle">관람료</h2>
+              <div className="v3-evlist__chips">
+                {FEE_FILTERS.map((fee) => (
+                  <button
+                    key={fee}
+                    type="button"
+                    className="v3-day-pill v3-evlist__chip v3-focus"
+                    aria-pressed={filters.fee === fee}
+                    onClick={() => update({ fee })}
+                  >
+                    {fee}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="v3-evlist__reset">
+              <button
+                type="button"
+                className="v3-btn"
+                disabled={active === 0}
+                onClick={() => update({ category: ALL, region: ALL, fee: ALL })}
+              >
+                필터 초기화
+              </button>
+            </div>
+            </div>
+          </aside>
+
+          <div className="v3-evlist__content">
+            <div className="v3-evlist__toolbar">
+              <h2 className="v3-evlist__count">
+                총 <b>{filtered.length.toLocaleString('ko-KR')}</b>건의 문화행사
+              </h2>
+              <div className="v3-evlist__tools">
+              <label className="v3-evlist__sort">
+                <span>SORT</span>
+                <select value={sort} onChange={(e) => { setSort(e.target.value as SortKey); setPage(1); }} className="v3-focus">
+                  {SORT_OPTIONS.map((o) => (
+                    <option key={o.id} value={o.id}>{o.label}</option>
+                  ))}
+                </select>
+              </label>
+              {/* Desktop: in the toolbar next to the sort. ≤900px: fixed at the bottom of the screen (CSS). */}
+              <Link to="/map" className="v3-btn v3-btn--primary v3-evlist__map">지도 보기 →</Link>
+              </div>
+            </div>
+
+            <div role="region" aria-label="문화행사 목록">
+              {paged.length === 0 ? (
+                <p className="v3-evlist__empty">조건에 맞는 행사가 없습니다.</p>
+              ) : (
+                <div className="v3-event-grid v3-event-grid--3">
+                  {paged.map((ev) => {
+                    const id = eventId(ev);
+                    return (
+                      <EventCard
+                        key={id}
+                        event={ev}
+                        id={id}
+                        saved={isFavorite(id, 'event')}
+                        onToggleFavorite={() =>
                           toggleFavorite({
-                            id: favId,
-                            type: "event",
-                            title: event.TITLE,
-                            location: event.PLACE || event.GUNAME,
-                            image: event.MAIN_IMG,
-                            category: event.CODENAME,
-                            date: event.DATE,
+                            id,
+                            type: 'event',
+                            title: ev.TITLE,
+                            location: ev.PLACE || ev.GUNAME,
+                            image: ev.MAIN_IMG,
+                            category: ev.CODENAME,
+                            date: ev.DATE,
                           })
                         }
-                        className={`shrink-0 ml-3 transition-colors ${isFavorite(favId, "event") ? "text-primary" : "text-gray-300 hover:text-primary"}`}
-                      >
-                        <span
-                          className={`material-symbols-outlined ${isFavorite(favId, "event") ? "fill" : ""}`}
-                        >
-                          favorite
-                        </span>
-                      </button>
-                    </div>
-                    <div className="space-y-1 text-sm text-gray-500 font-medium">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary/70 text-base shrink-0">
-                          calendar_month
-                        </span>
-                        <span className="truncate">{event.DATE}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary/70 text-base shrink-0">
-                          location_on
-                        </span>
-                        <span className="truncate">{event.PLACE || event.GUNAME}</span>
-                      </div>
-                      {event.USE_FEE && (
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-primary/70 text-base shrink-0">
-                            payments
-                          </span>
-                          <span className="truncate">{event.USE_FEE}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-                    {event.USE_TRGT ? (
-                      <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold truncate max-w-[160px]">
-                        {event.USE_TRGT}
-                      </span>
-                    ) : (
-                      <span />
-                    )}
-                    <Link
-                      to={`/event/${idx}`}
-                      className="shrink-0 w-[90px] h-[36px] flex items-center justify-center bg-navy text-white rounded-full text-sm font-bold hover:bg-primary transition-colors"
-                    >
-                      상세보기
-                    </Link>
-                  </div>
+                      />
+                    );
+                  })}
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              )}
+            </div>
 
-      {/* 페이지네이션 */}
-      {totalPages > 1 && (
-        <div className="mt-16 flex justify-center items-center gap-2">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center hover:text-primary disabled:opacity-30"
-          >
-            <span className="material-symbols-outlined">chevron_left</span>
-          </button>
-          {getPageNumbers().map((p, i) =>
-            p === "..." ? (
-              <span key={`dot-${i}`} className="px-2 text-gray-400">
-                ...
-              </span>
-            ) : (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`w-10 h-10 rounded-full font-bold ${
-                  page === p
-                    ? "bg-primary text-white"
-                    : "border border-gray-100 hover:text-primary"
-                }`}
-              >
-                {p}
-              </button>
-            ),
-          )}
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center hover:text-primary disabled:opacity-30"
-          >
-            <span className="material-symbols-outlined">chevron_right</span>
-          </button>
+            {totalPages > 1 && (
+              <nav className="v3-evlist__pages" aria-label="페이지">
+                <button type="button" className="v3-day-pill v3-focus" aria-label="이전 페이지" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>←</button>
+                {pageNumbers(page, totalPages).map((p, i) =>
+                  p === '…' ? (
+                    <span key={`dots-${i}`} className="v3-evlist__dots">…</span>
+                  ) : (
+                    <button key={p} type="button" className="v3-day-pill v3-focus" aria-pressed={page === p} aria-current={page === p ? 'page' : undefined} onClick={() => setPage(p)}>
+                      {p}
+                    </button>
+                  ),
+                )}
+                <button type="button" className="v3-day-pill v3-focus" aria-label="다음 페이지" disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>→</button>
+              </nav>
+            )}
+          </div>
         </div>
-      )}
+      </section>
 
-      {/* 지도 보기 FAB */}
-      <Link
-        to="/map"
-        className="fixed bottom-10 right-10 bg-primary text-white flex items-center gap-2 px-6 py-4 rounded-full shadow-2xl font-bold transition-transform hover:scale-105 active:scale-95 z-40"
-      >
-        <span className="material-symbols-outlined">map</span>
-        지도 보기
-      </Link>
     </div>
   );
 };

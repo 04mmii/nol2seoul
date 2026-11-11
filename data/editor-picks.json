@@ -1,0 +1,8 @@
+{
+  "note": "Home \"에디터가 고른 서울\" (decision 2026-11-11). id = cultural space \"s<NUM>\" or night spot \"n<NUM>\" (utils/placeId.ts). comment: the editor's own short note — leave \"\" to show none. Places missing from the API are skipped.",
+  "picks": [
+    { "id": "s14", "comment": "" },
+    { "id": "s72", "comment": "" },
+    { "id": "n32", "comment": "" }
+  ]
+}

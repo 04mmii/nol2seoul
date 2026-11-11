@@ -36,24 +36,24 @@ export interface EventItem {
 
 // Cultural Space Types
 export interface CulturalSpace {
-  FAC_CODE: string | number;
+  /** Fields as sent by the live culturalSpaceInfo API (checked 2026-11-09, BUG-13). */
+  NUM: string;
   FAC_NAME: string;
   ADDR: string;
   PHNE: string;
   FAX?: string;
   HOMEPAGE?: string;
-  X_COORD: number;
-  Y_COORD: number;
-  DTLCONT: string;
-  IMG_URL?: string;
-  RELATE_SUBJ_NM?: string;
-  TICKET_YN?: string;
-  CLOSEDAY?: string;
-  TRAFFIC_INFO?: string;
-  MAIN_IMG?: string;
+  X_COORD: number | string;
+  Y_COORD: number | string;
   SUBJCODE?: string;
+  CLOSEDAY?: string;
+  MAIN_IMG?: string;
+  /** HTML — render through utils/space.ts `spaceDescription`. */
   FAC_DESC?: string;
-  NUM?: string;
+  /** "무료" | "유료". */
+  ENTRFREE?: string;
+  SUBWAY?: string;
+  BUSSTOP?: string;
 }
 
 // Night View Spot Types
@@ -66,6 +66,9 @@ export interface NightViewSpot {
   URL: string;
   OPERATING_TIME: string;
   ENTR_FEE: string;
+  /** "무료" | "유료". */
+  FREE_YN?: string;
+  /** Description (BUG-12: the code used to read a non-existent CONTENT). */
   CONTENTS?: string;
   SUBWAY: string;
   BUS: string;
@@ -75,7 +78,6 @@ export interface NightViewSpot {
   PARKING_INFO?: string;
   REG_DATE?: string;
   MOD_DATE?: string;
-  CONTENT: string;
 }
 
 // User Profile Types
@@ -98,13 +100,15 @@ declare global {
         LatLng: new (lat: number, lng: number) => KakaoLatLng;
         Map: new (container: HTMLElement, options: KakaoMapOptions) => KakaoMap;
         Marker: new (options: KakaoMarkerOptions) => KakaoMarker;
-        MarkerImage: new (src: string, size: KakaoSize, options?: { offset?: { x: number; y: number } }) => KakaoMarkerImageInstance;
+        MarkerImage: new (src: string, size: KakaoSize, options?: { offset?: KakaoPoint }) => KakaoMarkerImageInstance;
+        Point: new (x: number, y: number) => KakaoPoint;
         Size: new (width: number, height: number) => KakaoSize;
         InfoWindow: new (options: KakaoInfoWindowOptions) => KakaoInfoWindow;
         CustomOverlay: new (options: KakaoCustomOverlayOptions) => KakaoCustomOverlay;
         MarkerClusterer: new (options: KakaoMarkerClustererOptions) => KakaoMarkerClusterer;
         event: {
           addListener: (target: unknown, type: string, handler: () => void) => void;
+          removeListener: (target: unknown, type: string, handler: () => void) => void;
         };
         services: {
           Geocoder: new () => KakaoGeocoder;
@@ -127,25 +131,37 @@ export interface KakaoMapOptions {
 
 export interface KakaoMap {
   setCenter: (latlng: KakaoLatLng) => void;
-  setLevel: (level: number) => void;
+  /** `anchor`: the point that stays fixed on screen while zooming (Kakao Maps v2 option). */
+  setLevel: (level: number, options?: { anchor?: KakaoLatLng; animate?: boolean }) => void;
   getLevel: () => number;
   getCenter: () => KakaoLatLng;
   panTo: (latlng: KakaoLatLng) => void;
+  /** Moves the centre by (dx, dy) pixels, animated. */
+  panBy: (dx: number, dy: number) => void;
 }
 
 export interface KakaoMarkerOptions {
   position: KakaoLatLng;
   map?: KakaoMap;
   image?: KakaoMarkerImageInstance;
+  /** Tooltip text (Kakao Maps v2 option). */
+  title?: string;
+  zIndex?: number;
 }
 
 export interface KakaoMarker {
   setMap: (map: KakaoMap | null) => void;
   getPosition: () => KakaoLatLng;
   setImage: (image: KakaoMarkerImageInstance) => void;
+  setZIndex: (zIndex: number) => void;
 }
 
 export interface KakaoMarkerImageInstance {}
+
+export interface KakaoPoint {
+  x: number;
+  y: number;
+}
 
 export interface KakaoSize {
   width: number;
@@ -171,6 +187,9 @@ export interface KakaoCustomOverlayOptions {
   content: string | HTMLElement;
   position: KakaoLatLng;
   map?: KakaoMap;
+  /** 0 = top of the content at the position, 1 = bottom (Kakao default 0.5). */
+  yAnchor?: number;
+  zIndex?: number;
 }
 
 export interface KakaoCustomOverlay {
@@ -179,15 +198,23 @@ export interface KakaoCustomOverlay {
 
 export interface KakaoMarkerClustererOptions {
   map: KakaoMap;
-  markers: KakaoMarker[];
+  markers?: KakaoMarker[];
   gridSize?: number;
   averageCenter?: boolean;
   minLevel?: number;
+  minClusterSize?: number;
+  disableClickZoom?: boolean;
+  /** Count thresholds choosing `styles[i]`. */
+  calculator?: number[];
+  styles?: Array<Record<string, string>>;
 }
 
 export interface KakaoMarkerClusterer {
+  addMarker: (marker: KakaoMarker) => void;
   addMarkers: (markers: KakaoMarker[]) => void;
+  removeMarker: (marker: KakaoMarker) => void;
   clear: () => void;
+  redraw: () => void;
 }
 
 export interface KakaoGeocoder {

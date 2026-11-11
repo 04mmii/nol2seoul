@@ -1,0 +1,75 @@
+/*
+ * EventList — Redesign v3 (design-ref/src/page-events.jsx).
+ * Everything sits inside .v3-shell (--v3-content-max); only the section rules run full width.
+ * Colours follow DESIGN.md §2.0.1: active states are ink (Day Pill rule); tangerine only for the
+ * title emphasis (#5); the result count is ink, not tangerine.
+ */
+
+.v3-evlist { background: rgb(var(--v3-bone)); color: rgb(var(--v3-ink)); font-family: var(--v3-font-sans); font-size: 15px; line-height: 1.5; }
+.v3-evlist__state { padding: 120px 0; text-align: center; font-family: var(--v3-font-mono); font-size: 12px; letter-spacing: 0.06em; color: rgb(var(--v3-mute)); }
+
+/* ---------- Head ---------- */
+.v3-evlist__head { padding: 64px 0 32px; border-bottom: 1px solid rgb(var(--v3-ink)); }
+.v3-evlist__title { font-family: var(--v3-font-display); font-weight: 700; font-size: clamp(52px, 8vw, 120px); line-height: 0.9; letter-spacing: -0.05em; margin: 16px 0 0; }
+.v3-evlist__em { font-family: var(--v3-font-serif); font-style: italic; font-weight: 400; letter-spacing: -0.02em; color: rgb(var(--v3-accent)); }
+.v3-evlist__head-row { display: flex; flex-wrap: wrap; gap: 20px 32px; justify-content: space-between; align-items: flex-end; margin-top: 32px; }
+.v3-evlist__sub { max-width: 520px; font-size: 16px; color: rgb(var(--v3-ink-2)); margin: 0; text-wrap: pretty; }
+.v3-evlist__periods { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* ---------- Body: sidebar + content ---------- */
+.v3-evlist__body { border-bottom: 1px solid rgb(var(--v3-ink)); }
+.v3-evlist__grid { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 100vh; }
+.v3-evlist__filter-toggle { display: none; }
+
+/* The column stretches to the content height (background + divider run full length);
+ * only the inner panel is sticky below the 68px header. */
+.v3-evlist__side { background: rgb(var(--v3-bone-2)); border-right: 1px solid rgb(var(--v3-ink)); }
+.v3-evlist__side-inner { position: sticky; top: 68px; max-height: calc(100vh - 68px); overflow-y: auto; padding: 32px 24px; }
+.v3-evlist__fgroup + .v3-evlist__fgroup { margin-top: 32px; }
+.v3-evlist__fnum { font-family: var(--v3-font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: rgb(var(--v3-mute)); margin-bottom: 12px; }
+.v3-evlist__ftitle { font-family: var(--v3-font-display); font-size: 18px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 16px; }
+.v3-evlist__cats { list-style: none; padding: 0; margin: 0; }
+.v3-evlist__cat {
+  display: flex; justify-content: space-between; gap: 12px; width: 100%; padding: 8px 12px; border: none; border-radius: 6px;
+  background: transparent; color: rgb(var(--v3-ink)); font: inherit; font-size: 14px; text-align: left; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.v3-evlist__cat:hover { background: rgb(var(--v3-bone)); }
+.v3-evlist__cat[aria-pressed="true"] { background: rgb(var(--v3-ink)); color: rgb(var(--v3-bone)); }
+.v3-evlist__cat-n { font-family: var(--v3-font-mono); font-size: 11px; opacity: 0.7; }
+.v3-evlist__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.v3-evlist__chip { padding: 6px 10px; font-size: 11px; }
+.v3-evlist__reset { margin-top: 32px; padding-top: 24px; border-top: 1px dashed rgb(var(--v3-ink)); }
+.v3-evlist__reset .v3-btn { width: 100%; justify-content: center; }
+.v3-evlist__reset .v3-btn:disabled { opacity: 0.35; cursor: default; background: transparent; color: rgb(var(--v3-ink)); }
+
+.v3-evlist__content { min-width: 0; padding: 32px 0 0 28px; }
+.v3-evlist__toolbar { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid rgb(var(--v3-ink)); }
+.v3-evlist__count { font-family: var(--v3-font-mono); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; margin: 0; }
+.v3-evlist__count b { font-weight: 700; color: rgb(var(--v3-ink)); }
+.v3-evlist__sort { display: flex; gap: 8px; align-items: center; font-family: var(--v3-font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: rgb(var(--v3-mute)); }
+.v3-evlist__sort select { font-family: var(--v3-font-mono); font-size: 12px; padding: 6px 28px 6px 10px; border: 1px solid rgb(var(--v3-ink)); background-color: rgb(var(--v3-bone)); color: rgb(var(--v3-ink)); border-radius: 4px; }
+.v3-evlist__empty { padding: 56px 0; text-align: center; font-family: var(--v3-font-mono); font-size: 12px; letter-spacing: 0.06em; color: rgb(var(--v3-mute)); border-top: 1px solid rgb(var(--v3-ink) / 0.16); margin: 0; }
+
+/* 3 columns beside the sidebar; the shared rule drops to 2 columns at ≤1100px. */
+@media (min-width: 1101px) {
+  .v3-event-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.v3-evlist__pages { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; padding: 48px 0; }
+.v3-evlist__dots { font-family: var(--v3-font-mono); font-size: 11px; color: rgb(var(--v3-mute)); padding: 0 4px; }
+
+.v3-evlist__tools { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.v3-evlist__map { padding: 7px 14px; font-size: 13px; }
+
+/* ---------- Mobile ---------- */
+@media (max-width: 900px) {
+  .v3-evlist { padding-bottom: 80px; } /* room for the fixed 지도 보기 button so the page end isn't hidden */
+  .v3-evlist__head { padding: 40px 0 24px; }
+  .v3-evlist__grid { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .v3-evlist__filter-toggle { display: inline-flex; justify-self: start; margin: 20px 0 0; }
+  .v3-evlist__side { display: none; border-right: none; border: 1px solid rgb(var(--v3-ink) / 0.16); margin-top: 12px; }
+  .v3-evlist__side-inner { position: static; max-height: none; overflow: visible; }
+  .v3-evlist__side.is-open { display: block; }
+  .v3-evlist__content { padding: 24px 0 0; }
+  .v3-evlist__map { position: fixed; right: 16px; bottom: 16px; z-index: 40; padding: 12px 20px; font-size: 14px; box-shadow: 0 6px 24px rgb(var(--v3-ink) / 0.18); }
+}

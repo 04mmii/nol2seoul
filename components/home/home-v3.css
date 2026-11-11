@@ -1,0 +1,209 @@
+/*
+ * Home — Redesign v3 (ported from design-ref/src/styles-v3.css:
+ * hero-edit, cat-strip, events, event-card, day-pill, map-promo, curation-intro, editor picks, tonight).
+ * Placeholder captions from the prototype (e.g. "/poster · …") are replaced by real API images.
+ */
+
+.v3-home { background: rgb(var(--v3-bone)); color: rgb(var(--v3-ink)); font-family: var(--v3-font-sans); font-size: 15px; line-height: 1.5; }
+
+/* ---------- Full-bleed backgrounds ----------
+ * Section content always sits inside .v3-shell (--v3-content-max). Coloured halves (hero banner,
+ * map promo) extend to the viewport edge with a spread box-shadow clipped to one side
+ * (`box-shadow: 0 0 0 100vmax …; clip-path: inset(…)`) — this paints beyond the column without
+ * creating horizontal scroll. Full-width sections (After Dark, footer) simply paint their own box.
+ */
+
+/* ---------- Hero ---------- */
+.v3-hero { border-bottom: 1px solid rgb(var(--v3-ink) / 0.16); }
+.v3-hero__grid { display: grid; grid-template-columns: 1.05fr 1fr; min-height: 76vh; }
+.v3-hero__left { position: relative; display: flex; flex-direction: column; justify-content: space-between; padding: 56px 48px 0 0; border-right: 1px solid rgb(var(--v3-ink) / 0.16); }
+.v3-hero__masthead { display: flex; flex-wrap: wrap; gap: 6px 18px; font-family: var(--v3-font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: rgb(var(--v3-mute)); }
+.v3-hero__masthead b { color: rgb(var(--v3-ink)); font-weight: 500; }
+.v3-hero__title { font-family: var(--v3-font-display); font-weight: 700; font-size: clamp(58px, 7.4vw, 118px); line-height: 0.9; letter-spacing: -0.05em; margin: 40px 0 0; color: rgb(var(--v3-ink)); }
+.v3-hero__title .v3-ko { font-weight: 800; }
+.v3-hero__title .it { font-family: var(--v3-font-serif); font-style: italic; font-weight: 400; color: rgb(var(--v3-accent)); letter-spacing: -0.02em; }
+.v3-hero__sub { font-size: 16px; max-width: 430px; color: rgb(var(--v3-ink-2)); margin: 26px 0 0; line-height: 1.6; text-wrap: pretty; }
+.v3-hero__cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+.v3-hero__stats { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid rgb(var(--v3-ink) / 0.16); margin: 48px 0 0; }
+.v3-hero__stats > div { padding: 20px 0 22px; }
+.v3-hero__stats dt { font-family: var(--v3-font-mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgb(var(--v3-mute)); }
+.v3-hero__stats dd { font-family: var(--v3-font-display); font-size: 30px; font-weight: 700; letter-spacing: -0.035em; margin: 4px 0 0; }
+
+/* Right: banner — poster fills the column (cover) with caption + controls overlaid at the bottom,
+ * as in the design-ref. Navy background bleeds to the right edge beyond the shell line. */
+.v3-hero__right {
+  --bleed-color: rgb(var(--v3-night));
+  position: relative; overflow: hidden; min-height: 420px;
+  background: rgb(var(--v3-night)); color: rgb(var(--v3-bone));
+  box-shadow: 0 0 0 100vmax var(--bleed-color); clip-path: inset(0 -100vmax 0 0);
+}
+/* Readability gradient: bottom 45% only, transparent → night @ 92%, front-loaded (70% already at
+ * 40% of the band) so the caption's first line reads on bright posters. The top half stays uncovered. */
+.v3-hero__right::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 45%; background: linear-gradient(180deg, rgb(var(--v3-night) / 0) 0%, rgb(var(--v3-night) / 0.7) 40%, rgb(var(--v3-night) / 0.92) 100%); pointer-events: none; z-index: 1; }
+.v3-hero__slide { position: absolute; inset: 0; background: rgb(var(--v3-night-2)) repeating-linear-gradient(135deg, rgb(var(--v3-bone) / 0.06) 0 1px, transparent 1px 8px); opacity: 0; transition: opacity 0.7s ease; }
+.v3-hero__slide:nth-child(2) { background-color: rgb(var(--v3-night-slate)); }
+.v3-hero__slide:nth-child(3) { background-color: rgb(var(--v3-night-plum)); }
+.v3-hero__slide.is-active { opacity: 1; }
+.v3-hero__slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.v3-hero__cap { position: absolute; left: 28px; right: 28px; bottom: 64px; z-index: 2; max-width: 560px; display: block; color: rgb(var(--v3-bone)); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
+.v3-hero__cap:hover .v3-hero__cover-title { text-decoration: underline; text-underline-offset: 4px; }
+/* Category chip (분류 칩): accent fill + ink text (C1), independent of the gradient behind it. */
+.v3-hero__cover-cat { display: inline-block; padding: 4px 8px; border-radius: 2px; background: rgb(var(--v3-accent)); color: rgb(var(--v3-accent-ink)); text-shadow: none; font-family: var(--v3-font-mono); font-size: 11px; line-height: 1.4; letter-spacing: 0.1em; text-transform: uppercase; }
+.v3-hero__cover-dday { display: inline-block; margin-left: 6px; padding: 3px 8px; border: 1px solid rgb(var(--v3-bone)); border-radius: 2px; color: rgb(var(--v3-bone)); font-family: var(--v3-font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; } /* upcoming hand-picked banner (2026-11-11) */
+/* Clamp keeps the caption inside the gradient band. */
+.v3-hero__cover-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-family: var(--v3-font-sans); font-weight: 800; font-size: clamp(24px, 2.3vw, 34px); line-height: 1.2; letter-spacing: -0.035em; margin-top: 10px; text-wrap: pretty; }
+.v3-hero__cover-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; font-family: var(--v3-font-mono); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: rgb(var(--v3-bone) / 0.72); }
+/* Controls sit lower (bottom 16 + padding 12 + 32 button = top line at 60px) so the caption at bottom 64px clears them. */
+.v3-hero__controls { position: absolute; left: 28px; right: 28px; bottom: 16px; z-index: 2; display: flex; align-items: center; gap: 14px; padding-top: 12px; border-top: 1px solid rgb(var(--v3-bone) / 0.18); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
+.v3-hero__bars { display: flex; gap: 6px; flex: 1; }
+.v3-hero__bar { flex: 1; max-width: 72px; height: 2px; border: none; padding: 0; background: rgb(var(--v3-bone) / 0.28); cursor: pointer; }
+.v3-hero__bar.is-active { background: rgb(var(--v3-bone)); }
+.v3-hero__count { font-family: var(--v3-font-mono); font-size: 11px; letter-spacing: 0.06em; color: rgb(var(--v3-bone) / 0.72); }
+.v3-hero__ctrl { width: 32px; height: 32px; border-radius: 3px; border: 1px solid rgb(var(--v3-bone) / 0.18); background: transparent; color: rgb(var(--v3-bone)); font-size: 13px; cursor: pointer; }
+.v3-hero__ctrl:hover { background: rgb(var(--v3-bone)); color: rgb(var(--v3-ink)); }
+
+/* ---------- Category strip (design-ref .cat-strip.three) ----------
+ * Horizontal lines: full-width, one above (the hero's bottom border) and one below (this section's
+ * border-bottom) — the strip draws no top border, so they never double up.
+ * Vertical lines: only the two between cells; the outer ends stay open.
+ * Every cell uses the ref padding 34px 32px 36px (text sits inside the box); the hover fill matches the
+ * cell box exactly — it never extends past the cell lines. */
+.v3-cat-strip { border-bottom: 1px solid rgb(var(--v3-ink) / 0.16); background: rgb(var(--v3-bone)); }
+.v3-cat-strip__grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+.v3-cat-strip__cell:last-child { border-right: none; }
+.v3-cat-strip__cell { position: relative; display: block; padding: 34px 32px 36px; border-right: 1px solid rgb(var(--v3-ink) / 0.16); transition: background 0.2s; color: inherit; }
+/* Hover/focus: accent 100% fill, every line of text in accent-ink, ↗ shown. */
+.v3-cat-strip__cell:hover,
+.v3-cat-strip__cell:focus-visible { background: rgb(var(--v3-accent-hover)); color: rgb(var(--v3-accent-ink)); }
+.v3-cat-strip__cell:hover :is(.v3-cat-strip__num, .v3-cat-strip__desc, .v3-cat-strip__arrow),
+.v3-cat-strip__cell:focus-visible :is(.v3-cat-strip__num, .v3-cat-strip__desc, .v3-cat-strip__arrow) { color: rgb(var(--v3-accent-ink)); }
+.v3-cat-strip__num { font-family: var(--v3-font-mono); font-size: 10px; color: rgb(var(--v3-mute)); text-transform: uppercase; letter-spacing: 0.1em; }
+.v3-cat-strip__label { font-family: var(--v3-font-sans); font-size: 30px; font-weight: 800; letter-spacing: -0.035em; line-height: 1; margin: 14px 0 8px; }
+.v3-cat-strip__desc { font-size: 14px; color: rgb(var(--v3-ink-2)); min-height: 1.5em; }
+.v3-cat-strip__arrow { position: absolute; top: 28px; right: 24px; font-size: 15px; color: rgb(var(--v3-mute)); opacity: 0; transition: opacity 0.2s, transform 0.2s; }
+.v3-cat-strip__cell:hover .v3-cat-strip__arrow,
+.v3-cat-strip__cell:focus-visible .v3-cat-strip__arrow { opacity: 1; transform: translate(2px, -2px); }
+
+/* ---------- Events ---------- */
+.v3-events { padding: var(--v3-sec-y) 0; border-bottom: 1px solid rgb(var(--v3-ink) / 0.16); }
+.v3-day-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.v3-events__status { padding: 56px 0; text-align: center; font-family: var(--v3-font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: rgb(var(--v3-mute)); border-top: 1px solid rgb(var(--v3-ink) / 0.16); border-bottom: 1px solid rgb(var(--v3-ink) / 0.16); }
+.v3-events__footer { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; margin-top: 28px; }
+.v3-events__count { font-family: var(--v3-font-mono); font-size: 11px; color: rgb(var(--v3-mute)); text-transform: uppercase; letter-spacing: 0.07em; }
+
+
+/* ---------- Map promo ---------- */
+.v3-map-promo { border-bottom: 1px solid rgb(var(--v3-ink) / 0.16); }
+.v3-map-promo__grid { display: grid; grid-template-columns: 1fr 1.1fr; min-height: 520px; }
+/* Orange half bleeds to the left edge, map half to the right edge; content stays on the shell. */
+.v3-map-promo__left {
+  --bleed-color: rgb(var(--v3-accent));
+  position: relative; display: flex; flex-direction: column; justify-content: space-between;
+  padding: var(--v3-sec-y) 56px var(--v3-sec-y) 0;
+  background: rgb(var(--v3-accent)); color: rgb(var(--v3-ink));
+  box-shadow: 0 0 0 100vmax var(--bleed-color); clip-path: inset(0 0 0 -100vmax);
+}
+.v3-map-promo__left .v3-eyebrow { color: rgb(var(--v3-ink)); }
+.v3-map-promo__title { font-family: var(--v3-font-sans); font-size: clamp(38px, 4vw, 58px); font-weight: 800; line-height: 1.06; letter-spacing: -0.04em; margin: 16px 0 0; }
+.v3-map-promo__desc { font-size: 15px; line-height: 1.65; max-width: 400px; margin-top: 20px; color: rgb(var(--v3-ink)); }
+.v3-space-types { list-style: none; padding: 0; margin: 28px 0 0; max-width: 400px; border-top: 1px solid rgb(var(--v3-ink) / 0.3); }
+.v3-space-types li { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid rgb(var(--v3-ink) / 0.3); font-size: 14px; font-weight: 600; }
+.v3-space-types li .v3-mono { font-size: 12px; font-weight: 500; }
+.v3-map-promo__cta { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 40px; }
+.v3-map-promo__note { font-family: var(--v3-font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: rgb(var(--v3-ink)); }
+.v3-map-promo__right {
+  --bleed-color: rgb(var(--v3-bone));
+  position: relative; display: flex; flex-direction: column; gap: 20px; padding: 32px 0 32px 32px;
+  background: rgb(var(--v3-bone));
+  box-shadow: 0 0 0 100vmax var(--bleed-color); clip-path: inset(0 -100vmax 0 0);
+}
+/* Dot map: every cultural space at its real position (same projection as the night hero light map). */
+.v3-map-promo__map { position: relative; flex: 1; min-height: 300px; }
+.v3-map-promo__dots { position: absolute; inset: 0; width: 100%; height: 100%; }
+.v3-map-promo__river { fill: none; stroke: rgb(var(--v3-ink) / 0.12); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.v3-map-promo__dot { fill: rgb(var(--v3-ink)); opacity: 0.55; }
+.v3-map-promo__marker circle { fill: rgb(var(--v3-ink)); stroke: rgb(var(--v3-bone)); stroke-width: 0.6; }
+.v3-map-promo__leader { stroke: rgb(var(--v3-ink)); stroke-width: 0.35; }
+.v3-map-promo__marker circle.v3-map-promo__anchor { stroke: none; }
+.v3-map-promo__marker text { fill: rgb(var(--v3-bone)); font-family: var(--v3-font-mono); font-size: 2.8px; font-weight: 600; text-anchor: middle; }
+.v3-map-promo__caption { position: absolute; bottom: 0; right: 0; font-family: var(--v3-font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: rgb(var(--v3-mute)); }
+/* Featured space cards (data/map-promo-spaces.json). */
+.v3-map-promo__cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid rgb(var(--v3-ink) / 0.16); border-left: 1px solid rgb(var(--v3-ink) / 0.16); }
+.v3-map-promo__card { min-width: 0; border-right: 1px solid rgb(var(--v3-ink) / 0.16); border-bottom: 1px solid rgb(var(--v3-ink) / 0.16); }
+.v3-map-promo__card-link { display: flex; flex-direction: column; height: 100%; color: inherit; transition: background 0.15s; }
+.v3-map-promo__card-link:hover { background: rgb(var(--v3-accent-tint)); }
+.v3-map-promo__card-img { aspect-ratio: 4 / 3; overflow: hidden; background: rgb(var(--v3-poster-ph)); }
+.v3-map-promo__card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.v3-map-promo__card-body { position: relative; display: block; padding: 12px 12px 14px 40px; }
+.v3-map-promo__card-num { position: absolute; left: 12px; top: 12px; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; background: rgb(var(--v3-ink)); color: rgb(var(--v3-bone)); font-family: var(--v3-font-mono); font-size: 10px; font-weight: 600; }
+.v3-map-promo__card-type { display: block; font-family: var(--v3-font-mono); font-size: 10px; letter-spacing: 0.06em; color: rgb(var(--v3-mute)); }
+.v3-map-promo__card-name { display: block; margin-top: 4px; font-size: 14px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.3; }
+
+/* ---------- Curation intro ---------- */
+.v3-curation-intro { padding: var(--v3-sec-y) 0 48px; background: rgb(var(--v3-bone)); }
+
+/* ---------- After Dark (night spots) ---------- */
+.v3-tonight { position: relative; overflow: hidden; padding: 72px 0; background: rgb(var(--v3-night)); color: rgb(var(--v3-bone)); }
+.v3-tonight__stars { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(1px 1px at 18% 16%, rgba(255,255,255,0.5), transparent), radial-gradient(1px 1px at 62% 12%, rgba(255,255,255,0.35), transparent), radial-gradient(1px 1px at 84% 26%, rgba(255,255,255,0.4), transparent), radial-gradient(1px 1px at 38% 8%, rgba(255,255,255,0.3), transparent); }
+.v3-tonight .v3-shell { position: relative; }
+.v3-tonight .v3-eyebrow { color: rgb(var(--v3-bone) / 0.62); }
+.v3-tonight .v3-sub-title { color: rgb(var(--v3-bone)); }
+.v3-tonight .v3-sub-title em { color: rgb(var(--v3-ember)); }
+.v3-tonight__status { padding: 48px 0; font-family: var(--v3-font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: rgb(var(--v3-bone) / 0.62); }
+/* After Dark uses the night page card (.v3-night__card, night-v3.css); four equal columns here. */
+.v3-tonight .v3-night__grid.v3-tonight__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (min-width: 1101px) { .v3-tonight .v3-tonight__grid .v3-night__card:nth-child(3n) { border-right: 1px solid rgb(var(--v3-bone) / 0.2); } .v3-tonight .v3-tonight__grid .v3-night__card:nth-child(4n) { border-right: none; } }
+
+/* ---------- Editor picks (data/editor-picks.json) ---------- */
+.v3-picks { padding: 0 0 var(--v3-sec-y); background: rgb(var(--v3-bone)); }
+.v3-picks__grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid rgb(var(--v3-ink) / 0.16); border-left: 1px solid rgb(var(--v3-ink) / 0.16); }
+.v3-pick { min-width: 0; border-right: 1px solid rgb(var(--v3-ink) / 0.16); border-bottom: 1px solid rgb(var(--v3-ink) / 0.16); }
+.v3-pick__link { display: flex; flex-direction: column; height: 100%; color: inherit; transition: background 0.15s; }
+.v3-pick__link:hover { background: rgb(var(--v3-accent-tint)); }
+.v3-pick__art { position: relative; display: block; aspect-ratio: 4 / 3; overflow: hidden; background: rgb(var(--v3-poster-ph)); }
+.v3-pick__art > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.v3-pick__ph { position: absolute; inset: 0; background: rgb(var(--v3-poster-ph)) repeating-linear-gradient(135deg, rgb(var(--v3-ink) / 0.06) 0 1px, transparent 1px 8px); }
+.v3-pick__body { display: flex; flex-direction: column; flex: 1; padding: 18px 20px 22px; }
+.v3-pick__top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.v3-pick__kicker { font-family: var(--v3-font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgb(var(--v3-mute)); }
+/* Night state on bone: lit = ember fill + ink; open = ink outline; others = ink-2 text (DESIGN §2.0.1 night note). */
+.v3-pick__state { padding: 2px 7px; border: 1px solid rgb(var(--v3-ink) / 0.34); border-radius: 2px; font-family: var(--v3-font-mono); font-size: 10px; font-weight: 600; white-space: nowrap; color: rgb(var(--v3-ink-2)); }
+.v3-pick__state.is-lit { background: rgb(var(--v3-ember)); border-color: rgb(var(--v3-ember)); color: rgb(var(--v3-ink)); }
+.v3-pick__state.is-open { border-color: rgb(var(--v3-ink)); color: rgb(var(--v3-ink)); }
+.v3-pick__name { margin-top: 10px; font-size: 20px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.25; }
+.v3-pick__meta { margin-top: 6px; font-family: var(--v3-font-mono); font-size: 11px; letter-spacing: 0.04em; color: rgb(var(--v3-ink-2)); overflow-wrap: anywhere; }
+.v3-pick__comment { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgb(var(--v3-ink) / 0.16); font-size: 14px; line-height: 1.6; color: rgb(var(--v3-ink)); }
+
+/* ---------- Responsive (from styles-v3.css) ---------- */
+@media (max-width: 1040px) {
+  .v3-tonight .v3-night__grid.v3-tonight__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .v3-picks__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .v3-hero__grid { grid-template-columns: 1fr; min-height: 0; }
+  .v3-hero__left { border-right: none; border-bottom: 1px solid rgb(var(--v3-ink) / 0.16); padding: 40px 0 8px; }
+  /* Stacked: navy bleeds to both edges; taller banner so the caption fits the 45% gradient band. */
+  .v3-hero__right { min-height: 60vh; clip-path: inset(0 -100vmax); }
+  .v3-hero__cover-title { font-size: 22px; }
+  .v3-cat-strip__grid { grid-template-columns: 1fr; }
+  /* Stacked (ref): no vertical lines, rows split by a line. */
+  .v3-cat-strip__cell { border-right: none; border-bottom: 1px solid rgb(var(--v3-ink) / 0.16); }
+  .v3-cat-strip__cell:last-child { border-bottom: none; }
+  .v3-map-promo__grid { grid-template-columns: 1fr; }
+  .v3-map-promo__left { padding: 56px 0; clip-path: inset(0 -100vmax); }
+  .v3-map-promo__right { padding: 32px 0; clip-path: inset(0 -100vmax); }
+  .v3-map-promo__map { min-height: 0; aspect-ratio: 1 / 1; }
+  .v3-tonight .v3-night__grid.v3-tonight__grid { grid-template-columns: minmax(0, 1fr); }
+  .v3-picks__grid { grid-template-columns: minmax(0, 1fr); }
+  .v3-map-promo__cards { grid-template-columns: minmax(0, 1fr); }
+  /* Mobile: compact rows (thumbnail + text) instead of three tall photos. */
+  .v3-map-promo__card-link { flex-direction: row; align-items: center; }
+  .v3-map-promo__card-img { flex: 0 0 112px; }
+  .v3-map-promo__card-body { flex: 1; min-width: 0; }
+}
+@media (max-width: 560px) {
+  .v3-hero__stats dd { font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v3-hero__slide { transition: none; }
+}

@@ -1,0 +1,33 @@
+/* Live Bar — design-ref styles-v3.css `.live-bar` / `.ticker-*`, v3 tokens. Emphasis = ember (as in the mock-up). */
+.v3-live { --v3-live-h: 34px; display: flex; align-items: stretch; height: 34px; overflow: hidden; background: rgb(var(--v3-ink)); color: rgb(var(--v3-bone)); font-family: var(--v3-font-mono); font-size: 11px; letter-spacing: 0.05em; }
+.v3-live__status { display: flex; align-items: center; gap: 10px; padding: 0 18px 0 var(--v3-gutter); letter-spacing: 0.06em; text-transform: uppercase; border-right: 1px solid rgb(var(--v3-bone) / 0.2); white-space: nowrap; }
+.v3-live__dot { width: 6px; height: 6px; border-radius: 50%; background: rgb(var(--v3-accent)); animation: v3-live-pulse 2.4s ease-in-out infinite; }
+@keyframes v3-live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+.v3-live__stream { flex: 1; min-width: 0; overflow: hidden; display: flex; align-items: center; }
+.v3-live__track { display: flex; width: max-content; animation: v3-live-scroll 60s linear infinite; }
+.v3-live__stream:hover .v3-live__track, .v3-live__stream:focus-within .v3-live__track, .v3-live__stream.is-paused .v3-live__track { animation-play-state: paused; }
+@keyframes v3-live-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.v3-live__list { display: flex; margin: 0; padding: 0 0 0 40px; list-style: none; }
+.v3-live__item { display: flex; align-items: center; gap: 40px; padding-right: 40px; white-space: nowrap; color: rgb(var(--v3-bone) / 0.78); }
+.v3-live__item.is-hot { color: rgb(var(--v3-ember)); }
+.v3-live__sep { width: 3px; height: 3px; border-radius: 50%; background: rgb(var(--v3-bone) / 0.35); }
+.v3-live__pause { display: grid; place-items: center; width: 34px; border: none; border-left: 1px solid rgb(var(--v3-bone) / 0.2); background: transparent; color: rgb(var(--v3-bone) / 0.7); font: inherit; font-size: 9px; cursor: pointer; }
+.v3-live__pause:hover { color: rgb(var(--v3-bone)); }
+.v3-live__pause:focus-visible { outline: 2px solid rgb(var(--v3-bone)); outline-offset: -2px; }
+.v3-live__clock { display: flex; align-items: center; padding: 0 var(--v3-gutter) 0 18px; border-left: 1px solid rgb(var(--v3-bone) / 0.2); color: rgb(var(--v3-bone) / 0.6); letter-spacing: 0.06em; white-space: nowrap; }
+
+/* Reduced motion: no scrolling, no pulse; one static copy (the stream can be scrolled sideways). */
+@media (prefers-reduced-motion: reduce) {
+  .v3-live__track { animation: none; }
+  .v3-live__track .v3-live__list[aria-hidden="true"] { display: none; }
+  .v3-live__stream { overflow-x: auto; scrollbar-width: none; }
+  .v3-live__dot { animation: none; }
+  .v3-live__pause { display: none; }
+}
+@media (max-width: 900px) {
+  .v3-live__clock { display: none; }
+  .v3-live__status { padding-right: 12px; }
+}
+
+/* Map route: fixed above the fixed header (App.tsx moves the header to top: 34px). */
+.v3-live--fixed { position: fixed; top: 0; left: 0; right: 0; z-index: 61; }

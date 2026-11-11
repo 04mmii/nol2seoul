@@ -1,191 +1,240 @@
-
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useEvents, useFavorites } from '../hooks';
+import FeeBadge from '../components/v3/FeeBadge';
+import EventCard from '../components/v3/EventCard';
+import EventLocationMap from '../components/detail/EventLocationMap';
+import HeroImage from '../components/detail/HeroImage';
+import {
+  bodyBlocks,
+  externalLinks,
+  heroSpecs,
+  infoRows,
+  pickRelatedEvents,
+} from '../components/detail/selectors';
+import { eventDateRange, eventLatLng, eventStatus, eventStatusLabel, eventVenue } from '../utils/event';
+import { cultcodeOf, eventId, findEventById, isCultcodeId, isLegacyIndexId } from '../utils/eventId';
+import '../components/detail/detail-v3.css';
 
+/**
+ * Event detail — Redesign v3 (design-ref/src/page-detail.jsx), data from the event API.
+ * Route contract unchanged: /event/:id where id is the index in the events array (DESIGN.md BUG-08).
+ * Not rendered because the API has no source for them: EDITOR'S PICK sticker, curator note,
+ * like count, share, nearby walk times, visitor reviews and rating.
+ */
 const EventDetail: React.FC = () => {
   const { id } = useParams();
   const { events, loading, isError } = useEvents();
-
   const { toggleFavorite, isFavorite } = useFavorites();
-  const eventIndex = Number(id);
-  const event = events[eventIndex];
+  const now = useMemo(() => new Date(), []);
+
+  // BUG-08: stable IDs (cultcode, hash fallback). Old index links ("/event/12") can't be resolved.
+  const event = useMemo(() => findEventById(events, id), [events, id]);
+  const legacyLink = !!id && isLegacyIndexId(id);
+  const related = useMemo(() => pickRelatedEvents(events, event, now), [events, event, now]);
 
   if (loading) {
     return (
-      <div className="max-w-[1200px] mx-auto px-6 py-20 flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        <p className="text-navy font-bold">행사 정보를 불러오는 중...</p>
+      <div className="v3-detail">
+        <div className="v3-shell v3-detail-status" role="status">
+          <p>행사 정보를 불러오는 중...</p>
+        </div>
       </div>
     );
   }
 
   if (isError || !event) {
+    // TECH-10: the proxy only returns events that haven't ended, so a well-formed cultcode that isn't
+    // in the data is almost always an ended event (or, rarely, one beyond the first 4,000 rows).
+    const message = isError
+      ? '행사 정보를 찾을 수 없습니다.'
+      : legacyLink
+        ? '오래된 링크라 행사를 찾을 수 없습니다.'
+        : id && isCultcodeId(id)
+          ? '종료된 행사입니다.'
+          : '행사 정보를 찾을 수 없습니다.';
     return (
-      <div className="max-w-[1200px] mx-auto px-6 py-20 text-center">
-        <span className="material-symbols-outlined text-5xl text-gray-300 mb-4 block">error</span>
-        <p className="text-gray-500 font-bold mb-4">행사 정보를 찾을 수 없습니다.</p>
-        <Link to="/events" className="text-primary font-bold hover:underline">목록으로 돌아가기</Link>
+      <div className="v3-detail">
+        <div className="v3-shell v3-detail-status" role="alert">
+          <p>{message}</p>
+          {message === '종료된 행사입니다.' && <p className="v3-detail-status__sub">진행 중이거나 예정된 행사만 볼 수 있어요.</p>}
+          <Link to="/events" className="v3-btn">목록으로 돌아가기</Link>
+        </div>
       </div>
     );
   }
 
-  const isFree = event.IS_FREE === '무료' || (event.USE_FEE && event.USE_FEE.includes('무료'));
-  const dateRange = event.STRTDATE && event.END_DATE
-    ? `${event.STRTDATE.slice(0, 10)} ~ ${event.END_DATE.slice(0, 10)}`
-    : event.DATE || '';
+  const favId = eventId(event);
+  const cultcode = cultcodeOf(event);
+  const saved = isFavorite(favId, 'event');
+  const dateRange = eventDateRange(event);
+  const status = eventStatusLabel(eventStatus(event, now));
+  const links = externalLinks(event);
+  const blocks = bodyBlocks(event);
+  const info = infoRows(event);
 
-  // 비슷한 장르의 행사 4개
-  const similarEvents = events
-    .filter((e, i) => i !== eventIndex && e.CODENAME === event.CODENAME)
-    .slice(0, 4);
+  const onToggleFavorite = () =>
+    toggleFavorite({
+      id: favId,
+      type: 'event',
+      title: event.TITLE,
+      location: eventVenue(event),
+      image: event.MAIN_IMG,
+      category: event.CODENAME,
+      // Same stored shape as before the redesign (DESIGN.md BUG-10).
+      date: dateRange,
+    });
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-10 pb-24">
-      {/* Breadcrumbs */}
-      <nav className="flex items-center gap-2 text-sm text-gray-400 mb-8 font-medium">
-        <Link to="/" className="hover:text-primary">홈</Link>
-        <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <Link to="/events" className="hover:text-primary">문화행사</Link>
-        <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <span className="text-navy truncate max-w-[200px]">{event.TITLE}</span>
-      </nav>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* Main Content Area */}
-        <div className="lg:col-span-2 space-y-10">
-          <div className="relative rounded-2xl overflow-hidden shadow-2xl group">
-            <img
-              className="w-full object-contain bg-gray-50"
-              src={event.MAIN_IMG || 'https://picsum.photos/seed/event-default/1200/800'}
-              alt={event.TITLE}
-              onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/event-default/1200/800'; }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-            <div className="absolute bottom-8 left-8 text-white">
-              <div className="flex gap-2 mb-4">
-                <span className="bg-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest">{event.CODENAME}</span>
-                {isFree && <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest">무료</span>}
-              </div>
-              <h2 className="text-4xl md:text-5xl font-black mb-4">{event.TITLE}</h2>
-              <p className="text-white/80 font-medium">#{event.CODENAME} #{event.GUNAME}</p>
-            </div>
+    <div className="v3-detail">
+      {/* Breadcrumb */}
+      <div className="v3-detail-crumbs">
+        <div className="v3-shell v3-detail-crumbs__inner">
+          <nav aria-label="현재 위치">
+            <ol>
+              <li><Link to="/">← 홈</Link></li>
+              <li><Link to="/events">문화행사</Link></li>
+              {event.CODENAME && <li>{event.CODENAME}</li>}
+              <li aria-current="page">{event.TITLE}</li>
+            </ol>
+          </nav>
+          <div className="v3-detail-crumbs__status">
+            {cultcode ? `EVENT № ${cultcode}` : 'EVENT'}{status && ` · ${status}`}
           </div>
-
-          <div className="flex border-b border-gray-100 gap-10">
-            <button className="pb-4 border-b-2 border-primary text-primary font-bold">상세정보</button>
-          </div>
-
-          <section className="space-y-6">
-            <h3 className="text-2xl font-black flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary">auto_awesome</span>
-              행사 소개
-            </h3>
-            <div className="text-gray-600 leading-relaxed text-lg font-medium space-y-4">
-              {event.PROGRAM && <p>{event.PROGRAM}</p>}
-              {event.ETC_DESC && <p>{event.ETC_DESC}</p>}
-              {!event.PROGRAM && !event.ETC_DESC && (
-                <p>{event.TITLE} - {event.PLACE}에서 진행되는 문화행사입니다.</p>
-              )}
-            </div>
-          </section>
-
-          <section className="space-y-6">
-            <h3 className="text-2xl font-black flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary">location_on</span>
-              오시는 길
-            </h3>
-            <div className="bg-primary/5 rounded-xl p-5 border border-primary/10 flex gap-4">
-              <span className="material-symbols-outlined text-primary">info</span>
-              <div>
-                <p className="text-sm font-bold text-primary mb-1">장소 안내</p>
-                <p className="text-sm text-gray-500 font-medium leading-relaxed">{event.PLACE} ({event.GUNAME})</p>
-                {event.ORG_NAME && <p className="text-sm text-gray-400 mt-1">주관: {event.ORG_NAME}</p>}
-              </div>
-            </div>
-          </section>
         </div>
-
-        {/* Sidebar Sticky Card */}
-        <aside className="lg:col-span-1">
-          <div className="sticky top-28 bg-white border border-gray-100 rounded-2xl p-8 shadow-xl shadow-primary/5 space-y-8">
-            <div className="space-y-6">
-              {[
-                { label: '일정', value: dateRange, icon: 'calendar_today' },
-                { label: '비용', value: event.USE_FEE || (isFree ? '무료' : '정보 없음'), icon: 'payments', highlight: true },
-                { label: '대상', value: event.USE_TRGT || '전체', icon: 'group' },
-                { label: '장소', value: event.PLACE || event.GUNAME, icon: 'map' },
-                ...(event.PLAYER ? [{ label: '출연진', value: event.PLAYER, icon: 'person' }] : []),
-              ].map(info => (
-                <div key={info.label} className="flex gap-4">
-                  <div className="bg-primary/10 p-3 rounded-full text-primary shrink-0 flex items-center justify-center size-12">
-                    <span className="material-symbols-outlined">{info.icon}</span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{info.label}</p>
-                    <p className={`text-lg font-extrabold break-words ${'highlight' in info && info.highlight ? 'text-primary' : 'text-navy'}`}>{info.value}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="pt-8 border-t border-gray-100 flex flex-col gap-4">
-              {(event.ORG_LINK || event.HMPG_ADDR) && (
-                <a
-                  href={event.ORG_LINK || event.HMPG_ADDR}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full bg-primary text-white py-4 rounded-full font-bold text-lg shadow-lg shadow-primary/30 hover:bg-primary-dark transition-all text-center"
-                >
-                  홈페이지 가기
-                </a>
-              )}
-              <button
-                onClick={() => toggleFavorite({
-                  id: String(eventIndex),
-                  type: 'event',
-                  title: event.TITLE,
-                  location: event.PLACE || event.GUNAME,
-                  image: event.MAIN_IMG,
-                  category: event.CODENAME,
-                  date: dateRange,
-                })}
-                className={`w-full py-4 rounded-full font-bold text-lg transition-all flex items-center justify-center gap-2 ${
-                  isFavorite(String(eventIndex), 'event')
-                    ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                    : 'bg-gray-100 text-navy hover:bg-gray-200'
-                }`}
-              >
-                <span className={`material-symbols-outlined ${isFavorite(String(eventIndex), 'event') ? 'fill' : ''}`}>favorite</span>
-                {isFavorite(String(eventIndex), 'event') ? '관심행사 등록됨' : '관심행사 등록'}
-              </button>
-            </div>
-          </div>
-        </aside>
       </div>
 
-      {/* Similar Events */}
-      {similarEvents.length > 0 && (
-        <section className="mt-20 py-10 border-t border-gray-100">
-          <h3 className="text-2xl font-black mb-8">비슷한 테마의 행사</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {similarEvents.map((e, i) => {
-              const idx = events.indexOf(e);
-              return (
-                <Link to={`/event/${idx}`} key={i} className="group cursor-pointer">
-                  <div className="relative aspect-[4/3] rounded-xl overflow-hidden mb-4">
-                    <img
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      src={e.MAIN_IMG || 'https://picsum.photos/seed/similar/400/300'}
-                      alt={e.TITLE}
-                      onError={(ev) => { (ev.target as HTMLImageElement).src = 'https://picsum.photos/seed/similar/400/300'; }}
-                    />
+      {/* Hero */}
+      <section className="v3-detail-hero" aria-labelledby="event-title">
+        <div className="v3-shell v3-detail-hero__grid">
+          <div className="v3-detail-hero__media">
+            <HeroImage key={event.MAIN_IMG ?? favId} src={event.MAIN_IMG} />
+          </div>
+          <div className="v3-detail-hero__body">
+            <div>
+              <div className="v3-detail-hero__cat">
+                {[event.CODENAME, event.THEMECODE].filter(Boolean).join(' · ')}
+              </div>
+              <h1 id="event-title" className="v3-detail-hero__title">
+                <span className="v3-ko">{event.TITLE}</span>
+              </h1>
+              {event.ORG_NAME && <div className="v3-detail-hero__org">주최 · {event.ORG_NAME}</div>}
+            </div>
+            <div>
+              <dl className="v3-detail-specs">
+                {heroSpecs(event).map((s) => (
+                  <div key={s.label}>
+                    <dt>{s.label}</dt>
+                    <dd className={s.highlight ? 'is-hl' : undefined}>
+                      {s.fee && <FeeBadge event={event} hideCheck className="v3-detail-specs__fee" />}
+                      {s.value}
+                    </dd>
                   </div>
-                  <p className="text-xs font-bold text-primary mb-1">{e.CODENAME}</p>
-                  <h4 className="font-bold mb-1 group-hover:text-primary transition-colors truncate">{e.TITLE}</h4>
-                  <p className="text-xs text-gray-400 font-bold">{e.GUNAME}</p>
-                </Link>
-              );
-            })}
+                ))}
+              </dl>
+              <div className="v3-detail-actions">
+                {links.primary && (
+                  <a href={links.primary} target="_blank" rel="noopener noreferrer" className="v3-btn v3-btn--primary">
+                    홈페이지 가기 →
+                  </a>
+                )}
+                <button type="button" className="v3-btn" aria-pressed={saved} onClick={onToggleFavorite}>
+                  <span aria-hidden="true">{saved ? '♥' : '♡'}</span> {saved ? '찜됨' : '찜하기'}
+                </button>
+                {links.portal && (
+                  <a href={links.portal} target="_blank" rel="noopener noreferrer" className="v3-btn">
+                    서울문화포털 ↗
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Article */}
+      <section className="v3-detail-article" aria-labelledby="event-about">
+        <div className="v3-shell v3-detail-article__grid">
+          <aside aria-label="행사 정보">
+            <h2 className="v3-detail-label">행사 정보</h2>
+            <ul className="v3-detail-info">
+              {info.map(([k, v]) => (
+                <li key={k}><span>{k}</span><span>{v}</span></li>
+              ))}
+            </ul>
+          </aside>
+
+          <div className="v3-detail-body">
+            <div className="v3-eyebrow"><span className="v3-eyebrow__dash" />ABOUT</div>
+            <h2 id="event-about" className="v3-detail-body__title">
+              <span className="v3-ko">행사 소개.</span>
+            </h2>
+            {blocks.length === 0 ? (
+              <p className="v3-detail-empty">
+                제공된 상세 소개가 없습니다.
+                {links.primary && (
+                  <> 자세한 내용은{' '}
+                    <a href={links.primary} target="_blank" rel="noopener noreferrer">주최 측 페이지</a>
+                    에서 확인하세요.
+                  </>
+                )}
+              </p>
+            ) : (
+              blocks.map((b, i) =>
+                b.kind === 'text' ? (
+                  <p key={i}>{b.text}</p>
+                ) : b.kind === 'image' ? (
+                  <figure key={i}><img src={b.src} alt={`${event.TITLE} 안내 이미지`} loading="lazy" /></figure>
+                ) : (
+                  <p key={i}>
+                    <a className="v3-detail-body__link" href={b.href} target="_blank" rel="noopener noreferrer">{b.href}</a>
+                  </p>
+                ),
+              )
+            )}
+          </div>
+
+          <aside className="v3-detail-article__map" aria-label="위치">
+            <h2 className="v3-detail-label">위치 · MAP</h2>
+            <EventLocationMap coords={eventLatLng(event)} label={eventVenue(event)} />
+            <div className="v3-detail-place">
+              {event.PLACE && <>{event.PLACE}<br /></>}
+              {event.GUNAME && <>서울 {event.GUNAME}<br /></>}
+              <Link to="/map">지도탐색에서 보기 →</Link>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      {/* Related */}
+      {related.length > 0 && (
+        <section className="v3-detail-related" aria-labelledby="event-related">
+          <div className="v3-shell">
+            <div className="v3-eyebrow"><span className="v3-eyebrow__dash" />같은 장르 · 같은 동네</div>
+            <h2 id="event-related" className="v3-section-title">
+              <em>다음으로</em> <span className="v3-ko">가볼 곳.</span>
+            </h2>
+            <div className="v3-event-grid">
+              {related.map(({ event: e, id: rid }) => (
+                <EventCard
+                  key={rid}
+                  event={e}
+                  id={rid}
+                  saved={isFavorite(rid, 'event')}
+                  onToggleFavorite={() =>
+                    toggleFavorite({
+                      id: rid,
+                      type: 'event',
+                      title: e.TITLE,
+                      location: eventVenue(e),
+                      image: e.MAIN_IMG,
+                      category: e.CODENAME,
+                      date: e.DATE,
+                    })
+                  }
+                />
+              ))}
+            </div>
           </div>
         </section>
       )}

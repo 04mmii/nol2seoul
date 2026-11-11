@@ -8,12 +8,27 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <!-- Redesign v3 fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" rel="stylesheet">
     <script>
+        // v3 colors read RGB channels from CSS variables defined in /index.css.
+        const v3 = (name) => `rgb(var(--v3-${name}) / <alpha-value>)`;
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
+                        // ---- Redesign v3 (approved) ----
+                        bone: { DEFAULT: v3('bone'), 2: v3('bone-2') },
+                        sand: v3('sand'),
+                        ink: { DEFAULT: v3('ink'), 2: v3('ink-2') },
+                        mute: v3('mute'),
+                        tangerine: { DEFAULT: v3('tangerine'), deep: v3('tangerine-deep') },
+                        night: { DEFAULT: v3('night'), 2: v3('night-2') },
+                        ember: v3('ember'),
+                        line: { DEFAULT: 'rgb(var(--v3-ink) / 0.16)', strong: 'rgb(var(--v3-ink) / 0.34)' },
+                        // ---- Legacy (pre-v3) — still used by screens not yet migrated ----
                         primary: {
                             DEFAULT: '#ff6933',
                             light: '#ff8a5c',
@@ -30,7 +45,19 @@
                         }
                     },
                     fontFamily: {
+                        // Legacy body font — switches to v3 once all screens are migrated.
                         sans: ['Plus Jakarta Sans', 'Noto Sans KR', 'sans-serif'],
+                        // Redesign v3
+                        body: ['var(--v3-font-sans)'],
+                        display: ['var(--v3-font-display)'],
+                        mono: ['var(--v3-font-mono)'],
+                        serif: ['var(--v3-font-serif)'],
+                    },
+                    maxWidth: {
+                        shell: 'var(--v3-maxw)',
+                    },
+                    spacing: {
+                        gutter: 'var(--v3-gutter)',
                     }
                 }
             }

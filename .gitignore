@@ -23,3 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Local screenshots (QA / before-after). Kept on disk, not in the repo (decision 2026-11-11).
+docs/screenshots/

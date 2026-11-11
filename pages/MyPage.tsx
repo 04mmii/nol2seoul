@@ -1,171 +1,195 @@
-
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useFavorites } from '../hooks';
-import type { FavoriteType } from '../hooks';
+import { useEvents, useCulturalSpaces, useNightViewSpots, useFavorites } from '../hooks';
+import type { FavoriteItem } from '../hooks';
+import EventCard from '../components/v3/EventCard';
+import SpaceCard from '../components/v3/SpaceCard';
+import NightArt from '../components/night/NightArt';
+import { buildNight, type NightSpotView } from '../components/night/selectors';
+import { eventDday } from '../utils/event';
+import { QUICK_LINKS, nightChipText } from '../components/search/quickLinks';
+import { resolveFavorites, sortEntries, myStats, goneLabel, type MyEntry, type MyTab } from '../components/mypage/selectors';
+import '../components/mypage/mypage-v3.css';
+
+/**
+ * MyPage — Redesign v3 (design-ref "Search and My v3" M1–M3, decisions 2026-11-10).
+ * Favorites saved in this browser only (no login): title count, 4 stats, type tabs, one shared card
+ * grid in a fixed 마감 임박순, ended/unavailable favorites dimmed with a delete button (never removed
+ * automatically), and an empty state that links onward.
+ * Removed (no data / placeholders): fake profile, account menu and logout, membership promo, sort control,
+ * "이번 주 마감" banner (its number stays in the stats).
+ */
+const TABS: Array<{ id: MyTab; label: string; short: string }> = [
+  { id: 'all', label: '전체', short: '전체' },
+  { id: 'event', label: '문화행사', short: '행사' },
+  { id: 'space', label: '문화공간', short: '공간' },
+  { id: 'spot', label: '야경명소', short: '야경' },
+];
+
+const LocalNote: React.FC = () => (
+  <p className="v3-my__local"><b>이 브라우저에 저장돼요</b><br />로그인 없이 사용 · 다른 기기와 공유되지 않음</p>
+);
+
+const Heart: React.FC<{ title: string; onRemove: () => void }> = ({ title, onRemove }) => (
+  <button type="button" className="v3-event-card__heart v3-focus" aria-pressed="true" aria-label={`${title} 찜 해제`} onClick={onRemove}>
+    <span aria-hidden="true">♥</span>
+  </button>
+);
+
+const SpotCard: React.FC<{ view: NightSpotView; views: NightSpotView[]; onRemove: () => void }> = ({ view, views, onRemove }) => {
+  const st = view.state;
+  return (
+    <article className="v3-event-card">
+      <div className="v3-event-card__thumb v3-my__night-thumb">
+        <NightArt view={view} views={views} />
+        <Heart title={view.spot.TITLE} onRemove={onRemove} />
+      </div>
+      <div className="v3-event-card__body">
+        <div className="v3-event-card__cat">야경명소{view.spot.SUBJECT_CD ? ` · ${view.spot.SUBJECT_CD}` : ''}</div>
+        <h3 className="v3-event-card__title"><Link to={`/night?spot=${view.id}`} className="v3-event-card__link">{view.spot.TITLE}</Link></h3>
+        <div className="v3-event-card__foot">
+          <span className="v3-my__foot-text">{view.district}</span>
+          {st.label && <span className={`v3-my__state is-${st.badge}`}>{st.label}</span>}
+        </div>
+      </div>
+    </article>
+  );
+};
+
+/**
+ * Favorite that isn't in current data: `ended` (dimmed poster + label), `lost` (dashed note instead of
+ * the poster), or `pending` (data still loading or failed — stored fields only, no verdict).
+ */
+const StoredCard: React.FC<{ fav: FavoriteItem; state: 'ended' | 'lost' | 'pending'; label?: string; onRemove: () => void }> = ({ fav, state, label, onRemove }) => (
+  <article className={`v3-event-card v3-my__stored is-${state}`}>
+    <div className="v3-event-card__thumb">
+      {state !== 'lost' && fav.image ? (
+        <img src={fav.image} alt="" loading="lazy" />
+      ) : (
+        <span className="v3-my__lost" aria-hidden="true">{state === 'lost' ? '서울시 데이터에서 찾을 수 없어요' : state === 'pending' ? '불러오는 중' : ''}</span>
+      )}
+    </div>
+    {label && <p className="v3-my__flag" role="note"><span>{label}</span></p>}
+    <div className="v3-event-card__body">
+      <div className="v3-event-card__cat">{fav.category}</div>
+      <h3 className="v3-event-card__title">{fav.title}</h3>
+      <div className="v3-event-card__venue">{fav.location}</div>
+      <div className="v3-event-card__foot">
+        <span className="v3-my__foot-text">{fav.date}</span>
+        <button type="button" className="v3-my__del v3-focus" onClick={onRemove} aria-label={`${fav.title} 찜 삭제`}>찜 삭제</button>
+      </div>
+    </div>
+  </article>
+);
 
 const MyPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<FavoriteType>('event');
-  const { favorites, removeFavorite, getByType, eventCount, spaceCount, spotCount } = useFavorites();
+  const { favorites, removeFavorite } = useFavorites();
+  const { events } = useEvents();
+  const { spaces } = useCulturalSpaces();
+  const { spots } = useNightViewSpots();
+  const [tab, setTab] = useState<MyTab>('all');
 
-  const currentItems = getByType(activeTab);
+  const now = useMemo(() => new Date(), [events, spaces, spots]); // eslint-disable-line react-hooks/exhaustive-deps
+  const night = useMemo(() => (spots.length ? buildNight(spots, now) : null), [spots, now]);
+  const entries = useMemo(
+    () => sortEntries(resolveFavorites(favorites, { events, spaces, spots, nightViews: night?.views ?? [] }, now)),
+    [favorites, events, spaces, spots, night, now],
+  );
+  const stats = myStats(entries, night, now);
+  const shown = tab === 'all' ? entries : entries.filter((e) => e.fav.type === tab);
+  const count = (t: MyTab) => (t === 'all' ? stats.total : t === 'event' ? stats.events : t === 'space' ? stats.spaces : stats.spots);
 
-  const tabs: { key: FavoriteType; label: string; count: number }[] = [
-    { key: 'event', label: '저장한 행사', count: eventCount },
-    { key: 'space', label: '저장한 장소', count: spaceCount },
-    { key: 'spot', label: '저장한 야경', count: spotCount },
-  ];
+  if (favorites.length === 0) {
+    return (
+      <div className="v3-my v3-shell">
+        <header className="v3-my__head">
+          <div>
+            <p className="v3-eyebrow"><span className="v3-eyebrow__dash" aria-hidden="true" />MY · 나의 놀서울</p>
+            <h1 className="v3-my__title">아직 찜한<br />서울이 없어요.</h1>
+          </div>
+          <LocalNote />
+        </header>
+        <div className="v3-my__empty">
+          <div className="v3-my__empty-l">
+            <p className="v3-my__empty-big">마음에 드는 곳에서<br /><em>♥&#xFE0E;</em>를 눌러 두세요.</p>
+            <p>행사·문화공간·야경명소를 찜하면 여기에 모이고, 마감이 가까운 순서로 보여 드려요.</p>
+            <Link to="/events" className="v3-btn v3-btn--primary">이번 주 행사 보기 →</Link>
+          </div>
+          <nav className="v3-my__empty-r" aria-label="바로 가기">
+            {[QUICK_LINKS.freeWeek, QUICK_LINKS.endingSoon, QUICK_LINKS.nightOn].map((l) => (
+              <Link key={l.id} to={l.to} className="v3-my__go v3-focus">
+                <b>{l.night ? nightChipText(night) : l.label}</b><span aria-hidden="true">→</span>
+              </Link>
+            ))}
+          </nav>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-10 pb-24 space-y-10">
-      {/* Profile Card */}
-      <section className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-8">
-        <div className="flex flex-col md:flex-row items-center gap-8">
-          <div className="relative">
-            <div className="size-32 rounded-full overflow-hidden border-4 border-white shadow-xl ring-2 ring-primary/20">
-              <img className="w-full h-full object-cover" src="https://picsum.photos/seed/me/400/400" alt="User Profile" />
-            </div>
-            <button className="absolute bottom-1 right-1 bg-primary text-white p-2 rounded-full shadow-lg border-2 border-white"><span className="material-symbols-outlined text-sm">photo_camera</span></button>
-          </div>
-          <div className="text-center md:text-left">
-            <div className="flex items-center gap-2 justify-center md:justify-start">
-              <h2 className="text-3xl font-black">서울여행자님</h2>
-              <span className="bg-primary/10 text-primary text-xs font-black px-3 py-1 rounded-full">Lv.4 탐험가</span>
-            </div>
-            <p className="text-gray-400 font-medium mt-1">seoultraveler@nolseoul.kr</p>
-            <div className="flex gap-3 mt-6 justify-center md:justify-start">
-              <button className="bg-primary text-white px-6 py-2.5 rounded-full font-bold text-sm shadow-lg shadow-primary/20 hover:brightness-110">프로필 수정</button>
-              <button className="bg-gray-100 text-navy px-6 py-2.5 rounded-full font-bold text-sm hover:bg-gray-200">공유하기</button>
-            </div>
-          </div>
+    <div className="v3-my v3-shell">
+      <header className="v3-my__head">
+        <div>
+          <p className="v3-eyebrow"><span className="v3-eyebrow__dash" aria-hidden="true" />MY · 나의 놀서울</p>
+          <h1 className="v3-my__title">찜해 둔 서울,<br /><em>{stats.total}</em>곳.</h1>
         </div>
+        <LocalNote />
+      </header>
 
-        <div className="flex gap-4 w-full md:w-auto">
-          {tabs.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 md:w-32 p-6 rounded-2xl flex flex-col items-center justify-center border transition-all cursor-pointer ${
-                activeTab === tab.key ? 'bg-primary/5 border-primary/30' : 'bg-background-light border-gray-100 hover:border-primary'
-              }`}
-            >
-              <span className="text-3xl font-black text-primary">{tab.count}</span>
-              <span className="text-[10px] font-black text-gray-400 mt-2 uppercase tracking-widest">{tab.label}</span>
+      <dl className="v3-my__stats">
+        <div><dt>찜한 행사</dt><dd>{stats.events} {stats.events > 0 && <small>진행 중 {stats.ongoing}</small>}</dd></div>
+        <div><dt>이번 주 마감</dt><dd>{stats.endingThisWeek} {stats.endingThisWeek > 0 && <small>놓치기 전에</small>}</dd></div>
+        <div><dt>찜한 문화공간</dt><dd>{stats.spaces}</dd></div>
+        <div>
+          <dt>지금 켜진 찜 야경</dt>
+          <dd>
+            {stats.beforeSunset && stats.litSpots === 0 ? (
+              <span className="v3-my__soon">곧 켜져요</span>
+            ) : (
+              <>{stats.litSpots > 0 && <span className="v3-my__lit" aria-hidden="true" />}{stats.litSpots}</>
+            )}
+            <small>/ 전체 {stats.spots}곳</small>
+          </dd>
+        </div>
+      </dl>
+
+      <div className="v3-my__bar">
+        <div className="v3-my__tabs" role="group" aria-label="종류">
+          {TABS.map((t) => (
+            <button key={t.id} type="button" className="v3-day-pill v3-focus" aria-pressed={tab === t.id} onClick={() => setTab(t.id)}>
+              <span className="v3-my__tab-long">{t.label}</span><span className="v3-my__tab-short">{t.short}</span> {count(t.id)}
             </button>
           ))}
         </div>
-      </section>
+        <p className="v3-my__order">마감 임박순</p>
+      </div>
 
-      {/* Content Tabs */}
-      <section className="grid grid-cols-1 lg:grid-cols-4 gap-10">
-        <aside className="lg:col-span-1 space-y-6">
-          <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
-            <div className="p-6 border-b border-gray-100"><h3 className="font-black">계정 설정</h3></div>
-            <nav className="flex flex-col">
-              {['공지사항', '1:1 문의', '환경설정'].map(item => (
-                <button key={item} className="flex items-center gap-3 px-6 py-4 hover:bg-gray-50 text-gray-500 font-bold text-sm transition-colors text-left">
-                  <span className="material-symbols-outlined text-gray-400">{item === '공지사항' ? 'campaign' : item === '1:1 문의' ? 'help_center' : 'settings'}</span>
-                  {item}
-                </button>
-              ))}
-              <button className="flex items-center gap-3 px-6 py-4 hover:bg-red-50 text-red-500 font-bold text-sm transition-colors text-left">
-                <span className="material-symbols-outlined">logout</span> 로그아웃
-              </button>
-            </nav>
-          </div>
-          <div className="bg-primary/5 rounded-2xl p-6 border border-primary/10">
-            <p className="text-[10px] font-black text-primary mb-2 uppercase tracking-widest">NOLSEOUL VIP</p>
-            <h4 className="font-black text-navy leading-tight mb-4">전시회 20% 할인 혜택을 놓치지 마세요!</h4>
-            <button className="w-full bg-primary text-white py-3 rounded-full text-xs font-black shadow-lg shadow-primary/20">멤버십 가입</button>
-          </div>
-        </aside>
-
-        <div className="lg:col-span-3 space-y-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 flex gap-10 overflow-x-auto no-scrollbar">
-            {tabs.map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`py-6 font-bold text-sm whitespace-nowrap ${
-                  activeTab === tab.key
-                    ? 'font-black border-b-4 border-primary text-navy'
-                    : 'text-gray-400 hover:text-navy'
-                }`}
-              >
-                {tab.label} <span className={activeTab === tab.key ? 'text-primary ml-1' : 'ml-1'}>{tab.count}</span>
-              </button>
-            ))}
-          </div>
-
-          {currentItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-              <span className="material-symbols-outlined text-5xl mb-4">
-                {activeTab === 'event' ? 'event' : activeTab === 'space' ? 'museum' : 'nightlight'}
-              </span>
-              <p className="font-bold text-lg mb-2">
-                저장한 {activeTab === 'event' ? '행사' : activeTab === 'space' ? '장소' : '야경명소'}가 없습니다
-              </p>
-              <p className="text-sm mb-6">마음에 드는 항목의 하트를 눌러 저장해보세요</p>
-              <Link
-                to={activeTab === 'event' ? '/events' : '/map'}
-                className="bg-primary text-white px-6 py-3 rounded-full font-bold text-sm hover:brightness-110"
-              >
-                {activeTab === 'event' ? '행사 둘러보기' : '지도에서 찾기'}
-              </Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {currentItems.map(item => (
-                <div key={`${item.type}-${item.id}`} className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all">
-                  <Link to={item.type === 'event' ? `/event/${item.id}` : '/map'}>
-                    <div className="relative h-52 overflow-hidden bg-gray-50">
-                      {item.image ? (
-                        <img
-                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                          src={item.image}
-                          alt={item.title}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-300">
-                          <span className="material-symbols-outlined text-5xl">
-                            {item.type === 'event' ? 'event' : item.type === 'space' ? 'museum' : 'nightlight'}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </Link>
-                  <div className="p-5">
-                    <div className="flex justify-between items-start">
-                      <div className="min-w-0 flex-1">
-                        {item.category && <p className="text-[10px] font-black text-primary uppercase mb-1 tracking-widest">{item.category}</p>}
-                        <h4 className="font-black text-navy mb-3 truncate">{item.title}</h4>
-                        <div className="space-y-1 text-xs text-gray-400 font-bold">
-                          {item.date && <p className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">calendar_today</span> {item.date}</p>}
-                          <p className="flex items-center gap-1 truncate"><span className="material-symbols-outlined text-sm">location_on</span> {item.location}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => removeFavorite(item.id, item.type)}
-                        className="text-primary shrink-0 ml-2 hover:scale-110 transition-transform"
-                      >
-                        <span className="material-symbols-outlined fill">favorite</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <Link to={activeTab === 'event' ? '/events' : '/map'} className="border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center h-[320px] group cursor-pointer hover:border-primary/50 transition-colors">
-                <div className="size-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-primary/10 group-hover:text-primary transition-all">
-                  <span className="material-symbols-outlined text-3xl">add</span>
-                </div>
-                <p className="mt-4 text-sm font-black text-gray-400">
-                  {activeTab === 'event' ? '새로운 행사 찾기' : activeTab === 'space' ? '문화공간 찾기' : '야경명소 찾기'}
-                </p>
-              </Link>
-            </div>
-          )}
+      {shown.length === 0 ? (
+        <p className="v3-my__none">이 종류로 찜한 곳이 없어요.</p>
+      ) : (
+        <div className="v3-event-grid v3-my__grid">
+          {shown.map((e) => {
+            const remove = () => removeFavorite(e.fav.id, e.fav.type);
+            const key = `${e.fav.type}-${e.fav.id}`;
+            switch (e.kind) {
+              case 'event':
+                return <EventCard key={key} event={e.event} id={e.fav.id} saved onToggleFavorite={remove} dday={eventDday(e.event, now)} />;
+              case 'space':
+                return (
+                  <SpaceCard key={key} space={e.space} saved onToggleFavorite={remove}
+                    foot={e.space.CLOSEDAY ? `${e.space.CLOSEDAY.length > 14 ? `${e.space.CLOSEDAY.slice(0, 14)}…` : e.space.CLOSEDAY} 휴관` : undefined} />
+                );
+              case 'spot':
+                return <SpotCard key={key} view={e.view} views={night?.views ?? []} onRemove={remove} />;
+              case 'gone':
+                return <StoredCard key={key} fav={e.fav} state={e.reason} label={goneLabel(e)} onRemove={remove} />;
+              default:
+                return <StoredCard key={key} fav={e.fav} state="pending" onRemove={remove} />;
+            }
+          })}
         </div>
-      </section>
+      )}
     </div>
   );
 };
