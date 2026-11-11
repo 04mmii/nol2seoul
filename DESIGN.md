@@ -267,7 +267,7 @@ All routes are hash routes (`HashRouter`).
 ### 3.x AI course remote (v3, 2026-11-11)
 
 Floating on every route (`components/course/CourseRemote.tsx`, `course-remote.css`), based on design-ref/src/course-remote.jsx.
-Square button (CTA rule, tangerine use #1: ink fill → accent fill + ink icon on hover) + "코스추천" bubble → input slides out to the left (chips) → panel rises with 3 stops: 문화행사 → 문화공간 → 야경명소; each stop: kind, name (link), area · category, schedule, reason, "↻ 다른 곳으로" (local, rule-based swap). Footer: source line ("AI 추천 · 목록에 있는 곳만" / "기본 규칙 코스 — reason"), 다시 짜기 (asks again without the current stops), 지도에서 보기 (→ `/map?sel=event:<id>`). Context: event detail pre-fills "<title> 보고 나서 " and fixes the first stop; `/night` pre-fills "야경으로 마무리하는 " (and fixes the last stop when `?spot=` is set). Esc closes. Reduced motion: no animations.
+Square button (CTA rule, tangerine use #1: ink fill → accent fill + ink icon on hover) + "코스추천" bubble → input slides out to the left (chips) → panel rises with 3 stops: 문화행사 → 문화공간 → 야경명소; each stop: kind, name (link), area · category, schedule, reason, "↻ 다른 곳으로" (local, rule-based swap). Footer: source line ("AI 추천 · 목록에 있는 곳만" / "기본 규칙 코스 — reason"), 다른 코스 보기 (asks again without the current stops) + 조건 바꾸기 (back to the input with the last query) on one row, 지도에서 보기 full width (→ `/map?sel=event:<id>`). Context: event detail pre-fills "<title> 보고 나서 " and fixes the first stop; `/night` pre-fills "야경으로 마무리하는 " (and fixes the last stop when `?spot=` is set). Esc closes. Reduced motion: no animations.
 
 ## 4. Component and variant inventory (Current patterns)
 

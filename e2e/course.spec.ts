@@ -121,10 +121,28 @@ test.describe('course remote UI', () => {
     await page.route('**/api/course', (route) => route.fulfill({ json: {
       title: '없는 곳 코스', source: 'ai', stops: [{ id: '999999', kind: 'event', reason: '지어낸 행사' }, { id: 's1', kind: 'space', reason: 'x' }, { id: 'n1', kind: 'night', reason: 'y' }],
     } }));
-    await panel.getByRole('button', { name: '다시 짜기' }).click();
+    await panel.getByRole('button', { name: '다른 코스 보기' }).click();
     await expect(panel.getByText('지어낸 행사')).toHaveCount(0);
     await expect(panel.locator('.v3-course__stop.is-filled')).toHaveCount(3);
     await expect(panel.getByText(/기본 규칙 코스/)).toBeVisible();
+  });
+
+  test('"조건 바꾸기" returns to the input with the last query; a new query makes a new course', async ({ page }) => {
+    await page.goto('/#/');
+    await page.getByRole('button', { name: 'AI 코스추천 열기' }).click();
+    const input = page.getByRole('textbox', { name: '코스 조건' });
+    await input.fill('클래식');
+    await input.press('Enter');
+    const panel = page.getByRole('dialog', { name: 'AI 코스추천 결과' });
+    await expect(panel.locator('.v3-course__stop.is-filled')).toHaveCount(3);
+    await panel.getByRole('button', { name: '조건 바꾸기' }).click();
+    await expect(input).toBeVisible();
+    await expect(input).toHaveValue('클래식');
+    await expect(input).toBeFocused();
+    await input.fill('무료');
+    await input.press('Enter');
+    await expect(panel.locator('.v3-course__q')).toHaveText('“무료”');
+    await expect(panel.locator('.v3-course__stop.is-filled')).toHaveCount(3);
   });
 
   test('server error / 429 → rule course, the app keeps working', async ({ page }) => {

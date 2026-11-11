@@ -52,10 +52,11 @@
 .v3-course__sk { height: 10px; margin: 6px 0; border-radius: 2px; background: rgb(var(--v3-bone-2)); animation: v3CoursePulse 1.2s ease-in-out infinite; }
 .v3-course__sk.w40 { width: 40%; } .v3-course__sk.w80 { width: 80%; height: 16px; } .v3-course__sk.w60 { width: 60%; }
 @keyframes v3CoursePulse { 50% { opacity: 0.45; } }
-.v3-course__pf { padding: 12px 20px 20px; border-top: 1px solid rgb(var(--v3-ink) / 0.16); }
+.v3-course__pf { position: sticky; bottom: 0; padding: 12px 20px 16px; border-top: 1px solid rgb(var(--v3-ink) / 0.16); background: rgb(var(--v3-bone)); } /* actions stay visible while the stops scroll */
 .v3-course__src { margin: 0 0 10px; font-family: var(--v3-font-mono); font-size: 10px; letter-spacing: 0.03em; line-height: 1.6; color: rgb(var(--v3-mute)); }
 .v3-course__src.is-rules { color: rgb(var(--v3-ink-2)); }
-.v3-course__actions { display: flex; gap: 8px; }
+.v3-course__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.v3-course__btn--wide { grid-column: 1 / -1; }
 .v3-course__btn { flex: 1; justify-content: center; }
 .v3-course__btn:disabled { opacity: 0.5; cursor: default; }
 

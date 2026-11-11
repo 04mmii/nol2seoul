@@ -13,7 +13,7 @@ import './course-remote.css';
  * Square button + "코스추천" bubble → input slides out to the left → result panel rises.
  * Course = 문화행사 → 문화공간 → 야경명소, chosen only from our data (server drops unknown ids).
  * The model runs on the server (api/course.ts); with no key / an error, a rule-based course is shown
- * and labelled. "다른 곳으로" swaps one stop locally (no model call); "다시 짜기" asks again without the
+ * and labelled. "다른 곳으로" swaps one stop locally (no model call); "다른 코스 보기" asks again without the
  * current stops. Page context: event detail → starts with that event; night page → ends with a night spot.
  */
 const CHIPS = ['오늘 저녁 데이트', '무료로만', '친구랑 가볍게', '전시 위주로'];
@@ -112,6 +112,12 @@ const CourseRemote: React.FC = () => {
     setQuery(text);
     void run(text);
   };
+  /** "조건 바꾸기": back to the input with the last query (the current course stays until a new one arrives). */
+  const editConditions = () => {
+    if (request) setQuery(request.query);
+    setStage('input');
+  };
+  /** "다른 코스 보기": same query, without the current stops (page-context start/end stay). */
   const retry = () => {
     if (!course || !request) return;
     const keep = new Set([ctx.startId, ctx.endId]);
@@ -165,8 +171,9 @@ const CourseRemote: React.FC = () => {
           <div className="v3-course__pf">
             <p className={`v3-course__src is-${course.source}`}>{course.source === 'ai' ? 'AI 추천 · 목록에 있는 곳만' : '기본 규칙 코스'}{course.note ? ` — ${course.note}` : ''}</p>
             <div className="v3-course__actions">
-              <button type="button" className="v3-btn v3-course__btn" onClick={retry}>다시 짜기</button>
-              <button type="button" className="v3-btn v3-btn--primary v3-course__btn" disabled={!first} onClick={() => { if (first) { navigate(mapLink(first)); close(); } }}>지도에서 보기 →</button>
+              <button type="button" className="v3-btn v3-course__btn" onClick={retry}>다른 코스 보기</button>
+              <button type="button" className="v3-btn v3-course__btn" onClick={editConditions}>조건 바꾸기</button>
+              <button type="button" className="v3-btn v3-btn--primary v3-course__btn v3-course__btn--wide" disabled={!first} onClick={() => { if (first) { navigate(mapLink(first)); close(); } }}>지도에서 보기 →</button>
             </div>
           </div>
         )}

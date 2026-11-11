@@ -12,25 +12,28 @@ import Anthropic from '@anthropic-ai/sdk';
 // ".js" extension: package.json is "type": "module" (Node ESM on Vercel).
 import { COURSE_SCHEMA, COURSE_SYSTEM, cacheKey, coursePrompt, ruleCourse, sanitizeRequest, validateAiCourse, type CourseRequest, type CourseResult } from './course.js';
 
-export const COURSE_MODEL = 'claude-opus-5-5';
+/** Model choice (user decision 2026-11-11): Haiku 5.5 — short pick-3-from-a-list task, lowest cost. */
+export const COURSE_MODEL = 'claude-haiku-5-5';
 
 /** Model call, injectable for tests (tests never call the paid API). Returns the parsed JSON or throws. */
 export type CourseModel = (req: CourseRequest) => Promise<unknown>;
 
+/**
+ * Haiku 5.5 has no server-side refusal fallback, so a refusal (or any error) throws and the caller
+ * returns the rule-based course instead.
+ */
 export function anthropicModel(apiKey: string): CourseModel {
   const client = new Anthropic({ apiKey, timeout: 25_000, maxRetries: 1 });
   return async (req) => {
-    const res = await client.beta.messages.create({
+    const res = await client.messages.create({
       model: COURSE_MODEL,
       max_tokens: 2000,
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
       output_config: { effort: 'low', format: { type: 'json_schema', schema: COURSE_SCHEMA as unknown as Record<string, unknown> } },
       system: COURSE_SYSTEM,
       messages: [{ role: 'user', content: coursePrompt(req) }],
     });
     if (res.stop_reason === 'refusal') throw new Error('refusal');
-    const text = res.content.find((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text')?.text;
+    const text = res.content.find((b): b is Anthropic.TextBlock => b.type === 'text')?.text;
     if (!text) throw new Error('empty');
     return JSON.parse(text);
   };

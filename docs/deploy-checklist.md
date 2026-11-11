@@ -46,7 +46,7 @@ Vercel → Project → Settings → Environment Variables. `VITE_`로 시작하�
 - 사진은 `data/night-photos.json`에 고정 (15곳), 이미지 자체는 관광공사 서버(`tong.visitkorea.or.kr`)에서 로드.
 
 ### Anthropic (AI 코스추천, `POST /api/course`)
-- 키가 있을 때만 호출. 모델 `claude-opus-5-5`, effort `low`, 최대 출력 2,000토큰, 요청당 후보 최대 120곳(종류별 40, 브라우저는 30씩 보냄).
+- 키가 있을 때만 호출. 모델 `claude-haiku-5-5`(2026-11-11 사용자 결정), effort `low`, 거절 시 서버 측 대체 모델 없음 → 규칙 코스로 대체, 최대 출력 2,000토큰, 요청당 후보 최대 120곳(종류별 40, 브라우저는 30씩 보냄).
 - 비용 보호: 같은 입력은 서버 메모리 캐시(1시간, 300개) + 브라우저 세션 캐시, 클라이언트(IP)당 3초에 1회·10분에 8회 (초과 시 429 → 화면은 규칙 코스로 대체), 브라우저에서도 3초 간격.
 - **한계:** 캐시·제한이 함수 인스턴스 메모리에 있어서, 인스턴스가 여러 개 뜨면 각자 따로 센다. 확실한 제한이 필요하면 Vercel KV 같은 저장소가 필요(아직 설정 안 함). Anthropic 콘솔에서 **월 사용 한도(spend limit)** 를 함께 걸어 두는 것을 권장.
 - 함수 실행 시간: SDK 타임아웃 25초. Vercel 플랜의 기본 함수 최대 시간이 그보다 짧으면 `vercel.json`의 `functions`에서 `api/course.ts`의 `maxDuration`을 늘려야 한다 (배포 후 확인).
