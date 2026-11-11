@@ -2,7 +2,7 @@
 
 > 근거: `DESIGN.md`(v0.8+), `CLAUDE.md`, 브랜치 `redesign-v3` 커밋 기록(2026-11-09 ~ 11-11, 26커밋).
 > "제안 / 결정"은 작업 대화 기록 기준. 대화 요약만 남아 있어 누가 처음 꺼냈는지 분명하지 않은 것은 **확인 필요**로 표시했다.
-> 스크린샷: Before = `main`(6279fb6) → `docs/screenshots/2026-11-11/before-main/`, After = `redesign-v3` → `docs/screenshots/2026-11-11/qa/`, `mypage/`, `course/`.
+> 스크린샷은 **로컬 전용**(`docs/screenshots/`는 2026-11-11부터 `.gitignore`, 저장소에 없음). Before = `main`(6279fb6) → `docs/screenshots/2026-11-11/before-main/`, After = `redesign-v3` → `docs/screenshots/2026-11-11/qa/`, `mypage/`, `course/`.
 
 ---
 
