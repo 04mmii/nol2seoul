@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useFavorites, useNightViewSpots } from '../hooks';
 import NightLights from '../components/night/NightLights';
 import NightArt from '../components/night/NightArt';
+import NightSpotCard, { SpotActions, StateBadge } from '../components/night/NightSpotCard';
 import { COLLECTIONS, buildNight, matchesNightFilter, pickFeature, type CollectionId, type NightFilter, type NightSpotView } from '../components/night/selectors';
 import { formatHm } from '../utils/sun';
 import '../components/night/night-v3.css';
@@ -169,21 +170,7 @@ const NightPage: React.FC = () => {
             ) : (
               <div className="v3-night__grid">
                 {shown.map((v) => (
-                  <article key={v.index} id={`night-spot-${v.id}`} tabIndex={-1} className={`v3-night__card ${target === v.id ? 'is-target' : ''}`}>
-                    <div className="v3-night__card-top">
-                      <span className="v3-night__kicker">SPOT № {String(v.index + 1).padStart(2, '0')}</span>
-                      <StateBadge view={v} />
-                    </div>
-                    <div className="v3-night__card-art"><NightArt view={v} views={night.views} /></div>
-                    <h3 className="v3-night__card-title">{v.spot.TITLE}</h3>
-                    <p className="v3-night__card-meta">{[v.district, v.spot.SUBJECT_CD].filter(Boolean).join(' · ')}</p>
-                    <p className="v3-night__card-time">
-                      {v.spot.OPERATING_TIME}
-                      {v.manual && <span className="v3-night__manual" title="data/night-manual-rules.json — API 값이 아닌 수동 규칙"> · 수동 규칙 적용</span>}
-                    </p>
-                    {v.desc && <p className="v3-night__card-desc">{v.desc}</p>}
-                    <SpotActions view={v} saved={isFavorite(v.fav.id, 'spot')} onToggle={() => toggleFavorite(v.fav)} compact />
-                  </article>
+                  <NightSpotCard key={v.index} view={v} views={night.views} saved={isFavorite(v.fav.id, 'spot')} onToggle={() => toggleFavorite(v.fav)} isTarget={target === v.id} domId={`night-spot-${v.id}`} />
                 ))}
               </div>
             )}
@@ -193,18 +180,5 @@ const NightPage: React.FC = () => {
     </div>
   );
 };
-
-const StateBadge: React.FC<{ view: NightSpotView }> = ({ view }) =>
-  view.state.badge === 'none' ? null : (
-    <span className={`v3-night__badge is-${view.state.badge}`}>{view.state.badge === 'lit' ? '● ' : ''}{view.state.label}</span>
-  );
-
-const SpotActions: React.FC<{ view: NightSpotView; saved: boolean; onToggle: () => void; compact?: boolean }> = ({ view, saved, onToggle, compact }) => (
-  <div className={`v3-night__actions ${compact ? 'is-compact' : ''}`}>
-    <Link to={`/map?cat=${encodeURIComponent('야경명소')}&spot=${view.id}`} className="v3-btn v3-night__btn-accent">지도에서 보기 →</Link>
-    <button type="button" className="v3-btn v3-btn--ghost-light" aria-pressed={saved} onClick={onToggle} aria-label={`${view.spot.TITLE} ${saved ? '찜 해제' : '찜하기'}`}>{saved ? '♥ 찜됨' : '♡ 찜'}</button>
-    {view.spot.URL && <a href={view.spot.URL} target="_blank" rel="noopener noreferrer" className="v3-btn v3-btn--ghost-light">홈페이지 ↗</a>}
-  </div>
-);
 
 export default NightPage;

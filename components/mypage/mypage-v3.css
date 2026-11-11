@@ -26,7 +26,6 @@
 .v3-my__none { padding: 48px 0; border-top: 1px solid rgb(var(--v3-ink) / 0.16); color: rgb(var(--v3-ink-2)); font-size: 14px; }
 
 .v3-my__night-thumb { background: rgb(var(--v3-night)); }
-.v3-my__ph-space { background-color: rgb(var(--v3-bone-2)); }
 .v3-my__foot-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .v3-my__foot-right { margin-left: auto; text-align: right; }
 .v3-my__state { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; color: rgb(var(--v3-ink-2)); }

@@ -1,0 +1,10 @@
+/*
+ * Space detail v3 (2026-11-11) — reuses components/detail/detail-v3.css; only the space-specific bits here.
+ */
+.v3-space-transit { margin-top: 40px; padding-top: 24px; border-top: 1px solid rgb(var(--v3-ink) / 0.16); }
+.v3-space-transit dl { margin: 0; }
+.v3-space-transit dl > div { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px dashed rgb(var(--v3-ink) / 0.34); }
+.v3-space-transit dt { font-family: var(--v3-font-mono); font-size: 11px; letter-spacing: 0.06em; color: rgb(var(--v3-mute)); }
+.v3-space-transit dd { margin: 0; font-size: 15px; line-height: 1.6; color: rgb(var(--v3-ink)); overflow-wrap: anywhere; }
+.v3-detail-info a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.v3-space-card__foot-right { margin-left: auto; text-align: right; }

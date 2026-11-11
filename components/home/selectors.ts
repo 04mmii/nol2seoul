@@ -5,8 +5,11 @@
  *   category strip, map promo    → space  (culturalSpaceInfo) — event counts also shown in the strip
  *   After Dark                   → night  (viewNightSpot)
  */
-import type { Event, CulturalSpace, NightViewSpot } from '../../types';
+import type { Event, CulturalSpace } from '../../types';
+// Type-only (erased at runtime), so no import cycle with night/selectors at runtime.
+import type { NightSpotView } from '../night/selectors';
 import { dateKeys, eventDay as day, isFreeEvent } from '../../utils/event';
+import { eventId } from '../../utils/eventId';
 
 // Shared event helpers now live in utils/event.ts; re-exported for existing imports.
 export { dateKeys, isFreeEvent, eventPrice, eventVenue } from '../../utils/event';
@@ -35,15 +38,31 @@ export function countStartingThisWeek(events: Event[], now: Date = new Date()): 
   return events.filter((e) => day(e.STRTDATE) >= today && day(e.STRTDATE) <= weekLater).length;
 }
 
-/** Up to `n` hero events: ongoing today with an image first, then any event with an image, then any. */
-export function pickHeroEvents(events: Event[], now: Date = new Date(), n = 3): Event[] {
-  const ongoing = filterEventsByTab(events, 'today', now);
-  const ranked = [
-    ...ongoing.filter((e) => e.MAIN_IMG),
-    ...events.filter((e) => e.MAIN_IMG),
-    ...ongoing,
-    ...events,
-  ];
+/**
+ * Hero banners (decision 2026-11-11):
+ *  1. hand-picked events from data/featured-events.json, in that order — ongoing OR upcoming, never ended;
+ *  2. remaining slots: automatic rule — ongoing, with a poster, at least 2 days left (so a banner isn't
+ *     gone tomorrow); started this week (Mon–Sun) first, newest start first; then ending within 7 days,
+ *     soonest first; then the other ongoing ones, newest start first;
+ *  3. last resort (sparse data): any ongoing event, then any event.
+ */
+export function pickHeroEvents(events: Event[], now: Date = new Date(), featuredIds: readonly string[] = [], n = 3): Event[] {
+  const { today, weekLater } = dateKeys(now);
+  const plus2 = new Date(Date.parse(`${today}T00:00:00Z`) + 2 * 86_400_000).toISOString().slice(0, 10);
+  const dow = new Date(`${today}T00:00:00Z`).getUTCDay(); // 0 = Sun
+  const weekStart = new Date(Date.parse(`${today}T00:00:00Z`) - ((dow + 6) % 7) * 86_400_000).toISOString().slice(0, 10);
+  const notEnded = (e: Event) => day(e.END_DATE) >= today;
+  const ongoing = (e: Event) => day(e.STRTDATE) <= today && notEnded(e);
+
+  const featured = featuredIds.flatMap((id) => {
+    const e = events.find((x) => eventId(x) === id);
+    return e && notEnded(e) ? [e] : [];
+  });
+  const auto = events.filter((e) => ongoing(e) && e.MAIN_IMG && day(e.END_DATE) >= plus2);
+  const tier = (e: Event) => (day(e.STRTDATE) >= weekStart ? 0 : day(e.END_DATE) <= weekLater ? 1 : 2);
+  auto.sort((a, b) => tier(a) - tier(b)
+    || (tier(a) === 1 ? day(a.END_DATE).localeCompare(day(b.END_DATE)) : day(b.STRTDATE).localeCompare(day(a.STRTDATE))));
+  const ranked = [...featured, ...auto, ...events.filter((e) => ongoing(e) && e.MAIN_IMG), ...events.filter(ongoing), ...events];
   return [...new Set(ranked)].slice(0, n);
 }
 
@@ -97,11 +116,11 @@ export function formatMastheadDate(now: Date = new Date()): string {
 
 export const formatCount = (n: number) => n.toLocaleString('ko-KR');
 
-export type NightSpotView = {
-  spot: NightViewSpot;
-  district: string;
-};
-
-export function pickNightSpots(spots: NightViewSpot[], n = 4): NightSpotView[] {
-  return spots.slice(0, n).map((spot) => ({ spot, district: districtFromAddress(spot.ADDR) }));
+/**
+ * Home After Dark (2026-11-11): 4 spots — lit now first, then sunset-lit spots (they light up soonest),
+ * then spots with a 한국관광공사 photo, then the rest; API order breaks ties.
+ */
+export function pickAfterDark(views: NightSpotView[], n = 4): NightSpotView[] {
+  const rank = (v: NightSpotView) => (v.state.badge === 'lit' ? 0 : v.rule.kind === 'sunset' ? 1 : v.photo ? 2 : 3);
+  return [...views].sort((a, b) => rank(a) - rank(b) || Number(!!b.photo) - Number(!!a.photo) || a.index - b.index).slice(0, n);
 }

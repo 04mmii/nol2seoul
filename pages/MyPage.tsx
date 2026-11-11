@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { useEvents, useCulturalSpaces, useNightViewSpots, useFavorites } from '../hooks';
 import type { FavoriteItem } from '../hooks';
 import EventCard from '../components/v3/EventCard';
+import SpaceCard from '../components/v3/SpaceCard';
 import NightArt from '../components/night/NightArt';
 import { buildNight, type NightSpotView } from '../components/night/selectors';
-import { districtFromAddress } from '../components/home/selectors';
 import { eventDday } from '../utils/event';
 import { QUICK_LINKS, nightChipText } from '../components/search/quickLinks';
 import { resolveFavorites, sortEntries, myStats, goneLabel, type MyEntry, type MyTab } from '../components/mypage/selectors';
@@ -35,31 +35,6 @@ const Heart: React.FC<{ title: string; onRemove: () => void }> = ({ title, onRem
     <span aria-hidden="true">♥</span>
   </button>
 );
-
-const SpaceCard: React.FC<{ entry: Extract<MyEntry, { kind: 'space' }>; onRemove: () => void }> = ({ entry, onRemove }) => {
-  const { space, id } = entry;
-  const [broken, setBroken] = useState(false);
-  return (
-    <article className="v3-event-card">
-      <div className="v3-event-card__thumb">
-        {space.MAIN_IMG && !broken ? (
-          <img src={space.MAIN_IMG} alt="" loading="lazy" onError={() => setBroken(true)} />
-        ) : (
-          <span className="v3-event-card__ph v3-my__ph-space" aria-hidden="true"><span className="v3-event-card__ph-cap">문화공간</span></span>
-        )}
-        <Heart title={space.FAC_NAME} onRemove={onRemove} />
-      </div>
-      <div className="v3-event-card__body">
-        <div className="v3-event-card__cat">문화공간{space.SUBJCODE ? ` · ${space.SUBJCODE}` : ''}</div>
-        <h3 className="v3-event-card__title"><Link to={`/space/${id}`} className="v3-event-card__link">{space.FAC_NAME}</Link></h3>
-        <div className="v3-event-card__foot">
-          <span className="v3-my__foot-text">{districtFromAddress(space.ADDR) || space.ADDR}</span>
-          {space.CLOSEDAY && <span className="v3-my__foot-text v3-my__foot-right">{space.CLOSEDAY.length > 14 ? `${space.CLOSEDAY.slice(0, 14)}…` : space.CLOSEDAY} 휴관</span>}
-        </div>
-      </div>
-    </article>
-  );
-};
 
 const SpotCard: React.FC<{ view: NightSpotView; views: NightSpotView[]; onRemove: () => void }> = ({ view, views, onRemove }) => {
   const st = view.state;
@@ -201,7 +176,10 @@ const MyPage: React.FC = () => {
               case 'event':
                 return <EventCard key={key} event={e.event} id={e.fav.id} saved onToggleFavorite={remove} dday={eventDday(e.event, now)} />;
               case 'space':
-                return <SpaceCard key={key} entry={e} onRemove={remove} />;
+                return (
+                  <SpaceCard key={key} space={e.space} saved onToggleFavorite={remove}
+                    foot={e.space.CLOSEDAY ? `${e.space.CLOSEDAY.length > 14 ? `${e.space.CLOSEDAY.slice(0, 14)}…` : e.space.CLOSEDAY} 휴관` : undefined} />
+                );
               case 'spot':
                 return <SpotCard key={key} view={e.view} views={night?.views ?? []} onRemove={remove} />;
               case 'gone':

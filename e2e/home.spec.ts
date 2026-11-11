@@ -12,7 +12,9 @@ import {
   STORAGE,
   type StoredFavorite,
 } from './support/test';
-import { EV, SPACES, SPOTS } from './fixtures/seoul-api';
+import { EV, EVENTS, FIXED_NOW, SPACES, SPOTS } from './fixtures/seoul-api';
+import { pickHeroEvents } from '../components/home/selectors';
+import type { Event } from '../types';
 
 const eventsRegion = (page: import('@playwright/test').Page) => page.getByRole('region', { name: /지금 서울에서/ });
 
@@ -32,7 +34,8 @@ test.describe('Home (v3)', () => {
     await expect(page.getByRole('heading', { name: /내 주변 문화공간을/ })).toBeVisible();
     await expect(page.getByRole('heading', { name: /에디터가 고른/ })).toBeVisible();
     await expect(page.getByRole('heading', { name: /가장 빛나는/ })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /그들이 고른/ })).toBeVisible();
+    // Curators (fictional people/quotes) were removed on 2026-11-11.
+    await expect(page.getByRole('heading', { name: /그들이 고른/ })).toHaveCount(0);
   });
 
   // ---- Mapping: event → hero + grid -------------------------------------------------------
@@ -175,17 +178,20 @@ test.describe('Home (v3)', () => {
     const night = page.getByRole('region', { name: /가장 빛나는/ });
     const card = night.getByRole('article').filter({ has: page.getByRole('heading', { name: SPOTS[0].TITLE }) });
     await expect(card).toBeVisible();
-    await expect(card).toContainText('FEATURED');
+    // Same card as the night page (2026-11-11): state badge, mini map (no photo for this fixture), time, actions.
+    await expect(card.locator('.v3-night__badge')).toBeVisible();
+    await expect(card.locator('figcaption')).toHaveText('실제 위치 그래픽');
     await expect(card).toContainText('중구'); // district parsed from ADDR
     await expect(card).toContainText(SPOTS[0].OPERATING_TIME);
+    await expect(card.getByRole('link', { name: '지도에서 보기 →' })).toHaveAttribute('href', /spot=n1$/);
+    await expect(card).not.toContainText('FEATURED');
     await night.getByRole('link', { name: /야경명소 전체 보기/ }).click();
     await expect(page).toHaveURL(/#\/night$/);
   });
 
-  test('curators render from the constants file', async ({ page }) => {
-    const curators = page.getByRole('region', { name: /그들이 고른/ });
-    await expect(curators.getByRole('article')).toHaveCount(3);
-    await expect(curators.getByRole('heading', { name: '이도연' })).toBeVisible();
+  test('editor picks: ids not in the data are skipped (fixtures have none of the examples → no section)', async ({ page }) => {
+    await expect(page.getByRole('region', { name: '에디터가 고른 장소' })).toHaveCount(0);
+    for (const name of ['이도연', 'Han Soo Min']) await expect(page.getByText(name)).toHaveCount(0);
   });
 
   test('header nav links route correctly', async ({ page }) => {
@@ -228,5 +234,69 @@ test.describe('Home (v3) — mobile 390px', () => {
     await expect(homeCard(page, EV.todayFreeClassic.title)).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);
+  });
+});
+
+// ---- Editor picks + map promo cards with matching data (data/editor-picks.json, data/map-promo-spaces.json) ----
+test.describe('Home — editor picks and map promo cards', () => {
+  const space = (num: string, name: string, img = `https://fixtures.nolseoul.test/space-${num}.png`) =>
+    ({ ...SPACES[0], NUM: num, FAC_NAME: name, MAIN_IMG: img, X_COORD: 37.57 + Number(num) / 10000, Y_COORD: 126.98 });
+  const spot32 = { ...SPOTS[0], NUM: '32', TITLE: '[픽스처] 성곽길 야경', OPERATING_TIME: '상시개방' };
+
+  test.beforeEach(async ({ page }) => {
+    const wrap = (key: string, row: unknown[]) => ({ [key]: { list_total_count: row.length, RESULT: { CODE: 'INFO-000' }, row } });
+    await page.route('**/api/seoulapi?type=space', (r) => r.fulfill({ json: wrap('culturalSpaceInfo', [space('14', '[픽스처] 생활사박물관'), space('72', '[픽스처] 갤러리'), space('41', '[픽스처] 현대미술관'), space('74', '[픽스처] 고궁박물관', '')]) }));
+    await page.route('**/api/seoulapi?type=night', (r) => r.fulfill({ json: wrap('viewNightSpot', [SPOTS[0], spot32]) }));
+    await page.goto('/#/');
+  });
+
+  test('editor picks: spaces with photo, night spot with mini map + state; empty comment shows nothing', async ({ page }) => {
+    const picks = page.getByRole('region', { name: '에디터가 고른 장소' });
+    await expect(picks.getByRole('link')).toHaveCount(3);
+    await expect(picks.getByRole('link', { name: /생활사박물관/ })).toHaveAttribute('href', '#/space/s14');
+    await expect(picks.getByRole('link', { name: /성곽길 야경/ })).toHaveAttribute('href', '#/night?spot=n32');
+    await expect(picks.locator('.v3-pick__state')).toHaveText('운영 중'); // 상시개방
+    await expect(picks.locator('.v3-pick__comment')).toHaveCount(0);
+  });
+
+  test('map promo: dot map + numbered cards; a listed space without a photo is skipped', async ({ page }) => {
+    const cards = page.getByRole('list', { name: '대표 문화공간' });
+    await expect(cards.getByRole('link')).toHaveCount(1); // s41 only: s74 has no MAIN_IMG, s26 missing
+    await expect(cards.getByRole('link', { name: /현대미술관/ })).toHaveAttribute('href', '#/space/s41');
+    await expect(page.locator('.v3-map-promo__dot')).toHaveCount(4);
+    await expect(page.locator('.v3-map-promo__marker')).toHaveCount(1);
+  });
+});
+
+// ---- Hero banners: data/featured-events.json is empty (decision 2026-11-11) → automatic rule only.
+// The hand-pick logic itself is tested on pickHeroEvents directly (the JSON is bundled at build time).
+test.describe('Home — hero banners', () => {
+  const picked = (code: string, title: string, start: string, end: string) => ({
+    ...EVENTS[1], TITLE: title, HMPG_ADDR: `https://culture.example.test/view.do?cultcode=${code}`, STRTDATE: `${start} 00:00:00.0`, END_DATE: `${end} 00:00:00.0`, DATE: `${start}~${end}`,
+  }) as unknown as Event;
+  const rows = [
+    ...(EVENTS as unknown as Event[]),
+    picked('159961', '[픽] 스케이트장', '2026-12-18', '2027-02-09'),
+    picked('159958', '[픽] 끝난 축제', '2026-10-01', '2026-11-01'), // ended before FIXED_NOW (11-03)
+    picked('159960', '[픽] 광화문마켓', '2026-12-11', '2027-01-10'),
+  ];
+
+  test('pickHeroEvents: picks first in given order (upcoming allowed), ended pick skipped, gap auto-filled', () => {
+    const out = pickHeroEvents(rows, FIXED_NOW, ['159960', '159958', '159961']).map((e) => e.TITLE);
+    expect(out).toEqual(['[픽] 광화문마켓', '[픽] 스케이트장', EV.todayFreeClassic.title]);
+  });
+
+  test('empty featured file: banners come from the automatic rule; upcoming events and the D-n chip are not shown', async ({ page }) => {
+    await page.route('**/api/seoulapi?type=event', (r) => r.fulfill({ json: { culturalEventInfo: { list_total_count: rows.length, RESULT: { CODE: 'INFO-000' }, row: rows } } }));
+    await page.goto('/#/');
+    const hero = page.getByRole('region', { name: '이번 주 문화행사' });
+    const caption = hero.locator('.v3-hero__cap');
+    // Automatic rule (ongoing + poster + ≥2 days left) → todayFreeClassic (ends 11-05) first.
+    await expect(caption).toContainText(EV.todayFreeClassic.title);
+    for (let i = 0; i < 2; i++) {
+      await expect(caption.locator('.v3-hero__cover-dday')).toHaveCount(0);
+      await hero.getByRole('button', { name: '다음 배너' }).click();
+    }
+    await expect(hero).not.toContainText('[픽]');
   });
 });

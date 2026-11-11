@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Event } from '../../types';
 import { HERO_COPY } from '../../constants/home';
+import { eventStatus } from '../../utils/event';
 import { eventPrice, eventVenue, formatCount, formatMastheadDate } from './selectors';
 
 export type HeroBanner = { event: Event; id: string };
@@ -92,6 +93,7 @@ const HeroEditorial: React.FC<Props> = ({ banners, stats, now }) => {
         {current && (
           <Link to={`/event/${current.id}`} className="v3-hero__cap v3-focus" aria-live="polite">
             <span className="v3-hero__cover-cat">FEATURED · {current.event.CODENAME}</span>
+            {(() => { const st = eventStatus(current.event, now); return st.kind === 'upcoming' ? <span className="v3-hero__cover-dday">D-{st.daysToStart} 개막</span> : null; })()}
             <span className="v3-hero__cover-title">{current.event.TITLE}</span>
             <span className="v3-hero__cover-meta">
               <span>{eventVenue(current.event)}</span>

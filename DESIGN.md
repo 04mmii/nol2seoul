@@ -264,6 +264,16 @@ All routes are hash routes (`HashRouter`).
 
 ---
 
+### 3.y Home finish + Space detail (v3, 2026-11-11)
+
+- **Home hero:** `data/featured-events.json` (cultcodes, in order) can pin banners; upcoming picks get a "D-n 개막" chip (bone outline, not tangerine); ended picks drop out and the automatic rule fills the slots (ongoing + poster + ≥2 days left; this-week starts → ending within 7 days → newest).
+  - **Current (2026-11-11): the file is empty** — banners follow the "THIS WEEK" title, automatic rule only.
+  - **December memo (not active):** Christmas set chosen 2026-11-11, in order: `159960` 광화문마켓 → `159958` 서울빛초롱축제 → `159961` 서울광장 스케이트장. To use it, put these ids in `ids`; each drops out by itself once ended.
+- **Map promo:** right half = every cultural space as an ink dot on bone (same projection as the night hero light map) + numbered markers for the cards from `data/map-promo-spaces.json` (colliding markers are offset with a leader line); 2–3 photo cards (≥400 px wide, ≤500 KB, checked once). Mobile: compact rows.
+- **Editor picks** (`data/editor-picks.json`, replaces the fictional curators): 4:3 cards — space photo, or night photo / mini light map + state badge (bone variant: lit = ember fill, open = ink outline); comment shown only when written. Order: Curation intro → Editor picks → After Dark.
+- **After Dark:** the night page card (`components/night/NightSpotCard.tsx`), 4 equal cards (lit → sunset-lit → photo → rest).
+- **Space detail** (`/space/s<NUM>`, no design-ref page): event detail v3 structure — breadcrumb, hero (MAIN_IMG or hatched placeholder; category, name, address; facts 분류 · 입장료 · 휴관일(≤20 chars) · 지역; 홈페이지 · 찜 · 지도에서 보기), info (주소, 전화, 휴관일, 입장료, 홈페이지), about (FAC_DESC text), 교통 (SUBWAY/BUSSTOP when meaningful), Kakao map, "이 공간에서 열리는 행사" (event PLACE contains the space name; hidden when none), "가까운 공간" (4 nearest, straight-line distance).
+
 ### 3.x AI course remote (v3, 2026-11-11)
 
 Floating on every route (`components/course/CourseRemote.tsx`, `course-remote.css`), based on design-ref/src/course-remote.jsx.

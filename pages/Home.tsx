@@ -5,20 +5,27 @@ import CategoryStrip from '../components/home/CategoryStrip';
 import HomeEvents from '../components/home/HomeEvents';
 import MapPromo from '../components/home/MapPromo';
 import AfterDark from '../components/home/AfterDark';
-import { CurationIntro, Curators } from '../components/home/Curation';
+import { CurationIntro } from '../components/home/Curation';
+import EditorPicks from '../components/home/EditorPicks';
+import { buildNight } from '../components/night/selectors';
 import {
   countStartingThisWeek,
   filterEventsByTab,
   pickHeroEvents,
-  pickNightSpots,
+  pickAfterDark,
   topCounts,
 } from '../components/home/selectors';
 import { eventId } from '../utils/eventId';
+import featured from '../data/featured-events.json' with { type: 'json' };
 import '../components/home/home-v3.css';
+
+/** Hand-picked hero banners (data/featured-events.json, 2026-11-11). */
+const FEATURED_IDS: string[] = (featured as { ids: string[] }).ids;
 
 /**
  * Home — Redesign v3 (design-ref/src/layout-editorial-v3.jsx).
- * Sections: Hero → CategoryStrip → Events → MapPromo → CurationIntro → After Dark → Curators.
+ * Sections: Hero → CategoryStrip → Events → MapPromo → CurationIntro → EditorPicks → After Dark.
+ * (Curators removed 2026-11-11: fictional people/quotes; replaced by the editor picks.)
  */
 const Home: React.FC = () => {
   const { events, loading: eventsLoading, isError: eventsError } = useEvents();
@@ -30,14 +37,15 @@ const Home: React.FC = () => {
   const now = useMemo(() => new Date(), []);
 
   const heroBanners: HeroBanner[] = useMemo(
-    () => pickHeroEvents(events, now).map((event) => ({ event, id: eventId(event) })),
+    () => pickHeroEvents(events, now, FEATURED_IDS).map((event) => ({ event, id: eventId(event) })),
     [events, now],
   );
   const ongoingCount = useMemo(() => filterEventsByTab(events, 'today', now).length, [events, now]);
   const weekStarts = useMemo(() => countStartingThisWeek(events, now), [events, now]);
   const topGenres = useMemo(() => topCounts(events, (e) => e.CODENAME, 4).map(([k]) => k), [events]);
   const topSpaceTypes = useMemo(() => topCounts(spaces, (s) => s.SUBJCODE, 4).map(([k]) => k), [spaces]);
-  const nightSpots = useMemo(() => pickNightSpots(spots), [spots]);
+  const night = useMemo(() => buildNight(spots, now), [spots, now]);
+  const afterDark = useMemo(() => pickAfterDark(night.views), [night]);
 
   const statsLoading = eventsLoading || spacesLoading;
 
@@ -59,8 +67,8 @@ const Home: React.FC = () => {
       />
       <MapPromo spaces={spaces} loading={spacesLoading} />
       <CurationIntro />
-      <AfterDark spots={nightSpots} loading={spotsLoading} />
-      <Curators />
+      <EditorPicks spaces={spaces} nightViews={night.views} />
+      <AfterDark picks={afterDark} views={night.views} loading={spotsLoading} isFavorite={isFavorite} toggleFavorite={toggleFavorite} />
     </div>
   );
 };

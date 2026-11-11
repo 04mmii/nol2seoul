@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useEvents, useFavorites } from '../hooks';
 import FeeBadge from '../components/v3/FeeBadge';
 import EventCard from '../components/v3/EventCard';
 import EventLocationMap from '../components/detail/EventLocationMap';
+import HeroImage from '../components/detail/HeroImage';
 import {
   bodyBlocks,
   externalLinks,
@@ -239,18 +240,6 @@ const EventDetail: React.FC = () => {
       )}
     </div>
   );
-};
-
-const HeroImage: React.FC<{ src?: string }> = ({ src }) => {
-  const [broken, setBroken] = useState(false);
-  if (!src || broken) {
-    return (
-      <span className="v3-detail-hero__ph" aria-hidden="true">
-        <span className="v3-detail-hero__ph-cap">NO IMAGE</span>
-      </span>
-    );
-  }
-  return <img key={src} src={src} alt="" onError={() => setBroken(true)} />;
 };
 
 export default EventDetail;
